@@ -450,6 +450,19 @@ async function load(ticker) {
   }
 }
 
+// Verdict wording lives here, so a wording change shows up as soon as the page is uploaded,
+// even for data files written by an older version of the scripts.
+const VERDICT_TEXT = {
+  good: { label: "Favorable to sell covered calls", summary: "No red flags. The recommended call below balances premium against keeping your shares." },
+  caution: { label: "Sell covered calls further out of the money", summary: "One flag is up. The recommended call already uses a lower delta; consider selling fewer contracts." },
+  wait: { label: "Hold off on selling calls", summary: "Several flags are up. The premium isn't worth the risk to your shares right now." },
+  earnings: { label: "Hold off until after earnings", summary: "Every near expiration spans the earnings report. Sell covered calls once earnings are out." },
+};
+function verdictText(v) {
+  const key = v.level === "wait" && (v.reason === "earnings" || /earnings/i.test(v.label || "")) ? "earnings" : v.level;
+  return VERDICT_TEXT[key] || { label: v.label, summary: v.summary };
+}
+
 function render(r) {
   state.report = r;
   $("report").hidden = false;
@@ -457,8 +470,9 @@ function render(r) {
   const v = $("verdict");
   v.dataset.level = r.verdict.level;
   $("vTicker").textContent = r.ticker + " · covered call check";
-  $("vLabel").textContent = r.verdict.label;
-  $("vSummary").textContent = r.verdict.summary;
+  const vt = verdictText(r.verdict);
+  $("vLabel").textContent = vt.label;
+  $("vSummary").textContent = vt.summary;
   $("qPrice").textContent = money(r.price);
   const ch = $("qChange");
   ch.textContent = (r.change_pct >= 0 ? "+" : "") + r.change_pct.toFixed(2) + "% vs prior close";
@@ -732,7 +746,7 @@ function saveGh(c) { try { localStorage.setItem("cca-gh", JSON.stringify(c)); } 
 
 function openTradePanel(d) {
   const r = state.report;
-  pendingTrade = { ...d, ticker: r.ticker, stock_price: r.price, verdict: r.verdict.label };
+  pendingTrade = { ...d, ticker: r.ticker, stock_price: r.price, verdict: verdictText(r.verdict).label };
   const kind = d.type === "put" ? "put" : "call";
   $("tpWhat").innerHTML = `Sell 1 ${esc(r.ticker)} <strong>${money(d.strike)} ${kind}</strong> expiring <strong>${fmtDate(d.expiry)}</strong> · ${esc(STRAT[d.strategy] || d.strategy)}. The premium is filled in with the ${d.live === "1" ? "bid" : "last trade"} from the last update. Change it to the price Fidelity shows you.`;
   $("tpPremium").value = Number(d.premium).toFixed(2);
