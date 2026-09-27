@@ -1,0 +1,28 @@
+{
+ "updated": "2026-09-27T16:31:00+00:00",
+ "fee_per_contract": 0.65,
+ "strategy_names": {
+  "delta": "Call to sell (0.20 delta)",
+  "mon_wed": "Schedule: Monday \u2192 Wednesday",
+  "thu_fri": "Schedule: Thursday \u2192 Friday",
+  "thu_mon": "Schedule: Thursday \u2192 next Monday",
+  "put": "Wheel put",
+  "manual": "Your pick"
+ },
+ "summary": {
+  "followed": {
+   "n": 0,
+   "open": 0
+  },
+  "skipped": {
+   "n": 0,
+   "open": 0
+  },
+  "mine": {
+   "n": 0,
+   "open": 0
+  },
+  "by_strategy": {}
+ },
+ "trades": []
+}
