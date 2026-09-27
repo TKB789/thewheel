@@ -1,0 +1,255 @@
+{
+ "ticker": "VUZI",
+ "updated": "2026-09-27T20:07:22+00:00",
+ "price": 2.94,
+ "prev_close": 2.74,
+ "change_pct": 7.3,
+ "hv20": 0.6547,
+ "atm_iv": 0.8377,
+ "rsi14": 60.0,
+ "ma20": 2.63,
+ "pct_vs_ma20": 11.81,
+ "earnings_date": "2026-11-12",
+ "ex_div_date": null,
+ "dividend_rate": null,
+ "put_call_oi": 0.12,
+ "put_call_volume": 0.02,
+ "call_target_delta": 0.15,
+ "put_target_delta": 0.25,
+ "verdict": {
+  "level": "caution",
+  "label": "Sell covered calls further out of the money",
+  "summary": "One flag is up. The recommended call already uses a lower delta; consider selling fewer contracts."
+ },
+ "factors": [
+  {
+   "name": "Earnings",
+   "status": "good",
+   "value": "2026-11-12",
+   "note": "Next earnings Nov 12, outside the next 45 days."
+  },
+  {
+   "name": "Premium level",
+   "status": "good",
+   "value": "IV/HV 1.28",
+   "note": "Premium is rich. Options are priced for more movement than the stock has shown lately."
+  },
+  {
+   "name": "Momentum",
+   "status": "bad",
+   "value": "RSI 60",
+   "note": "Stock is running hot (+11.8% vs its 20-day average). Higher chance it climbs through your strike."
+  },
+  {
+   "name": "Put/call (open interest)",
+   "status": "info",
+   "value": "0.12",
+   "note": "Call-heavy positioning: traders are leaning bullish."
+  }
+ ],
+ "put_verdict": {
+  "level": "good",
+  "label": "Favorable to sell cash-secured puts",
+  "summary": "No red flags. The recommended put below pays you to wait for a lower buy price."
+ },
+ "put_factors": [
+  {
+   "name": "Earnings",
+   "status": "good",
+   "value": "2026-11-12",
+   "note": "Next earnings Nov 12, outside the next 45 days."
+  },
+  {
+   "name": "Premium level",
+   "status": "good",
+   "value": "IV/HV 1.28",
+   "note": "Premium is rich. Options are priced for more movement than the stock has shown lately."
+  },
+  {
+   "name": "Trend",
+   "status": "good",
+   "value": "RSI 60",
+   "note": "Trend is steady (+11.8% vs its 20-day average)."
+  },
+  {
+   "name": "Put/call (open interest)",
+   "status": "info",
+   "value": "0.12",
+   "note": "Call-heavy positioning: traders are leaning bullish."
+  }
+ ],
+ "recommended_call": {
+  "strike": 4.0,
+  "bid": 0.0,
+  "ask": 0.1,
+  "mid": 0.05,
+  "live_quote": false,
+  "iv": 1.1255,
+  "delta": 0.144,
+  "prob_assign": 0.094,
+  "premium": 5.0,
+  "yield_pct": 1.701,
+  "ann_yield_pct": 32.7,
+  "cash_needed": null,
+  "open_interest": 1237,
+  "volume": 1,
+  "expiry": "2026-10-16",
+  "dte": 19
+ },
+ "recommended_put": null,
+ "expiries": [
+  {
+   "date": "2026-10-16",
+   "dte": 19,
+   "calls": [
+    {
+     "strike": 4.0,
+     "bid": 0.0,
+     "ask": 0.1,
+     "mid": 0.05,
+     "live_quote": false,
+     "iv": 1.1255,
+     "delta": 0.144,
+     "prob_assign": 0.094,
+     "premium": 5.0,
+     "yield_pct": 1.701,
+     "ann_yield_pct": 32.7,
+     "cash_needed": null,
+     "open_interest": 1237,
+     "volume": 1
+    },
+    {
+     "strike": 5.0,
+     "bid": 0.0,
+     "ask": 0.5,
+     "mid": 0.04,
+     "live_quote": false,
+     "iv": 1.5533,
+     "delta": 0.094,
+     "prob_assign": 0.047,
+     "premium": 4.0,
+     "yield_pct": 1.361,
+     "ann_yield_pct": 26.1,
+     "cash_needed": null,
+     "open_interest": 670,
+     "volume": 41
+    },
+    {
+     "strike": 6.0,
+     "bid": 0.0,
+     "ask": 0.0,
+     "mid": 0.05,
+     "live_quote": false,
+     "iv": 2.0172,
+     "delta": 0.094,
+     "prob_assign": 0.038,
+     "premium": 5.0,
+     "yield_pct": 1.701,
+     "ann_yield_pct": 32.7,
+     "cash_needed": null,
+     "open_interest": 0,
+     "volume": 4
+    },
+    {
+     "strike": 7.0,
+     "bid": 0.0,
+     "ask": 0.05,
+     "mid": 0.02,
+     "live_quote": false,
+     "iv": 1.9594,
+     "delta": 0.043,
+     "prob_assign": 0.015,
+     "premium": 2.0,
+     "yield_pct": 0.68,
+     "ann_yield_pct": 13.1,
+     "cash_needed": null,
+     "open_interest": 944,
+     "volume": 30
+    },
+    {
+     "strike": 8.0,
+     "bid": 0.0,
+     "ask": 0.75,
+     "mid": 0.05,
+     "live_quote": false,
+     "iv": 2.5715,
+     "delta": 0.079,
+     "prob_assign": 0.023,
+     "premium": 5.0,
+     "yield_pct": 1.701,
+     "ann_yield_pct": 32.7,
+     "cash_needed": null,
+     "open_interest": 59,
+     "volume": 5
+    },
+    {
+     "strike": 9.0,
+     "bid": 0.0,
+     "ask": 0.75,
+     "mid": 0.05,
+     "live_quote": false,
+     "iv": 2.7861,
+     "delta": 0.075,
+     "prob_assign": 0.019,
+     "premium": 5.0,
+     "yield_pct": 1.701,
+     "ann_yield_pct": 32.7,
+     "cash_needed": null,
+     "open_interest": 3,
+     "volume": 2
+    },
+    {
+     "strike": 10.0,
+     "bid": 0.0,
+     "ask": 0.5,
+     "mid": 0.25,
+     "live_quote": false,
+     "iv": 4.3002,
+     "delta": 0.225,
+     "prob_assign": 0.041,
+     "premium": 25.0,
+     "yield_pct": 8.503,
+     "ann_yield_pct": 163.4,
+     "cash_needed": null,
+     "open_interest": 22,
+     "volume": 43
+    }
+   ],
+   "puts": [
+    {
+     "strike": 1.5,
+     "bid": 0.0,
+     "ask": 0.0,
+     "mid": 0.05,
+     "live_quote": false,
+     "iv": 2.2953,
+     "delta": -0.06,
+     "prob_assign": 0.152,
+     "premium": 5.0,
+     "yield_pct": 3.333,
+     "ann_yield_pct": 64.0,
+     "cash_needed": 150.0,
+     "open_interest": 0,
+     "volume": 10
+    },
+    {
+     "strike": 2.0,
+     "bid": 0.0,
+     "ask": 0.15,
+     "mid": 0.08,
+     "live_quote": false,
+     "iv": 1.7186,
+     "delta": -0.118,
+     "prob_assign": 0.214,
+     "premium": 8.0,
+     "yield_pct": 4.0,
+     "ann_yield_pct": 76.8,
+     "cash_needed": 200.0,
+     "open_interest": 62,
+     "volume": 5
+    }
+   ]
+  }
+ ],
+ "session_date": "2026-09-25"
+}
