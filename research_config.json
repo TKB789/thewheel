@@ -1,0 +1,6 @@
+{
+  "_comment": "Per-ticker settings for the correlation study. 'wiki' is the English Wikipedia article title (underscores for spaces). 'peers' are stocks whose moves are tested as leading signals.",
+  "_default": {"peers": ["MSFT", "AAPL", "AMZN", "NVDA"]},
+  "GOOGL": {"wiki": "Alphabet_Inc.", "peers": ["MSFT", "META", "AMZN", "NVDA"]},
+  "GOOG": {"wiki": "Alphabet_Inc.", "peers": ["MSFT", "META", "AMZN", "NVDA"]}
+}
