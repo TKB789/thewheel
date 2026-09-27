@@ -28,8 +28,9 @@ import math
 import sys
 import urllib.parse
 import urllib.request
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, time, timedelta, timezone
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 import numpy as np
 import pandas as pd
@@ -93,6 +94,8 @@ TARGETS = {
     "low_end": "rises past one expected move when the reading is in its bottom fifth",
 }
 
+CLOSE_SETTLED = time(16, 15)  # daily bars are final a little after the 4:00 PM close
+MIN_WEEKS = 60           # about a year of Mondays or Thursdays before a window is studied
 TARGET_ASSIGN = 0.15   # aim strikes at ~15% historical assignment (≈ 0.15 delta)
 TRAIN_FRAC = 0.70
 FDR_Q = 0.10
@@ -712,8 +715,9 @@ def load_analyst(ticker):
 def run_ticker(ticker, cfg, px_market):
     tcfg = {**cfg.get("_default", {}), **cfg.get(ticker, {})}
     peers = [p for p in tcfg.get("peers", []) if p != ticker]
-    px = dict(px_market)
-    px.update(load_prices([ticker] + [p for p in peers if p not in px]))
+    # px_market doubles as a cache, so a peer shared by several tickers downloads once per run
+    px_market.update(load_prices([t for t in [ticker] + peers if t not in px_market]))
+    px = px_market
     if ticker not in px:
         raise RuntimeError("no price history")
     wiki = load_wiki(tcfg.get("wiki"))
@@ -722,13 +726,32 @@ def run_ticker(ticker, cfg, px_market):
     return analyze(ticker, px, peers, wiki, earn, tcfg.get("wiki"), analyst)
 
 
-def analyze(ticker, px, peers, wiki, earn, wiki_article, analyst=None):
+def decision_inputs(F: pd.DataFrame, now_et: datetime):
+    """Today's readings, built exactly the way the history was:
+    - during a trading session, the last row is an unfinished day. Use yesterday's completed row,
+      today's opening gap, and the 'known before today's open' signals stored on today's row.
+    - after the close or on a non-trading day, use the last completed row; the gap is unknown
+      until the next open, and the before-open signals are the latest available."""
+    last_day = F.index[-1].date()
+    in_session = last_day == now_et.date() and now_et.time() < CLOSE_SETTLED and len(F) > 1
+    base = F.iloc[-2] if in_session else F.iloc[-1]
+    cur = {f: (None if pd.isna(base[f]) else float(base[f])) for f in FEATURES}
+    if in_session:
+        cur["gap_open"] = float(F["open"].iloc[-1] / F["close"].iloc[-2] - 1)
+        for f in ENTRY_DAY_FEATURES:
+            v = F[f].iloc[-1]
+            cur[f] = None if pd.isna(v) else float(v)
+    else:
+        cur["gap_open"] = None
+        cur.update(F.attrs.get("wiki_now", {}))
+        cur.update(F.attrs.get("analyst_now", {}))
+    return base, cur, in_session
+
+
+def analyze(ticker, px, peers, wiki, earn, wiki_article, analyst=None, now_et=None):
     F = build_features(px, ticker, peers, wiki, earn, analyst)
-    last = F.iloc[-1]
-    current = {f: (None if pd.isna(last[f]) else float(last[f])) for f in FEATURES}
-    current["gap_open"] = None  # unknown until the sell day opens
-    current.update(F.attrs.get("wiki_now", {}))
-    current.update(F.attrs.get("analyst_now", {}))
+    now_et = now_et or datetime.now(ZoneInfo("America/New_York"))
+    last, current, in_session = decision_inputs(F, now_et)
     tone, tone_now = headline_tone(ticker)
     news = daily_forward_study(F, {"news_tone": tone} if tone is not None else {},
                                {"news_tone": "Yahoo headline tone, past 3 days"}, NEWS_MIN, NEWS_SPLIT_MIN) \
@@ -738,6 +761,13 @@ def analyze(ticker, px, peers, wiki, earn, wiki_article, analyst=None):
     windows = []
     for win in WINDOWS:
         ev = make_events(F, win, earn)
+        if len(ev) < MIN_WEEKS or (~ev["earnings"]).sum() < MIN_WEEKS:
+            # too little history (recent listing): no study, no strike suggestion for this window
+            windows.append({"key": win["key"], "label": win["label"], "entry_dow": win["entry_dow"],
+                            "exit_offset": win["exit_offset"], "baseline": {"n": int(len(ev))},
+                            "tests": [], "pairs": [], "holding": [], "suggestion": None,
+                            "earnings_weeks_excluded": int(ev["earnings"].sum()) if len(ev) else 0})
+            continue
         ev_clean, tests, pairs, base = study_window(ev, win, ticker)
         holding = [t for t in tests if t["holds"]] + [t for t in pairs if t["holds"]]
         sigma_now = float(last["hv20"]) * math.sqrt(win["sessions"] / 252)
@@ -753,7 +783,8 @@ def analyze(ticker, px, peers, wiki, earn, wiki_article, analyst=None):
     return {
         "ticker": ticker,
         "updated": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-        "price": round(float(last["close"]), 2),
+        "price": round(float(F["close"].iloc[-1]), 2),
+        "readings_from": "yesterday's close plus today's open (market open now)" if in_session else f"the close on {last.name.date().isoformat()}",
         "history_from": F.index[0].date().isoformat(),
         "signals_tested": sum(1 for f in FEATURES if F[f].notna().sum() > 100),
         "signals_missing": [LABELS[f] for f in FEATURES if F[f].notna().sum() <= 100 and f != "gap_open"],
@@ -768,12 +799,24 @@ def analyze(ticker, px, peers, wiki, earn, wiki_article, analyst=None):
     }
 
 
-def main():
-    tickers = []
-    for line in WATCHLIST.read_text().splitlines():
+def tickers_to_run(watchlist_path):
+    """One ticker from the command line (on-demand lookup), otherwise the whole watchlist."""
+    import re as _re
+    if len(sys.argv) > 1 and sys.argv[1].strip():
+        tk = sys.argv[1].strip().upper()
+        if not _re.fullmatch(r"[A-Z0-9.^=-]{1,12}", tk):
+            sys.exit(f"'{tk}' doesn't look like a ticker symbol")
+        return [tk], True
+    out = []
+    for line in watchlist_path.read_text().splitlines():
         s = line.split("#")[0].strip().upper()
-        if s and s not in tickers:
-            tickers.append(s)
+        if s and s not in out:
+            out.append(s)
+    return out, False
+
+
+def main():
+    tickers, single = tickers_to_run(WATCHLIST)
     cfg = json.loads(CONFIG.read_text()) if CONFIG.exists() else {}
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     print("Downloading market series...")

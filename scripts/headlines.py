@@ -61,14 +61,26 @@ def fetch_news(ticker):
     return [x for x in (parse_item(i) for i in (items or [])) if x]
 
 
+def tickers_to_run(watchlist_path):
+    """One ticker from the command line (on-demand lookup), otherwise the whole watchlist."""
+    import re as _re
+    if len(sys.argv) > 1 and sys.argv[1].strip():
+        tk = sys.argv[1].strip().upper()
+        if not _re.fullmatch(r"[A-Z0-9.^=-]{1,12}", tk):
+            sys.exit(f"'{tk}' doesn't look like a ticker symbol")
+        return [tk], True
+    out = []
+    for line in watchlist_path.read_text().splitlines():
+        s = line.split("#")[0].strip().upper()
+        if s and s not in out:
+            out.append(s)
+    return out, False
+
+
 def main():
     from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
     vader = SentimentIntensityAnalyzer()
-    tickers = []
-    for line in WATCHLIST.read_text().splitlines():
-        s = line.split("#")[0].strip().upper()
-        if s and s not in tickers:
-            tickers.append(s)
+    tickers, single = tickers_to_run(WATCHLIST)
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     for tk in tickers:
         path = OUT_DIR / f"{tk}.csv"

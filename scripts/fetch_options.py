@@ -394,16 +394,31 @@ def fetch(ticker):
     if ex_div and ex_div < today:
         ex_div = None
 
-    return build_report(ticker, closes, price, prev_close, raw, earnings, ex_div, div_rate,
-                        today, datetime.now(timezone.utc).isoformat(timespec="seconds"))
+    report = build_report(ticker, closes, price, prev_close, raw, earnings, ex_div, div_rate,
+                          today, datetime.now(timezone.utc).isoformat(timespec="seconds"))
+    # the trading day these prices come from (differs from today on weekends and market holidays)
+    report["session_date"] = hist.index[-1].date().isoformat()
+    return report
+
+
+def tickers_to_run(watchlist_path):
+    """One ticker from the command line (on-demand lookup), otherwise the whole watchlist."""
+    import re as _re
+    if len(sys.argv) > 1 and sys.argv[1].strip():
+        tk = sys.argv[1].strip().upper()
+        if not _re.fullmatch(r"[A-Z0-9.^=-]{1,12}", tk):
+            sys.exit(f"'{tk}' doesn't look like a ticker symbol")
+        return [tk], True
+    out = []
+    for line in watchlist_path.read_text().splitlines():
+        s = line.split("#")[0].strip().upper()
+        if s and s not in out:
+            out.append(s)
+    return out, False
 
 
 def main():
-    tickers = []
-    for line in WATCHLIST.read_text().splitlines():
-        s = line.split("#")[0].strip().upper()
-        if s and s not in tickers:
-            tickers.append(s)
+    tickers, single = tickers_to_run(WATCHLIST)
     DATA_DIR.mkdir(exist_ok=True)
     ok, failed = [], []
     for tk in tickers:
@@ -415,11 +430,17 @@ def main():
         except Exception as exc:  # keep going; one bad ticker shouldn't stop the rest
             failed.append(tk)
             print(f"{tk}: FAILED ({exc})", file=sys.stderr)
+    if single:  # on-demand lookup: keep every ticker already listed
+        try:
+            prev = json.loads((DATA_DIR / "index.json").read_text()).get("tickers", [])
+        except (OSError, ValueError):
+            prev = []
+        ok = sorted(set(prev) | set(ok))
     (DATA_DIR / "index.json").write_text(json.dumps({
         "tickers": ok, "failed": failed,
         "updated": datetime.now(timezone.utc).isoformat(timespec="seconds"),
     }, indent=1))
-    if not ok:
+    if not ok or (single and failed):   # a failed lookup must show as failed so the page can say so
         sys.exit(1)
 
 

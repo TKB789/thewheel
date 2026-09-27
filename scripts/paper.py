@@ -110,6 +110,8 @@ def auto_log(now_et: datetime):
         updated = datetime.fromisoformat(opt["updated"]).astimezone(ET).date()
         if updated != today:          # never log from stale quotes
             continue
+        if opt.get("session_date", today.isoformat()) != today.isoformat():
+            continue                  # market holiday: quotes are from the last session
         res = load_json(DATA / "research" / f"{tk}.json")
         level = opt["verdict"]["level"]
         stamp = now_et.isoformat(timespec="minutes")
@@ -139,6 +141,8 @@ def auto_log(now_et: datetime):
         picks = []
         for win in (res or {}).get("windows", []):
             if win["entry_dow"] != today.weekday() or (tk, win["key"], today.isoformat()) in have:
+                continue
+            if not win.get("suggestion"):     # not enough history to study this window yet
                 continue
             expiry, call = schedule_pick(opt, win, today)
             if not call:
