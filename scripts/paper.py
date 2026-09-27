@@ -41,6 +41,10 @@ STRATEGY_NAMES = {
     "thu_fri": "Schedule: Thursday → Friday",
     "thu_mon": "Schedule: Thursday → next Monday",
     "put": "Wheel put",
+    "csp": "Cash-secured put (0.25 delta)",
+    "csp_mon_wed": "Put schedule: Monday → Wednesday",
+    "csp_thu_fri": "Put schedule: Thursday → Friday",
+    "csp_thu_mon": "Put schedule: Thursday → next Monday",
     "manual": "Your pick",
 }
 
@@ -85,14 +89,30 @@ def earnings_hits(opt, entry: date, expiry: date):
     return entry - timedelta(days=1) <= d <= expiry   # includes a report the evening before you sell
 
 
-def schedule_pick(opt, win, entry: date):
+def schedule_pick(opt, win, entry: date, side="call"):
+    """The schedule card's strike: for calls, the first listed strike at or above the study's
+    upside target; for puts, the first listed strike at or below its downside target."""
     expiry = entry + timedelta(days=win["exit_offset"])
     exp = next((e for e in opt.get("expiries", []) if e["date"] == expiry.isoformat()), None)
+    sug = win.get("suggestion") or {}
     if not exp:
         return expiry, None
-    target = opt["price"] * (1 + win["suggestion"]["move_pct"] / 100)
-    calls = sorted((c for c in exp["calls"] if c["strike"] >= target), key=lambda c: c["strike"])
-    return expiry, (calls[0] if calls else None)
+    if side == "call":
+        target = opt["price"] * (1 + sug["move_pct"] / 100)
+        cands = sorted((c for c in exp["calls"] if c["strike"] >= target), key=lambda c: c["strike"])
+    else:
+        if sug.get("put_move_pct") is None:
+            return expiry, None
+        target = opt["price"] * (1 - sug["put_move_pct"] / 100)
+        cands = sorted((c for c in exp["puts"] if c["strike"] <= target), key=lambda c: -c["strike"])
+    return expiry, (cands[0] if cands else None)
+
+
+SIDES = {
+    # side: (verdict key, recommended key, chain key, delta strategy key, schedule prefix, target delta, band)
+    "call": ("verdict", "recommended_call", "calls", "delta", "", 0.20, (0.10, 0.30)),
+    "put": ("put_verdict", "recommended_put", "puts", "csp", "csp_", 0.25, (0.15, 0.35)),
+}
 
 
 def auto_log(now_et: datetime):
@@ -113,58 +133,64 @@ def auto_log(now_et: datetime):
         if opt.get("session_date", today.isoformat()) != today.isoformat():
             continue                  # market holiday: quotes are from the last session
         res = load_json(DATA / "research" / f"{tk}.json")
-        level = opt["verdict"]["level"]
         stamp = now_et.isoformat(timespec="minutes")
 
-        # 1) the delta-based "Call to sell" card
-        if (tk, "delta", today.isoformat()) not in have:
-            rc = opt.get("recommended_call")
-            decision = "sell" if rc and level != "wait" else "wait"
-            pick = rc
-            if pick is None and opt.get("expiries"):
-                near = opt["expiries"][0]
-                cands = [c for c in near["calls"] if 0.10 <= c["delta"] <= 0.30]
-                if cands:
-                    pick = dict(min(cands, key=lambda c: abs(c["delta"] - 0.20)), expiry=near["date"])
-            if pick and date.fromisoformat(pick["expiry"]) > today:
-                px, src = fill_price(pick)
-                rows.append({"id": f"A-{tk}-delta-{today:%Y%m%d}", "source": "auto", "logged_at": stamp,
-                             "ticker": tk, "type": "call", "strategy": "delta", "expiry": pick["expiry"],
-                             "strike": pick["strike"], "premium": round(px, 2), "contracts": 1,
-                             "stock_price": opt["price"], "decision": decision,
-                             "verdict": opt["verdict"]["label"], "note": f"premium = {src}"})
-                added += 1
+        for side, (vkey, rkey, chain, dkey, prefix, tdelta, band) in SIDES.items():
+            verdict = opt.get(vkey)
+            if not verdict:
+                continue
+            level = verdict["level"]
 
-        # 2) schedule cards for windows that start today. On Thursday the Friday and Monday
-        #    expirations are alternatives: the one paying more premium per day is the pick,
-        #    the other is logged as "alternative" for comparison.
-        picks = []
-        for win in (res or {}).get("windows", []):
-            if win["entry_dow"] != today.weekday() or (tk, win["key"], today.isoformat()) in have:
-                continue
-            if not win.get("suggestion"):     # not enough history to study this window yet
-                continue
-            expiry, call = schedule_pick(opt, win, today)
-            if not call:
-                continue
-            skip = earnings_hits(opt, today, expiry)
-            px, src = fill_price(call)
-            picks.append({"id": f"A-{tk}-{win['key']}-{today:%Y%m%d}", "source": "auto", "logged_at": stamp,
-                          "ticker": tk, "type": "call", "strategy": win["key"], "expiry": expiry.isoformat(),
-                          "strike": call["strike"], "premium": round(px, 2), "contracts": 1,
-                          "stock_price": opt["price"],
-                          "decision": "wait" if skip or level == "wait" else "sell",
-                          "verdict": "earnings in window" if skip else opt["verdict"]["label"],
-                          "note": f"premium = {src}",
-                          "_per_day": px / max(1, (expiry - today).days)})
-        live = [p for p in picks if p["decision"] == "sell"]
-        if len(live) > 1:
-            best = max(live, key=lambda p: p["_per_day"])
-            for p in live:
-                if p is not best:
-                    p["decision"] = "alternative"
-        rows.extend(picks)
-        added += len(picks)
+            # 1) the delta-based card ("Call to sell" / the recommended cash-secured put)
+            if (tk, dkey, today.isoformat()) not in have:
+                rec = opt.get(rkey)
+                decision = "sell" if rec and level != "wait" else "wait"
+                pick = rec
+                if pick is None and opt.get("expiries"):      # hypothetical trade for "hold off" days
+                    near = opt["expiries"][0]
+                    cands = [c for c in near[chain] if band[0] <= abs(c["delta"]) <= band[1]]
+                    if cands:
+                        pick = dict(min(cands, key=lambda c: abs(abs(c["delta"]) - tdelta)), expiry=near["date"])
+                if pick and date.fromisoformat(pick["expiry"]) > today:
+                    px, src = fill_price(pick)
+                    rows.append({"id": f"A-{tk}-{dkey}-{today:%Y%m%d}", "source": "auto", "logged_at": stamp,
+                                 "ticker": tk, "type": side, "strategy": dkey, "expiry": pick["expiry"],
+                                 "strike": pick["strike"], "premium": round(px, 2), "contracts": 1,
+                                 "stock_price": opt["price"], "decision": decision,
+                                 "verdict": verdict["label"], "note": f"premium = {src}"})
+                    added += 1
+
+            # 2) schedule cards for windows that start today. On Thursday the Friday and Monday
+            #    expirations are alternatives: the one paying more premium per day is the pick,
+            #    the other is logged as "alternative" for comparison.
+            picks = []
+            for win in (res or {}).get("windows", []):
+                key = prefix + win["key"]
+                if win["entry_dow"] != today.weekday() or (tk, key, today.isoformat()) in have:
+                    continue
+                if not win.get("suggestion"):     # not enough history to study this window yet
+                    continue
+                expiry, o = schedule_pick(opt, win, today, side)
+                if not o:
+                    continue
+                skip = earnings_hits(opt, today, expiry)
+                px, src = fill_price(o)
+                picks.append({"id": f"A-{tk}-{key}-{today:%Y%m%d}", "source": "auto", "logged_at": stamp,
+                              "ticker": tk, "type": side, "strategy": key, "expiry": expiry.isoformat(),
+                              "strike": o["strike"], "premium": round(px, 2), "contracts": 1,
+                              "stock_price": opt["price"],
+                              "decision": "wait" if skip or level == "wait" else "sell",
+                              "verdict": "earnings in window" if skip else verdict["label"],
+                              "note": f"premium = {src}",
+                              "_per_day": px / max(1, (expiry - today).days)})
+            live = [p for p in picks if p["decision"] == "sell"]
+            if len(live) > 1:
+                best = max(live, key=lambda p: p["_per_day"])
+                for p in live:
+                    if p is not best:
+                        p["decision"] = "alternative"
+            rows.extend(picks)
+            added += len(picks)
     write_csv(AUTO_LOG, rows)
     return rows, added
 
@@ -259,6 +285,9 @@ def build(auto_rows, manual_rows, closes, now_et):
     # "followed" = the one call your routine would have sold each Monday / Thursday
     followed = [t for t in auto if t["strategy"] in schedule and t["decision"] == "sell"]
     skipped = [t for t in auto if t["strategy"] in schedule and t["decision"] == "wait"]
+    put_schedule = tuple("csp_" + k for k in schedule)
+    puts_followed = [t for t in auto if t["strategy"] in put_schedule and t["decision"] == "sell"]
+    puts_skipped = [t for t in auto if t["strategy"] in put_schedule and t["decision"] == "wait"]
     mine = [t for t in trades if t["source"] == "manual"]
     by_strategy = {}
     for t in auto:
@@ -271,6 +300,8 @@ def build(auto_rows, manual_rows, closes, now_et):
         "summary": {
             "followed": summarize(followed),
             "skipped": summarize(skipped),
+            "puts_followed": summarize(puts_followed),
+            "puts_skipped": summarize(puts_skipped),
             "mine": summarize(mine),
             "by_strategy": {k: summarize(v) for k, v in by_strategy.items()},
         },

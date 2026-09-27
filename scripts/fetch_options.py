@@ -32,7 +32,8 @@ MAX_EXPIRIES = 6
 CALL_TARGET_DELTA = 0.20    # "keep my shares" target
 CALL_TARGET_DELTA_HOT = 0.15  # tighter when the stock is running hot
 CALL_DELTA_BAND = (0.10, 0.30)
-PUT_TARGET_DELTA = 0.25     # wheel re-entry target
+PUT_TARGET_DELTA = 0.25     # standard for cash-secured puts you'd be glad to have assigned
+PUT_TARGET_DELTA_FALLING = 0.15  # further out when the stock is sliding
 PUT_DELTA_BAND = (0.15, 0.35)
 SHOW_DELTA_RANGE = (0.03, 0.50)
 
@@ -248,6 +249,75 @@ def assess(ctx):
     return f, verdict, hot
 
 
+def assess_puts(ctx):
+    """Score the setup for selling cash-secured puts. The risk is the reverse of a covered call:
+    a stock in a steep slide can blow through the strike, so you buy shares that keep falling."""
+    f = []
+    today, near, earn = ctx["today"], ctx["nearest_expiry"], ctx["earnings_date"]
+    earnings_blocks = bool(earn and near and today <= earn <= near)
+    if earnings_blocks:
+        f.append({"name": "Earnings", "status": "bad", "value": earn.isoformat(),
+                  "note": f"Earnings on {earn:%b %-d} land before the {near:%b %-d} expiry. "
+                          "A bad report can gap the stock far below any strike."})
+    elif earn and (earn - today).days <= MAX_DTE:
+        f.append({"name": "Earnings", "status": "neutral", "value": earn.isoformat(),
+                  "note": f"Earnings on {earn:%b %-d}. Only expirations before that date are recommended."})
+    elif earn:
+        f.append({"name": "Earnings", "status": "good", "value": earn.isoformat(),
+                  "note": f"Next earnings {earn:%b %-d}, outside the next {MAX_DTE} days."})
+    else:
+        f.append({"name": "Earnings", "status": "neutral", "value": "Unknown",
+                  "note": "No earnings date found. Check your broker before selling."})
+
+    ratio = ctx["atm_iv"] / ctx["hv20"] if ctx["hv20"] else None
+    if ratio is None:
+        f.append({"name": "Premium level", "status": "neutral", "value": "n/a", "note": "Not enough data."})
+    elif ratio >= 1.15:
+        f.append({"name": "Premium level", "status": "good", "value": f"IV/HV {ratio:.2f}",
+                  "note": "Premium is rich. Options are priced for more movement than the stock has shown lately."})
+    elif ratio >= 0.9:
+        f.append({"name": "Premium level", "status": "neutral", "value": f"IV/HV {ratio:.2f}",
+                  "note": "Premium is fairly priced against recent movement."})
+    else:
+        f.append({"name": "Premium level", "status": "bad", "value": f"IV/HV {ratio:.2f}",
+                  "note": "Premium is thin. The stock has been moving more than options are paying for."})
+
+    r, gap = ctx["rsi14"], ctx["pct_vs_ma20"]
+    falling = r < 30 or gap < -6
+    if falling:
+        f.append({"name": "Trend", "status": "bad", "value": f"RSI {r:.0f}",
+                  "note": f"Stock is sliding ({gap:+.1f}% vs its 20-day average). Puts sold into a slide "
+                          "often get assigned, and the shares can keep falling after."})
+    elif r > 70:
+        f.append({"name": "Trend", "status": "neutral", "value": f"RSI {r:.0f}",
+                  "note": "Stock is running hot. Put premium is thinner here, and pullbacks can come fast."})
+    else:
+        f.append({"name": "Trend", "status": "good", "value": f"RSI {r:.0f}",
+                  "note": f"Trend is steady ({gap:+.1f}% vs its 20-day average)."})
+
+    pc = ctx["put_call_oi"]
+    if pc is not None:
+        desc = ("Heavy put positioning: traders are hedging against a drop." if pc > 1.2 else
+                "Call-heavy positioning: traders are leaning bullish." if pc < 0.7 else
+                "Balanced positioning between puts and calls.")
+        f.append({"name": "Put/call (open interest)", "status": "info", "value": f"{pc:.2f}", "note": desc})
+
+    bads = sum(1 for x in f if x["status"] == "bad" and x["name"] != "Earnings")
+    if earnings_blocks:
+        v = {"level": "wait", "reason": "earnings", "label": "Hold off until after earnings",
+             "summary": "Every near expiration spans the earnings report. Sell puts once earnings are out."}
+    elif bads == 0:
+        v = {"level": "good", "label": "Favorable to sell cash-secured puts",
+             "summary": "No red flags. The recommended put below pays you to wait for a lower buy price."}
+    elif bads == 1:
+        v = {"level": "caution", "label": "Sell puts further out of the money",
+             "summary": "One flag is up. The recommended put already uses a lower delta; consider selling fewer contracts."}
+    else:
+        v = {"level": "wait", "label": "Hold off on selling puts",
+             "summary": "Several flags are up. The premium isn't worth the risk of buying into weakness right now."}
+    return f, v, falling
+
+
 def build_report(ticker, closes, price, prev_close, raw_expiries, earnings_date,
                  ex_div_date, dividend_rate, today, updated):
     hv20 = realized_vol(closes, 20)
@@ -276,18 +346,22 @@ def build_report(ticker, closes, price, prev_close, raw_expiries, earnings_date,
     atm_iv = atm_iv or hv20
     nearest = date.fromisoformat(expiries[0]["date"]) if expiries else None
 
-    factors, verdict, hot = assess({
+    ctx = {
         "today": today, "nearest_expiry": nearest, "earnings_date": earnings_date,
         "atm_iv": atm_iv, "hv20": hv20, "rsi14": rsi14, "pct_vs_ma20": pct_vs_ma20,
         "ex_div_date": ex_div_date,
         "put_call_oi": (put_oi / call_oi) if call_oi else None,
-    })
+    }
+    factors, verdict, hot = assess(ctx)
+    put_factors, put_verdict, falling = assess_puts(ctx)
 
     before = earnings_date if earnings_date and earnings_date >= today else None
     call_target = CALL_TARGET_DELTA_HOT if hot else CALL_TARGET_DELTA
     rec_call = None if verdict.get("reason") == "earnings" else \
         pick(expiries, "calls", call_target, CALL_DELTA_BAND, before)
-    rec_put = pick(expiries, "puts", PUT_TARGET_DELTA, PUT_DELTA_BAND, before)
+    put_target = PUT_TARGET_DELTA_FALLING if falling else PUT_TARGET_DELTA
+    rec_put = None if put_verdict.get("reason") == "earnings" else \
+        pick(expiries, "puts", put_target, PUT_DELTA_BAND, before)
 
     return {
         "ticker": ticker,
@@ -306,9 +380,11 @@ def build_report(ticker, closes, price, prev_close, raw_expiries, earnings_date,
         "put_call_oi": round(put_oi / call_oi, 2) if call_oi else None,
         "put_call_volume": round(put_vol / call_vol, 2) if call_vol else None,
         "call_target_delta": call_target,
-        "put_target_delta": PUT_TARGET_DELTA,
+        "put_target_delta": put_target,
         "verdict": verdict,
         "factors": factors,
+        "put_verdict": put_verdict,
+        "put_factors": put_factors,
         "recommended_call": rec_call,
         "recommended_put": rec_put,
         "expiries": expiries,

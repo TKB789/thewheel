@@ -96,7 +96,8 @@ TARGETS = {
 
 CLOSE_SETTLED = time(16, 15)  # daily bars are final a little after the 4:00 PM close
 MIN_WEEKS = 60           # about a year of Mondays or Thursdays before a window is studied
-TARGET_ASSIGN = 0.15   # aim strikes at ~15% historical assignment (≈ 0.15 delta)
+TARGET_ASSIGN = 0.15       # covered calls: ~15% historical assignment (≈ 0.15 delta)
+PUT_TARGET_ASSIGN = 0.25   # cash-secured puts you'd be glad to have assigned: ~25% (≈ 0.25 delta)
 TRAIN_FRAC = 0.70
 FDR_Q = 0.10
 TEST_P = 0.10
@@ -588,6 +589,10 @@ def suggest(ev: pd.DataFrame, holding: list, current: dict, sigma_now: float):
     zq = float(sample["z"].quantile(1 - TARGET_ASSIGN))
     move = max(zq * sigma_now, 0.0025)
     table = [{"move_pct": k, "rate": float((sample["z"] * sigma_now > k / 100).mean())} for k in STRIKE_STEPS]
+    # cash-secured puts: how far below today the stock finished, at the put target rate
+    zp = float(sample["z"].quantile(PUT_TARGET_ASSIGN))
+    put_move = max(-zp * sigma_now, 0.0025)
+    put_table = [{"move_pct": k, "rate": float((sample["z"] * sigma_now < -k / 100).mean())} for k in STRIKE_STEPS]
     return {
         "sigma_pct": round(sigma_now * 100, 3),
         "move_pct": round(move * 100, 3),
@@ -595,6 +600,9 @@ def suggest(ev: pd.DataFrame, holding: list, current: dict, sigma_now: float):
         "n_sample": int(len(sample)),
         "conditioned_on": used,
         "exceed_table": table,
+        "put_move_pct": round(put_move * 100, 3),
+        "put_target_rate": PUT_TARGET_ASSIGN,
+        "put_exceed_table": put_table,
     }
 
 
@@ -795,7 +803,8 @@ def analyze(ticker, px, peers, wiki, earn, wiki_article, analyst=None, now_et=No
         "news": news,
         "analyst_history": bool(F[list(ANALYST_FEATURES)].notna().any().any()),
         "method": {"train_frac": TRAIN_FRAC, "fdr_q": FDR_Q, "test_p": TEST_P,
-                   "target_assign": TARGET_ASSIGN, "min_conditioned_sample": MIN_COND},
+                   "target_assign": TARGET_ASSIGN, "put_target_assign": PUT_TARGET_ASSIGN,
+                   "min_conditioned_sample": MIN_COND},
     }
 
 
