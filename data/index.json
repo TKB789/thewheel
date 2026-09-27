@@ -1,8 +1,9 @@
 {
  "tickers": [
   "GOOGL",
-  "GOOG"
+  "GOOG",
+  "AAPL"
  ],
  "failed": [],
- "updated": "2026-09-27T15:52:08+00:00"
+ "updated": "2026-09-27T16:01:06+00:00"
 }
