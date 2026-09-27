@@ -188,6 +188,7 @@
   .tradepanel { border-color: var(--accent); }
   .tp-actions { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
   .logform label.wide input { width: min(320px, 80vw); }
+  .setup-steps { margin: 0 0 14px; padding-left: 20px; display: grid; gap: 4px; }
   .setup { margin-top: 14px; padding: 14px; border-radius: 6px; background: var(--surface-2); font-size: 14px; }
   .setup p { margin: 0 0 8px; } .setup ol { margin: 0 0 12px; padding-left: 20px; display: grid; gap: 4px; }
   .linkish { background: none; border: 0; padding: 0; color: var(--accent); font: inherit; font-size: 13px; cursor: pointer; text-decoration: underline; }
@@ -199,6 +200,12 @@
   .tile .t-line { font-size: 13px; color: var(--muted); }
   .pos { color: var(--good); } .neg { color: var(--bad); }
   td.status-open { color: var(--muted); }
+  .fresh { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: baseline; font-size: 13px; color: var(--muted); }
+  .fresh strong { color: var(--ink); font-weight: 600; }
+  .progress { margin-top: 8px; font-size: 14px; }
+  .progress .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); margin-right: 6px; animation: pulse 1.2s ease-in-out infinite; }
+  @keyframes pulse { 50% { opacity: 0.3; } }
+  @media (prefers-reduced-motion: reduce) { .progress .dot { animation: none; } }
   footer { font-size: 13px; color: var(--muted); display: grid; gap: 6px; max-width: 75ch; }
   footer p { margin: 0; }
 </style>
@@ -225,6 +232,32 @@
 
   <div id="analyzerView" class="wrap">
   <div id="stale" class="notice" hidden></div>
+  <div class="fresh" id="fresh" hidden>
+    <span id="freshText"></span>
+    <button type="button" class="linkish" id="refreshNow">Refresh this ticker now</button>
+  </div>
+
+  <section class="card" id="ghCard" hidden>
+    <h3>Connect your GitHub repository</h3>
+    <p class="sub" id="ghWhy"></p>
+    <ol class="setup-steps sub">
+      <li>On github.com: your profile picture → Settings → Developer settings → Personal access tokens → <strong>Fine-grained tokens</strong> → Generate new token.</li>
+      <li>Repository access: <strong>Only select repositories</strong>, then pick this one.</li>
+      <li>Repository permissions: <strong>Contents: Read and write</strong> (to save paper trades) and <strong>Actions: Read and write</strong> (to fetch data on demand). Leave everything else off.</li>
+      <li>Generate the token, copy it, and paste it below.</li>
+    </ol>
+    <div class="logform">
+      <label for="ghOwner">GitHub username<input id="ghOwner" type="text" autocapitalize="off" autocomplete="off" spellcheck="false"></label>
+      <label for="ghRepo">Repository<input id="ghRepo" type="text" autocapitalize="off" autocomplete="off" spellcheck="false"></label>
+      <label for="ghToken" class="wide">Token<input id="ghToken" type="password" autocomplete="off" placeholder="github_pat_..."></label>
+    </div>
+    <div class="tp-actions">
+      <button type="button" id="ghSave" class="btn2">Save and continue</button>
+      <button type="button" id="ghCancel" class="ghost">Cancel</button>
+      <button type="button" id="ghForget" class="linkish">Remove saved token</button>
+    </div>
+    <p class="sub" id="ghStatus" style="margin:12px 0 0">The token is kept only in this browser. Safari clears saved site data for sites you don't open for about a week, so you may need to paste it again now and then.</p>
+  </section>
   <div id="notice" class="notice" hidden></div>
 
   <div id="report" hidden>
@@ -255,25 +288,10 @@
           <label for="tpContracts">Contracts<input type="number" id="tpContracts" step="1" min="1" value="1"></label>
           <label for="tpNote" class="wide">Note (optional)<input type="text" id="tpNote" maxlength="80" placeholder="Fidelity bid at 9:40"></label>
         </div>
-        <div id="tpSetup" class="setup" hidden>
-          <p><strong>One-time setup.</strong> Paper trades are saved to <code>paper_trades.csv</code> in your repository, so the page needs a GitHub token that can edit only that repository.</p>
-          <ol>
-            <li>On github.com: your profile picture → Settings → Developer settings → Personal access tokens → <strong>Fine-grained tokens</strong> → Generate new token.</li>
-            <li>Repository access: <strong>Only select repositories</strong>, then pick this one.</li>
-            <li>Permissions → Repository permissions → <strong>Contents: Read and write</strong>. Leave everything else off.</li>
-            <li>Generate the token, copy it, and paste it below.</li>
-          </ol>
-          <div class="logform">
-            <label for="ghOwner">GitHub username<input id="ghOwner" type="text" autocapitalize="off" autocomplete="off" spellcheck="false"></label>
-            <label for="ghRepo">Repository<input id="ghRepo" type="text" autocapitalize="off" autocomplete="off" spellcheck="false"></label>
-            <label for="ghToken" class="wide">Token<input id="ghToken" type="password" autocomplete="off" placeholder="github_pat_..."></label>
-          </div>
-          <p class="sub" style="margin:10px 0 0">The token is kept only in this browser. Safari clears saved site data for sites you don't open for about a week, so you may need to paste it again now and then.</p>
-        </div>
         <div class="tp-actions">
           <button type="button" id="tpLog" class="btn2">Log paper trade</button>
           <button type="button" id="tpCancel" class="ghost">Cancel</button>
-          <button type="button" id="tpSettings" class="linkish">GitHub settings</button>
+          <button type="button" id="tpSettings" class="linkish">GitHub connection</button>
         </div>
         <p class="sub" id="tpStatus" style="margin:12px 0 0"></p>
       </section>
@@ -346,8 +364,9 @@
   </div>
 
   <footer>
+    <p id="schedLine"></p>
     <p><strong>How it decides.</strong> Calls are recommended near 0.20 delta (0.15 when the stock is running hot), the common range for covered calls when you want to keep your shares. Wheel puts target 0.25 delta. Expirations that span an earnings report are skipped. "Chance of assignment" is the market-implied probability the option finishes in the money, from Black-Scholes using each option's own implied volatility.</p>
-    <p>Data comes from Yahoo Finance through a scheduled job in this repository, delayed at least 15 minutes and only as fresh as the last run. Confirm the quote in your brokerage before trading. This is a decision aid, not financial advice.</p>
+    <p>Data comes from Yahoo Finance through a scheduled job in this repository, delayed about 15 minutes and only as fresh as the last run. Confirm the quote in your brokerage before trading. This is a decision aid, not financial advice.</p>
   </footer>
 </div>
 
@@ -419,7 +438,10 @@ async function load(ticker) {
     render(rep);
   } catch (e) {
     $("report").hidden = true;
-    showNotice(`<strong>${esc(ticker)} isn't on your watchlist yet.</strong> Add it on its own line in <code>watchlist.txt</code> and commit. The update job runs automatically and the data shows up here in about a minute.`, true);
+    $("fresh").hidden = true;
+    showNotice(`<strong>No data for ${esc(ticker)} yet.</strong> Get it now: GitHub fetches the option chain and runs the 10-year study for ${esc(ticker)}, then adds it to your watchlist so it keeps updating. This usually takes 3 to 5 minutes.
+      <div class="tp-actions"><button type="button" class="btn2" id="lookupBtn">Get data for ${esc(ticker)}</button></div><div class="progress" id="lookupProgress"></div>`);
+    $("lookupBtn").addEventListener("click", () => lookup(ticker));
   }
 }
 
@@ -441,6 +463,7 @@ function render(r) {
   const st = $("stale");
   st.hidden = state.sampleMode || ageH < 26;
   if (!st.hidden) st.innerHTML = `<strong>These numbers are from ${upd.toLocaleString("en-US", { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}.</strong> Run "Update options data" from the Actions tab in your repository before trading on them.`;
+  renderFreshness(r);
   $("qAsOf").textContent = "Data as of " + upd.toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 
   renderCall(r);
@@ -566,6 +589,7 @@ function renderResearch(r, R) {
     const expiry = addDays(entry, w.exit_offset);
     const exp = r.expiries.find((e) => e.date === iso(expiry));
     const s = w.suggestion;
+    if (!s) return { w, entry, expiry, noHist: true, perDay: null };
     const target = r.price * (1 + s.move_pct / 100);
     let call = null;
     if (exp) call = exp.calls.filter((c) => c.strike >= target).sort((a, b) => a.strike - b.strike)[0] || null;
@@ -583,9 +607,11 @@ function renderResearch(r, R) {
   const thu = slots.filter((x) => x.w.entry_dow === 3 && x.perDay != null);
   const bestThu = thu.length === 2 ? thu.reduce((a, b) => (b.perDay > a.perDay ? b : a)) : null;
 
-  $("schedSub").textContent = `Strikes are set where ${r.ticker} rose past them by expiry in about ${Math.round(R.method.target_assign * 100)}% of past weeks that looked like this one. That's the historical version of a 0.15-delta call. Premiums are at today's prices.`;
+  $("schedSub").textContent = `Strikes are set where ${r.ticker} rose past them by expiry in about ${Math.round(R.method.target_assign * 100)}% of past weeks that looked like this one. That's the historical version of a 0.15-delta call. Premiums are at today's prices.${R.readings_from ? ` Signal readings use ${R.readings_from}.` : ""}`;
   $("schedCards").innerHTML = slots.map((x) => {
     const w = x.w, c = x.call, s = x.s;
+    if (x.noHist) return `<div class="slot"><div class="when"><b>${esc(w.label)}</b><span>${DAY[x.entry.getDay()]} ${fmtDate(iso(x.entry))} → ${DAY[x.expiry.getDay()]} ${fmtDate(iso(x.expiry))}</span></div>
+        <div class="why">Not enough price history yet. This window gets a strike suggestion once there's about a year of ${w.entry_dow === 0 ? "Mondays" : "Thursdays"} to study.</div></div>`;
     const chips = [];
     if (x === soonest) chips.push(`<span class="chip info">Next up</span>`);
     if (x.earn) chips.push(`<span class="chip bad">Wait: earnings</span>`);
@@ -708,9 +734,6 @@ function openTradePanel(d) {
   $("tpContracts").value = 1;
   $("tpNote").value = "";
   $("tpStatus").textContent = "";
-  const c = ghConfig();
-  $("ghOwner").value = c.owner || ""; $("ghRepo").value = c.repo || ""; $("ghToken").value = c.token || "";
-  $("tpSetup").hidden = state.sampleMode || !!c.token;
   $("tpSettings").hidden = state.sampleMode;
   $("tradePanel").hidden = false;
   $("tradePanel").scrollIntoView({ behavior: "smooth", block: "center" });
@@ -752,23 +775,17 @@ async function logTrade() {
     renderPaper();
     return;
   }
-  const c = ghConfig();
-  if (!$("tpSetup").hidden) {
-    c.owner = $("ghOwner").value.trim(); c.repo = $("ghRepo").value.trim(); c.token = $("ghToken").value.trim();
-    if (!c.owner || !c.repo || !c.token) { $("tpStatus").textContent = "Fill in your GitHub username, repository and token first."; return; }
-    saveGh(c);
-  }
+  if (!ghConfig().token) return openGhCard("Paper trades are saved to paper_trades.csv in your repository, so the page needs a GitHub token first.", logTrade);
   $("tpLog").disabled = true;
   $("tpStatus").textContent = "Saving to GitHub...";
   try {
     await appendToRepo(line, `Paper trade: ${t.ticker} ${t.strike} ${t.type} ${t.expiry}`);
     $("tpStatus").innerHTML = `Logged. It's in <strong>Paper trades</strong> now, and gets scored after it expires and the next update runs.`;
     state.previewTrades.unshift({ ...row, status: "open" });
-    $("tpSetup").hidden = true;
     renderPaper();
   } catch (e) {
     $("tpStatus").textContent = e.message || "Couldn't reach GitHub. Check your connection and try again.";
-    if (/token|access|username/i.test(e.message || "")) $("tpSetup").hidden = false;
+    if (/token|access|username/i.test(e.message || "")) openGhCard(e.message, logTrade);
   } finally { $("tpLog").disabled = false; }
 }
 
@@ -778,7 +795,7 @@ document.addEventListener("click", (ev) => {
 });
 $("tpLog").addEventListener("click", logTrade);
 $("tpCancel").addEventListener("click", () => { $("tradePanel").hidden = true; pendingTrade = null; });
-$("tpSettings").addEventListener("click", () => { $("tpSetup").hidden = !$("tpSetup").hidden; });
+$("tpSettings").addEventListener("click", () => openGhCard("", null));
 
 // ---------------------------------------------------------------- paper trades view
 function parseCsv(text) {
@@ -857,6 +874,166 @@ function setView(v) {
 $("navAnalyzer").addEventListener("click", () => setView("analyzer"));
 $("navPaper").addEventListener("click", () => setView("paper"));
 $("paperFilter").addEventListener("change", renderPaper);
+
+// ---------------------------------------------------------------- GitHub connection
+let ghThen = null;
+function openGhCard(why, then) {
+  const c = ghConfig();
+  $("ghOwner").value = c.owner || ""; $("ghRepo").value = c.repo || ""; $("ghToken").value = c.token || "";
+  $("ghWhy").textContent = why || "Paper trades and on-demand lookups go through your GitHub repository, using a token that can only touch this one repository.";
+  ghThen = then;
+  $("ghCard").hidden = false;
+  if ($("analyzerView").hidden) setView("analyzer");
+  $("ghCard").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+async function ghApi(path, opts = {}) {
+  const c = ghConfig();
+  return fetch(`https://api.github.com/repos/${encodeURIComponent(c.owner)}/${encodeURIComponent(c.repo)}${path}`, {
+    ...opts, cache: "no-store",
+    headers: { Authorization: `Bearer ${c.token}`, Accept: "application/vnd.github+json", ...(opts.headers || {}) },
+  });
+}
+$("ghSave").addEventListener("click", async () => {
+  const c = { owner: $("ghOwner").value.trim(), repo: $("ghRepo").value.trim(), token: $("ghToken").value.trim() };
+  if (!c.owner || !c.repo || !c.token) { $("ghStatus").textContent = "Fill in your GitHub username, repository and token."; return; }
+  saveGh(c);
+  $("ghStatus").textContent = "Checking with GitHub...";
+  try {
+    const r = await ghApi("");
+    if (r.status === 401) throw new Error("GitHub rejected the token. Copy it again, and check it hasn't expired.");
+    if (r.status === 404) throw new Error(`GitHub can't see ${c.owner}/${c.repo} with this token. Check the spelling, and that the token was given access to this repository.`);
+    if (!r.ok) throw new Error(`GitHub returned ${r.status}.`);
+    $("ghStatus").textContent = "Connected.";
+    $("ghCard").hidden = true;
+    const next = ghThen; ghThen = null;
+    if (next) next();
+  } catch (e) { $("ghStatus").textContent = e.message || "Couldn't reach GitHub. Check your connection."; }
+});
+$("ghCancel").addEventListener("click", () => { $("ghCard").hidden = true; ghThen = null; });
+$("ghForget").addEventListener("click", () => {
+  const c = ghConfig(); delete c.token; saveGh(c); $("ghToken").value = "";
+  $("ghStatus").textContent = "Token removed from this browser.";
+});
+
+// ---------------------------------------------------------------- on-demand lookup
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+function progress(html, done) { const el = $("lookupProgress"); if (el) el.innerHTML = (done ? "" : `<span class="dot"></span>`) + html; }
+
+async function lookup(ticker) {
+  if (state.sampleMode) return progress("This preview can't reach GitHub. On your GitHub site, this button fetches the ticker.", true);
+  if (!ghConfig().token) return openGhCard("Looking up a new ticker asks GitHub to run the update for it, so the page needs a GitHub token first.", () => lookup(ticker));
+  const btn = $("lookupBtn"); if (btn) btn.disabled = true;
+  try {
+    progress("Asking GitHub to start...");
+    const repo = await ghApi("");
+    if (!repo.ok) throw new Error(repo.status === 401 ? "GitHub rejected the token." : `GitHub returned ${repo.status}.`);
+    const branch = (await repo.json()).default_branch || "main";
+    const before = await ghApi("/actions/runs?event=workflow_dispatch&per_page=20");
+    const known = new Set(before.ok ? (await before.json()).workflow_runs.map((x) => x.id) : []);
+    const d = await ghApi("/actions/workflows/update-data.yml/dispatches", {
+      method: "POST", body: JSON.stringify({ ref: branch, inputs: { ticker } }),
+    });
+    if (d.status === 403 || d.status === 404) throw new Error("GitHub didn't allow starting the update. Give the token Actions: Read and write, and check that .github/workflows/update-data.yml is in your repository.");
+    if (d.status === 422) throw new Error("Your workflow file is an older version without on-demand lookups. Replace .github/workflows/update-data.yml with the latest one.");
+    if (!d.ok) throw new Error(`GitHub returned ${d.status} when starting the update.`);
+
+    const started = Date.now();
+    let run = null;
+    while (Date.now() - started < 20 * 60e3) {
+      await sleep(8000);
+      const r = await ghApi("/actions/runs?event=workflow_dispatch&per_page=20");
+      if (!r.ok) continue;
+      run = (await r.json()).workflow_runs.find((x) => !known.has(x.id)) || null;
+      const secs = Math.round((Date.now() - started) / 1000);
+      const t = `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, "0")}`;
+      if (!run || run.status === "queued" || run.status === "pending" || run.status === "waiting") progress(`Waiting for GitHub to start the run (${t})...`);
+      else if (run.status !== "completed") progress(`Fetching ${esc(ticker)} and running the study (${t})...`);
+      else break;
+    }
+    if (!run || run.status !== "completed") throw new Error("The run is taking longer than usual. Check the Actions tab, then reload this page.");
+    if (run.conclusion !== "success") {
+      progress(`GitHub couldn't get data for ${esc(ticker)}. Check the symbol and that it has listed options. <a href="${esc(run.html_url)}" target="_blank" rel="noopener">See what happened</a>.`, true);
+      return;
+    }
+    progress("Saved. Waiting for your site to publish the new data...");
+    const deadline = Date.now() + 6 * 60e3;
+    while (Date.now() < deadline) {
+      try {
+        const rep = await getJSON(`data/${encodeURIComponent(ticker)}.json`);
+        if (new Date(rep.updated) >= new Date(run.created_at) - 60e3) { await refreshIndex(); return load(ticker); }
+      } catch (e) {}
+      await sleep(10000);
+    }
+    progress("The data is saved in your repository, but the site hasn't published it yet. Reload in a minute.", true);
+  } catch (e) {
+    progress(esc(e.message || "Couldn't reach GitHub. Check your connection and try again."), true);
+    if (/token/i.test(e.message || "")) openGhCard(e.message, () => lookup(ticker));
+  } finally { if (btn) btn.disabled = false; }
+}
+
+async function refreshIndex() {
+  try {
+    const idx = await getJSON("data/index.json");
+    $("tickerList").innerHTML = (idx.tickers || []).map((t) => `<option value="${esc(t)}">`).join("");
+  } catch (e) {}
+}
+
+$("refreshNow").addEventListener("click", () => {
+  const t = state.report && state.report.ticker;
+  if (!t) return;
+  showNotice(`<strong>Refreshing ${esc(t)}.</strong> GitHub fetches fresh quotes and reruns the study for this ticker, usually in 3 to 5 minutes. Yahoo's prices are still about 15 minutes behind.<div class="progress" id="lookupProgress"></div>`);
+  lookup(t);
+});
+
+// ---------------------------------------------------------------- when data is collected
+const SLOTS_ET = [[10, 15], [13, 15], [16, 20]];   // must match the workflow schedule
+function etParts(d) {
+  return Object.fromEntries(new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", hourCycle: "h23", weekday: "short" }).formatToParts(d).map((x) => [x.type, x.value]));
+}
+function etWallToDate(y, m, d, hh, mm) {
+  for (const off of [4, 5]) {
+    const t = new Date(Date.UTC(y, m - 1, d, hh + off, mm));
+    const p = etParts(t);
+    if (+p.hour === hh && +p.minute === mm) return t;
+  }
+  return new Date(Date.UTC(y, m - 1, d, hh + 5, mm));
+}
+function nextUpdate(now = new Date()) {
+  for (let i = 0; i < 8; i++) {
+    const p = etParts(new Date(now.getTime() + i * 864e5));
+    if (p.weekday === "Sat" || p.weekday === "Sun") continue;
+    for (const [hh, mm] of SLOTS_ET) {
+      const t = etWallToDate(+p.year, +p.month, +p.day, hh, mm);
+      if (t > now) return t;
+    }
+  }
+  return null;
+}
+const localTime = (d) => d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+const localWhen = (d) => {
+  const today = new Date(), tmw = addDays(today, 1);
+  const day = d.toDateString() === today.toDateString() ? "today" : d.toDateString() === tmw.toDateString() ? "tomorrow" : d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+  return `${day} at ${localTime(d)}`;
+};
+const tzName = () => (new Intl.DateTimeFormat("en-US", { timeZoneName: "short" }).formatToParts(new Date()).find((x) => x.type === "timeZoneName") || {}).value || "";
+
+function renderFreshness(r) {
+  const upd = new Date(r.updated), nxt = nextUpdate();
+  const study = state.research && state.research.updated ? new Date(state.research.updated) : null;
+  $("freshText").innerHTML = `Prices collected <strong>${localWhen(upd)}</strong> (Yahoo, about 15 minutes delayed)` +
+    (study ? ` · Study run ${localWhen(study)}` : "") +
+    (nxt && !state.sampleMode ? ` · Next update <strong>${localWhen(nxt)}</strong>` : "");
+  $("fresh").hidden = false;
+  $("refreshNow").hidden = state.sampleMode;
+}
+
+(function renderScheduleLine() {
+  const p = etParts(new Date());
+  const times = SLOTS_ET.map(([hh, mm]) => localTime(etWallToDate(+p.year, +p.month, +p.day, hh, mm)));
+  const wk = localTime(etWallToDate(+p.year, +p.month, +p.day, 12, 5));
+  $("schedLine").innerHTML = `<strong>When data is collected</strong> (your time, ${tzName()}): weekdays at ${times[0]}, ${times[1]} and ${times[2]}. The ${times[0]} run is the sell-time snapshot, and the ${times[2]} run comes after the close with final prices, the 10-year study, and paper-trade results. Weekends at ${wk}, headlines only. Market holidays are skipped, and GitHub sometimes starts a run a few minutes late.`;
+})();
 
 function setSide(side) {
   state.side = side;

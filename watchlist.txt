@@ -1,3 +1,27 @@
-# One ticker per line. Commit a change here and the data refreshes in about a minute.
+# One ticker per line. Tickers you look up from the page are added here automatically.
+# Big tech
 GOOGL
 GOOG
+AAPL
+MSFT
+NVDA
+AMZN
+META
+TSLA
+# Chips and software
+AMD
+AVGO
+INTC
+ORCL
+CRM
+NFLX
+# Banks, staples, health, media
+JPM
+BAC
+KO
+PFE
+DIS
+# Index funds (no earnings dates)
+SPY
+QQQ
+IWM

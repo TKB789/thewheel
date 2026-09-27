@@ -1,6 +1,26 @@
 {
-  "_comment": "Per-ticker settings for the correlation study. 'wiki' is the English Wikipedia article title (underscores for spaces). 'peers' are stocks whose moves are tested as leading signals.",
+  "_comment": "Per-ticker settings for the correlation study. 'wiki' is the English Wikipedia article title as it appears in the article's web address. 'peers' are stocks whose moves are tested as leading signals. A wrong Wikipedia title just skips that one signal.",
   "_default": {"peers": ["MSFT", "AAPL", "AMZN", "NVDA"]},
   "GOOGL": {"wiki": "Alphabet_Inc.", "peers": ["MSFT", "META", "AMZN", "NVDA"]},
-  "GOOG": {"wiki": "Alphabet_Inc.", "peers": ["MSFT", "META", "AMZN", "NVDA"]}
+  "GOOG":  {"wiki": "Alphabet_Inc.", "peers": ["MSFT", "META", "AMZN", "NVDA"]},
+  "AAPL":  {"wiki": "Apple_Inc.", "peers": ["MSFT", "GOOGL", "AMZN", "META"]},
+  "MSFT":  {"wiki": "Microsoft", "peers": ["AAPL", "GOOGL", "AMZN", "ORCL"]},
+  "NVDA":  {"wiki": "Nvidia", "peers": ["AMD", "AVGO", "INTC", "TSM"]},
+  "AMZN":  {"wiki": "Amazon_(company)", "peers": ["MSFT", "GOOGL", "WMT", "META"]},
+  "META":  {"wiki": "Meta_Platforms", "peers": ["GOOGL", "SNAP", "PINS", "AMZN"]},
+  "TSLA":  {"wiki": "Tesla,_Inc.", "peers": ["GM", "F", "RIVN", "NVDA"]},
+  "AMD":   {"wiki": "AMD", "peers": ["NVDA", "INTC", "AVGO", "QCOM"]},
+  "AVGO":  {"wiki": "Broadcom", "peers": ["NVDA", "QCOM", "AMD", "TXN"]},
+  "INTC":  {"wiki": "Intel", "peers": ["AMD", "NVDA", "QCOM", "TXN"]},
+  "ORCL":  {"wiki": "Oracle_Corporation", "peers": ["MSFT", "CRM", "SAP", "IBM"]},
+  "CRM":   {"wiki": "Salesforce", "peers": ["ORCL", "MSFT", "NOW", "ADBE"]},
+  "NFLX":  {"wiki": "Netflix", "peers": ["DIS", "WBD", "ROKU", "SPOT"]},
+  "JPM":   {"wiki": "JPMorgan_Chase", "peers": ["BAC", "WFC", "C", "GS"]},
+  "BAC":   {"wiki": "Bank_of_America", "peers": ["JPM", "WFC", "C", "USB"]},
+  "KO":    {"wiki": "The_Coca-Cola_Company", "peers": ["PEP", "PG", "MDLZ", "KDP"]},
+  "PFE":   {"wiki": "Pfizer", "peers": ["MRK", "JNJ", "ABBV", "BMY"]},
+  "DIS":   {"wiki": "The_Walt_Disney_Company", "peers": ["NFLX", "CMCSA", "WBD", "SPOT"]},
+  "SPY":   {"wiki": "SPDR_S&P_500_ETF_Trust", "peers": ["QQQ", "IWM", "DIA"]},
+  "QQQ":   {"wiki": "Invesco_QQQ", "peers": ["SPY", "IWM", "DIA"]},
+  "IWM":   {"wiki": "IShares_Russell_2000_ETF", "peers": ["SPY", "QQQ", "DIA"]}
 }
