@@ -1,8 +1,28 @@
 {
  "tickers": [
   "GOOGL",
-  "GOOG"
+  "GOOG",
+  "AAPL",
+  "MSFT",
+  "NVDA",
+  "AMZN",
+  "META",
+  "TSLA",
+  "AMD",
+  "AVGO",
+  "INTC",
+  "ORCL",
+  "CRM",
+  "NFLX",
+  "JPM",
+  "BAC",
+  "KO",
+  "PFE",
+  "DIS",
+  "SPY",
+  "QQQ",
+  "IWM"
  ],
  "failed": [],
- "updated": "2026-09-27T16:30:12+00:00"
+ "updated": "2026-09-27T16:55:12+00:00"
 }
