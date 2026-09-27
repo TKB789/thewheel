@@ -2,56 +2,117 @@ name: Update options data
 
 on:
   schedule:
-    # Weekdays at about 10:45 AM, 1:45 PM and 4:45 PM Eastern (daylight time).
-    # GitHub runs cron in UTC and may start a few minutes late.
-    - cron: "45 14,17,20 * * 1-5"
+    # GitHub schedules run in UTC and don't follow daylight saving time, so each run is
+    # listed at both possible UTC hours. The "Check New York time" step keeps only the
+    # one that lands in the right New York window and skips the other.
+    - cron: "15 14,15 * * 1-5"   # 10:15 AM ET: after the opening swings settle; sell-time snapshot
+    - cron: "15 17,18 * * 1-5"   # 1:15 PM ET: midday refresh
+    - cron: "20 20,21 * * 1-5"   # 4:20 PM ET: after the close; final prices, study, trades settle
+    - cron: "5 16,17 * * 0,6"    # 12:05 PM ET weekends: headlines only
   push:
     paths:
-      - "watchlist.txt"
+      - "watchlist.txt"          # your own edits; the job's own commits don't trigger runs
       - "research_config.json"
       - "scripts/**"
   workflow_dispatch:
+    inputs:
+      ticker:
+        description: "Look up one ticker (leave empty to update the whole watchlist)"
+        required: false
+        default: ""
 
 permissions:
   contents: write
 
 concurrency:
   group: update-data
-  cancel-in-progress: true
+  cancel-in-progress: false   # queue runs instead of cancelling one that's saving data
 
 jobs:
   update:
     runs-on: ubuntu-latest
     steps:
+      - name: Check New York time
+        id: gate
+        env:
+          EVENT: ${{ github.event_name }}
+          IN_TICKER: ${{ inputs.ticker }}
+        run: |
+          TICKER=$(echo "$IN_TICKER" | tr '[:lower:]' '[:upper:]' | tr -d ' ')
+          if [ -n "$TICKER" ]; then
+            if ! echo "$TICKER" | grep -Eq '^[A-Z0-9.^=-]{1,12}$'; then echo "Not a ticker: $TICKER"; exit 1; fi
+            echo "mode=single" >> "$GITHUB_OUTPUT"; echo "research=true" >> "$GITHUB_OUTPUT"
+            echo "ticker=$TICKER" >> "$GITHUB_OUTPUT"; echo "Looking up $TICKER"; exit 0
+          fi
+          if [ "$EVENT" != "schedule" ]; then
+            echo "mode=full" >> "$GITHUB_OUTPUT"; echo "research=true" >> "$GITHUB_OUTPUT"
+            echo "Manual or push run: full update"; exit 0
+          fi
+          HM=$((10#$(TZ=America/New_York date +%H%M)))
+          DOW=$(TZ=America/New_York date +%u)   # 1 = Monday ... 7 = Sunday
+          MODE=skip; RESEARCH=false
+          if [ "$DOW" -le 5 ]; then
+            if [ $HM -ge 1000 ] && [ $HM -lt 1100 ]; then MODE=full; fi
+            if [ $HM -ge 1300 ] && [ $HM -lt 1400 ]; then MODE=full; fi
+            if [ $HM -ge 1615 ] && [ $HM -lt 1715 ]; then MODE=full; RESEARCH=true; fi
+          else
+            if [ $HM -ge 1200 ] && [ $HM -lt 1300 ]; then MODE=headlines; fi
+          fi
+          echo "New York time $(TZ=America/New_York date '+%a %H:%M') -> $MODE (study: $RESEARCH)"
+          echo "mode=$MODE" >> "$GITHUB_OUTPUT"; echo "research=$RESEARCH" >> "$GITHUB_OUTPUT"
+
       - uses: actions/checkout@v4
+        if: steps.gate.outputs.mode != 'skip'
 
       - uses: actions/setup-python@v5
+        if: steps.gate.outputs.mode != 'skip'
         with:
           python-version: "3.12"
 
       - name: Install dependencies
+        if: steps.gate.outputs.mode != 'skip'
         run: pip install -r requirements.txt
 
       - name: Fetch option chains
-        run: python scripts/fetch_options.py
+        if: steps.gate.outputs.mode == 'full' || steps.gate.outputs.mode == 'single'
+        env:
+          TICKER: ${{ steps.gate.outputs.ticker }}
+        run: python scripts/fetch_options.py "$TICKER"
 
       - name: Collect headlines
+        if: steps.gate.outputs.mode != 'skip'
         continue-on-error: true
-        run: python scripts/headlines.py
+        env:
+          TICKER: ${{ steps.gate.outputs.ticker }}
+        run: python scripts/headlines.py "$TICKER"
 
       - name: Run correlation study
+        if: steps.gate.outputs.research == 'true'
         continue-on-error: true   # a study failure shouldn't block fresh option data
-        run: python scripts/research.py
+        env:
+          TICKER: ${{ steps.gate.outputs.ticker }}
+        run: python scripts/research.py "$TICKER"
 
       - name: Paper trading
+        if: steps.gate.outputs.mode == 'full'
         continue-on-error: true
         run: python scripts/paper.py
 
+      - name: Add looked-up ticker to the watchlist
+        if: steps.gate.outputs.mode == 'single'
+        env:
+          TICKER: ${{ steps.gate.outputs.ticker }}
+        run: grep -qx "$TICKER" watchlist.txt || echo "$TICKER" >> watchlist.txt
+
       - name: Commit data
+        if: steps.gate.outputs.mode != 'skip'
+        env:
+          MODE: ${{ steps.gate.outputs.mode }}
+          TICKER: ${{ steps.gate.outputs.ticker }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898699+github-actions[bot]@users.noreply.github.com"
-          git add data
-          git diff --cached --quiet || git commit -m "Update options data"
+          git add data watchlist.txt
+          git diff --cached --quiet || git commit -m "Update data ($MODE${TICKER:+ $TICKER})"
           git pull --rebase
           git push
