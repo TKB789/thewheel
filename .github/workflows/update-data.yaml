@@ -9,7 +9,6 @@ on:
     paths:
       - "watchlist.txt"
       - "research_config.json"
-      - "fidelity_log.csv"
       - "scripts/**"
   workflow_dispatch:
 
@@ -36,9 +35,17 @@ jobs:
       - name: Fetch option chains
         run: python scripts/fetch_options.py
 
+      - name: Collect headlines
+        continue-on-error: true
+        run: python scripts/headlines.py
+
       - name: Run correlation study
         continue-on-error: true   # a study failure shouldn't block fresh option data
         run: python scripts/research.py
+
+      - name: Paper trading
+        continue-on-error: true
+        run: python scripts/paper.py
 
       - name: Commit data
         run: |
