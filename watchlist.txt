@@ -1,4 +1,3 @@
 # One ticker per line. Commit a change here and the data refreshes in about a minute.
 GOOGL
 GOOG
-AAPL
