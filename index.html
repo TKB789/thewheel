@@ -206,6 +206,9 @@
   .progress .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); margin-right: 6px; animation: pulse 1.2s ease-in-out infinite; }
   @keyframes pulse { 50% { opacity: 0.3; } }
   @media (prefers-reduced-motion: reduce) { .progress .dot { animation: none; } }
+  .avail { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; align-items: center; }
+  .tick { padding: 4px 10px; font: 500 13px var(--mono); border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
+  .tick:hover { border-color: var(--accent); }
   footer { font-size: 13px; color: var(--muted); display: grid; gap: 6px; max-width: 75ch; }
   footer p { margin: 0; }
 </style>
@@ -216,6 +219,7 @@
     <div>
       <h1>Covered Call Analyzer</h1>
       <p class="goal">Goal: keep the shares long term. If they get called away, sell cash-secured puts to buy back in (the wheel).</p>
+      <p class="goal" id="coverage"></p>
     </div>
     <form class="lookup" id="lookup" autocomplete="off">
       <label for="ticker" class="sr" hidden>Ticker</label>
@@ -234,7 +238,6 @@
   <div id="stale" class="notice" hidden></div>
   <div class="fresh" id="fresh" hidden>
     <span id="freshText"></span>
-    <button type="button" class="linkish" id="refreshNow">Refresh this ticker now</button>
   </div>
 
   <section class="card" id="ghCard" hidden>
@@ -243,7 +246,7 @@
     <ol class="setup-steps sub">
       <li>On github.com: your profile picture → Settings → Developer settings → Personal access tokens → <strong>Fine-grained tokens</strong> → Generate new token.</li>
       <li>Repository access: <strong>Only select repositories</strong>, then pick this one.</li>
-      <li>Repository permissions: <strong>Contents: Read and write</strong> (to save paper trades) and <strong>Actions: Read and write</strong> (to fetch data on demand). Leave everything else off.</li>
+      <li>Repository permissions: <strong>Contents: Read and write</strong>. Leave everything else off.</li>
       <li>Generate the token, copy it, and paste it below.</li>
     </ol>
     <div class="logform">
@@ -408,6 +411,8 @@ async function init() {
     state.sampleMode = true;
   }
   if (state.sampleMode && SAMPLE) tickers = [SAMPLE.ticker];
+  state.tickers = tickers;
+  $("coverage").textContent = tickers.length ? `Covers ${tickers.length} ticker${tickers.length === 1 ? "" : "s"} on the watchlist maintained by the site owner.` : "";
   $("tickerList").innerHTML = tickers.map((t) => `<option value="${esc(t)}">`).join("");
 
   const start = recall("cca-ticker");
@@ -439,9 +444,9 @@ async function load(ticker) {
   } catch (e) {
     $("report").hidden = true;
     $("fresh").hidden = true;
-    showNotice(`<strong>No data for ${esc(ticker)} yet.</strong> Get it now: GitHub fetches the option chain and runs the 10-year study for ${esc(ticker)}, then adds it to your watchlist so it keeps updating. This usually takes 3 to 5 minutes.
-      <div class="tp-actions"><button type="button" class="btn2" id="lookupBtn">Get data for ${esc(ticker)}</button></div><div class="progress" id="lookupProgress"></div>`);
-    $("lookupBtn").addEventListener("click", () => lookup(ticker));
+    const avail = state.tickers || [];
+    showNotice(`<strong>No data for ${esc(ticker)}.</strong> Data is only collected for tickers on the watchlist, which the site owner maintains. A ticker that was just added shows up after the next update.` +
+      (avail.length ? `<div class="avail">Available: ${avail.map((t) => `<button type="button" class="tick" data-t="${esc(t)}">${esc(t)}</button>`).join("")}</div>` : ""), true);
   }
 }
 
@@ -880,7 +885,7 @@ let ghThen = null;
 function openGhCard(why, then) {
   const c = ghConfig();
   $("ghOwner").value = c.owner || ""; $("ghRepo").value = c.repo || ""; $("ghToken").value = c.token || "";
-  $("ghWhy").textContent = why || "Paper trades and on-demand lookups go through your GitHub repository, using a token that can only touch this one repository.";
+  $("ghWhy").textContent = why || "Paper trades you log by hand are saved to your GitHub repository, using a token that can only touch this one repository.";
   ghThen = then;
   $("ghCard").hidden = false;
   if ($("analyzerView").hidden) setView("analyzer");
@@ -915,74 +920,9 @@ $("ghForget").addEventListener("click", () => {
   $("ghStatus").textContent = "Token removed from this browser.";
 });
 
-// ---------------------------------------------------------------- on-demand lookup
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-function progress(html, done) { const el = $("lookupProgress"); if (el) el.innerHTML = (done ? "" : `<span class="dot"></span>`) + html; }
-
-async function lookup(ticker) {
-  if (state.sampleMode) return progress("This preview can't reach GitHub. On your GitHub site, this button fetches the ticker.", true);
-  if (!ghConfig().token) return openGhCard("Looking up a new ticker asks GitHub to run the update for it, so the page needs a GitHub token first.", () => lookup(ticker));
-  const btn = $("lookupBtn"); if (btn) btn.disabled = true;
-  try {
-    progress("Asking GitHub to start...");
-    const repo = await ghApi("");
-    if (!repo.ok) throw new Error(repo.status === 401 ? "GitHub rejected the token." : `GitHub returned ${repo.status}.`);
-    const branch = (await repo.json()).default_branch || "main";
-    const before = await ghApi("/actions/runs?event=workflow_dispatch&per_page=20");
-    const known = new Set(before.ok ? (await before.json()).workflow_runs.map((x) => x.id) : []);
-    const d = await ghApi("/actions/workflows/update-data.yml/dispatches", {
-      method: "POST", body: JSON.stringify({ ref: branch, inputs: { ticker } }),
-    });
-    if (d.status === 403 || d.status === 404) throw new Error("GitHub didn't allow starting the update. Give the token Actions: Read and write, and check that .github/workflows/update-data.yml is in your repository.");
-    if (d.status === 422) throw new Error("Your workflow file is an older version without on-demand lookups. Replace .github/workflows/update-data.yml with the latest one.");
-    if (!d.ok) throw new Error(`GitHub returned ${d.status} when starting the update.`);
-
-    const started = Date.now();
-    let run = null;
-    while (Date.now() - started < 20 * 60e3) {
-      await sleep(8000);
-      const r = await ghApi("/actions/runs?event=workflow_dispatch&per_page=20");
-      if (!r.ok) continue;
-      run = (await r.json()).workflow_runs.find((x) => !known.has(x.id)) || null;
-      const secs = Math.round((Date.now() - started) / 1000);
-      const t = `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, "0")}`;
-      if (!run || run.status === "queued" || run.status === "pending" || run.status === "waiting") progress(`Waiting for GitHub to start the run (${t})...`);
-      else if (run.status !== "completed") progress(`Fetching ${esc(ticker)} and running the study (${t})...`);
-      else break;
-    }
-    if (!run || run.status !== "completed") throw new Error("The run is taking longer than usual. Check the Actions tab, then reload this page.");
-    if (run.conclusion !== "success") {
-      progress(`GitHub couldn't get data for ${esc(ticker)}. Check the symbol and that it has listed options. <a href="${esc(run.html_url)}" target="_blank" rel="noopener">See what happened</a>.`, true);
-      return;
-    }
-    progress("Saved. Waiting for your site to publish the new data...");
-    const deadline = Date.now() + 6 * 60e3;
-    while (Date.now() < deadline) {
-      try {
-        const rep = await getJSON(`data/${encodeURIComponent(ticker)}.json`);
-        if (new Date(rep.updated) >= new Date(run.created_at) - 60e3) { await refreshIndex(); return load(ticker); }
-      } catch (e) {}
-      await sleep(10000);
-    }
-    progress("The data is saved in your repository, but the site hasn't published it yet. Reload in a minute.", true);
-  } catch (e) {
-    progress(esc(e.message || "Couldn't reach GitHub. Check your connection and try again."), true);
-    if (/token/i.test(e.message || "")) openGhCard(e.message, () => lookup(ticker));
-  } finally { if (btn) btn.disabled = false; }
-}
-
-async function refreshIndex() {
-  try {
-    const idx = await getJSON("data/index.json");
-    $("tickerList").innerHTML = (idx.tickers || []).map((t) => `<option value="${esc(t)}">`).join("");
-  } catch (e) {}
-}
-
-$("refreshNow").addEventListener("click", () => {
-  const t = state.report && state.report.ticker;
-  if (!t) return;
-  showNotice(`<strong>Refreshing ${esc(t)}.</strong> GitHub fetches fresh quotes and reruns the study for this ticker, usually in 3 to 5 minutes. Yahoo's prices are still about 15 minutes behind.<div class="progress" id="lookupProgress"></div>`);
-  lookup(t);
+document.addEventListener("click", (ev) => {
+  const b = ev.target.closest(".tick");
+  if (b) { $("ticker").value = b.dataset.t; load(b.dataset.t); }
 });
 
 // ---------------------------------------------------------------- when data is collected
@@ -1025,14 +965,13 @@ function renderFreshness(r) {
     (study ? ` · Study run ${localWhen(study)}` : "") +
     (nxt && !state.sampleMode ? ` · Next update <strong>${localWhen(nxt)}</strong>` : "");
   $("fresh").hidden = false;
-  $("refreshNow").hidden = state.sampleMode;
 }
 
 (function renderScheduleLine() {
   const p = etParts(new Date());
   const times = SLOTS_ET.map(([hh, mm]) => localTime(etWallToDate(+p.year, +p.month, +p.day, hh, mm)));
   const wk = localTime(etWallToDate(+p.year, +p.month, +p.day, 12, 5));
-  $("schedLine").innerHTML = `<strong>When data is collected</strong> (your time, ${tzName()}): weekdays at ${times[0]}, ${times[1]} and ${times[2]}. The ${times[0]} run is the sell-time snapshot, and the ${times[2]} run comes after the close with final prices, the 10-year study, and paper-trade results. Weekends at ${wk}, headlines only. Market holidays are skipped, and GitHub sometimes starts a run a few minutes late.`;
+  $("schedLine").innerHTML = `<strong>When data is collected</strong> (your time, ${tzName()}): weekdays at ${times[0]}, ${times[1]} and ${times[2]}. The ${times[0]} run is the sell-time snapshot, and the ${times[2]} run comes after the close with final prices, the 10-year study, and paper-trade results. Weekends at ${wk}, headlines only. Market holidays are skipped, and GitHub sometimes starts a run a few minutes late. Only tickers on the watchlist are collected; the site owner maintains the watchlist.`;
 })();
 
 function setSide(side) {

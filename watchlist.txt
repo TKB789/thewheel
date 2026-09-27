@@ -1,4 +1,5 @@
-# One ticker per line. Tickers you look up from the page are added here automatically.
+# One ticker per line. The site only shows tickers listed here.
+# To add one from your phone: Actions tab → Update options data → Run workflow → type the ticker.
 # Big tech
 GOOGL
 GOOG
