@@ -1,6 +1,6 @@
 {
  "ticker": "AAPL",
- "updated": "2026-09-27T17:40:48+00:00",
+ "updated": "2026-09-27T18:34:34+00:00",
  "price": 341.07,
  "prev_close": 335.92,
  "change_pct": 1.53,
@@ -39,6 +39,37 @@
    "status": "good",
    "value": "RSI 66",
    "note": "Momentum is normal (+3.5% vs its 20-day average)."
+  },
+  {
+   "name": "Put/call (open interest)",
+   "status": "info",
+   "value": "0.60",
+   "note": "Call-heavy positioning: traders are leaning bullish."
+  }
+ ],
+ "put_verdict": {
+  "level": "good",
+  "label": "Favorable to sell cash-secured puts",
+  "summary": "No red flags. The recommended put below pays you to wait for a lower buy price."
+ },
+ "put_factors": [
+  {
+   "name": "Earnings",
+   "status": "neutral",
+   "value": "2026-10-29",
+   "note": "Earnings on Oct 29. Only expirations before that date are recommended."
+  },
+  {
+   "name": "Premium level",
+   "status": "neutral",
+   "value": "IV/HV 1.14",
+   "note": "Premium is fairly priced against recent movement."
+  },
+  {
+   "name": "Trend",
+   "status": "good",
+   "value": "RSI 66",
+   "note": "Trend is steady (+3.5% vs its 20-day average)."
   },
   {
    "name": "Put/call (open interest)",

@@ -1,6 +1,6 @@
 {
  "ticker": "SPY",
- "updated": "2026-09-27T17:41:04+00:00",
+ "updated": "2026-09-27T18:34:51+00:00",
  "price": 771.35,
  "prev_close": 767.18,
  "change_pct": 0.54,
@@ -39,6 +39,37 @@
    "status": "good",
    "value": "RSI 56",
    "note": "Momentum is normal (+0.8% vs its 20-day average)."
+  },
+  {
+   "name": "Put/call (open interest)",
+   "status": "info",
+   "value": "2.43",
+   "note": "Heavy put positioning: traders are hedging against a drop."
+  }
+ ],
+ "put_verdict": {
+  "level": "good",
+  "label": "Favorable to sell cash-secured puts",
+  "summary": "No red flags. The recommended put below pays you to wait for a lower buy price."
+ },
+ "put_factors": [
+  {
+   "name": "Earnings",
+   "status": "neutral",
+   "value": "Unknown",
+   "note": "No earnings date found. Check your broker before selling."
+  },
+  {
+   "name": "Premium level",
+   "status": "good",
+   "value": "IV/HV 1.22",
+   "note": "Premium is rich. Options are priced for more movement than the stock has shown lately."
+  },
+  {
+   "name": "Trend",
+   "status": "good",
+   "value": "RSI 56",
+   "note": "Trend is steady (+0.8% vs its 20-day average)."
   },
   {
    "name": "Put/call (open interest)",

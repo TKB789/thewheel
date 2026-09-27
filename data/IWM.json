@@ -1,6 +1,6 @@
 {
  "ticker": "IWM",
- "updated": "2026-09-27T17:41:07+00:00",
+ "updated": "2026-09-27T18:34:55+00:00",
  "price": 281.97,
  "prev_close": 281.66,
  "change_pct": 0.11,
@@ -39,6 +39,37 @@
    "status": "good",
    "value": "RSI 35",
    "note": "Momentum is normal (-2.3% vs its 20-day average)."
+  },
+  {
+   "name": "Put/call (open interest)",
+   "status": "info",
+   "value": "1.06",
+   "note": "Balanced positioning between puts and calls."
+  }
+ ],
+ "put_verdict": {
+  "level": "good",
+  "label": "Favorable to sell cash-secured puts",
+  "summary": "No red flags. The recommended put below pays you to wait for a lower buy price."
+ },
+ "put_factors": [
+  {
+   "name": "Earnings",
+   "status": "neutral",
+   "value": "Unknown",
+   "note": "No earnings date found. Check your broker before selling."
+  },
+  {
+   "name": "Premium level",
+   "status": "good",
+   "value": "IV/HV 1.73",
+   "note": "Premium is rich. Options are priced for more movement than the stock has shown lately."
+  },
+  {
+   "name": "Trend",
+   "status": "good",
+   "value": "RSI 35",
+   "note": "Trend is steady (-2.3% vs its 20-day average)."
   },
   {
    "name": "Put/call (open interest)",

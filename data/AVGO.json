@@ -1,6 +1,6 @@
 {
  "ticker": "AVGO",
- "updated": "2026-09-27T17:40:54+00:00",
+ "updated": "2026-09-27T18:34:41+00:00",
  "price": 352.81,
  "prev_close": 350.36,
  "change_pct": 0.7,
@@ -39,6 +39,37 @@
    "status": "good",
    "value": "RSI 44",
    "note": "Momentum is normal (-1.5% vs its 20-day average)."
+  },
+  {
+   "name": "Put/call (open interest)",
+   "status": "info",
+   "value": "0.49",
+   "note": "Call-heavy positioning: traders are leaning bullish."
+  }
+ ],
+ "put_verdict": {
+  "level": "good",
+  "label": "Favorable to sell cash-secured puts",
+  "summary": "No red flags. The recommended put below pays you to wait for a lower buy price."
+ },
+ "put_factors": [
+  {
+   "name": "Earnings",
+   "status": "good",
+   "value": "2026-12-09",
+   "note": "Next earnings Dec 9, outside the next 45 days."
+  },
+  {
+   "name": "Premium level",
+   "status": "good",
+   "value": "IV/HV 1.22",
+   "note": "Premium is rich. Options are priced for more movement than the stock has shown lately."
+  },
+  {
+   "name": "Trend",
+   "status": "good",
+   "value": "RSI 44",
+   "note": "Trend is steady (-1.5% vs its 20-day average)."
   },
   {
    "name": "Put/call (open interest)",

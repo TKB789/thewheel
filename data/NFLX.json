@@ -1,6 +1,6 @@
 {
  "ticker": "NFLX",
- "updated": "2026-09-27T17:40:58+00:00",
+ "updated": "2026-09-27T18:34:44+00:00",
  "price": 71.15,
  "prev_close": 71.72,
  "change_pct": -0.79,
@@ -15,7 +15,7 @@
  "put_call_oi": 0.57,
  "put_call_volume": 0.42,
  "call_target_delta": 0.2,
- "put_target_delta": 0.25,
+ "put_target_delta": 0.15,
  "verdict": {
   "level": "caution",
   "label": "Sell covered calls further out of the money",
@@ -39,6 +39,37 @@
    "status": "good",
    "value": "RSI 37",
    "note": "Momentum is normal (-7.3% vs its 20-day average)."
+  },
+  {
+   "name": "Put/call (open interest)",
+   "status": "info",
+   "value": "0.57",
+   "note": "Call-heavy positioning: traders are leaning bullish."
+  }
+ ],
+ "put_verdict": {
+  "level": "wait",
+  "label": "Hold off on selling puts",
+  "summary": "Several flags are up. The premium isn't worth the risk of buying into weakness right now."
+ },
+ "put_factors": [
+  {
+   "name": "Earnings",
+   "status": "neutral",
+   "value": "2026-10-20",
+   "note": "Earnings on Oct 20. Only expirations before that date are recommended."
+  },
+  {
+   "name": "Premium level",
+   "status": "bad",
+   "value": "IV/HV 0.88",
+   "note": "Premium is thin. The stock has been moving more than options are paying for."
+  },
+  {
+   "name": "Trend",
+   "status": "bad",
+   "value": "RSI 37",
+   "note": "Stock is sliding (-7.3% vs its 20-day average). Puts sold into a slide often get assigned, and the shares can keep falling after."
   },
   {
    "name": "Put/call (open interest)",

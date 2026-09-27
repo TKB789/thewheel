@@ -1,6 +1,6 @@
 {
  "ticker": "AMD",
- "updated": "2026-09-27T17:40:53+00:00",
+ "updated": "2026-09-27T18:34:40+00:00",
  "price": 630.63,
  "prev_close": 629.26,
  "change_pct": 0.22,
@@ -39,6 +39,37 @@
    "status": "bad",
    "value": "RSI 73",
    "note": "Stock is running hot (+19.4% vs its 20-day average). Higher chance it climbs through your strike."
+  },
+  {
+   "name": "Put/call (open interest)",
+   "status": "info",
+   "value": "1.36",
+   "note": "Heavy put positioning: traders are hedging against a drop."
+  }
+ ],
+ "put_verdict": {
+  "level": "good",
+  "label": "Favorable to sell cash-secured puts",
+  "summary": "No red flags. The recommended put below pays you to wait for a lower buy price."
+ },
+ "put_factors": [
+  {
+   "name": "Earnings",
+   "status": "neutral",
+   "value": "2026-11-03",
+   "note": "Earnings on Nov 3. Only expirations before that date are recommended."
+  },
+  {
+   "name": "Premium level",
+   "status": "neutral",
+   "value": "IV/HV 1.08",
+   "note": "Premium is fairly priced against recent movement."
+  },
+  {
+   "name": "Trend",
+   "status": "neutral",
+   "value": "RSI 73",
+   "note": "Stock is running hot. Put premium is thinner here, and pullbacks can come fast."
   },
   {
    "name": "Put/call (open interest)",

@@ -1,6 +1,6 @@
 {
  "ticker": "ORCL",
- "updated": "2026-09-27T17:40:56+00:00",
+ "updated": "2026-09-27T18:34:43+00:00",
  "price": 137.1,
  "prev_close": 139.54,
  "change_pct": -1.75,
@@ -15,7 +15,7 @@
  "put_call_oi": 0.8,
  "put_call_volume": 0.42,
  "call_target_delta": 0.2,
- "put_target_delta": 0.25,
+ "put_target_delta": 0.15,
  "verdict": {
   "level": "good",
   "label": "Favorable to sell covered calls",
@@ -47,6 +47,37 @@
    "note": "Balanced positioning between puts and calls."
   }
  ],
+ "put_verdict": {
+  "level": "caution",
+  "label": "Sell puts further out of the money",
+  "summary": "One flag is up. The recommended put already uses a lower delta; consider selling fewer contracts."
+ },
+ "put_factors": [
+  {
+   "name": "Earnings",
+   "status": "good",
+   "value": "2026-12-10",
+   "note": "Next earnings Dec 10, outside the next 45 days."
+  },
+  {
+   "name": "Premium level",
+   "status": "neutral",
+   "value": "IV/HV 1.09",
+   "note": "Premium is fairly priced against recent movement."
+  },
+  {
+   "name": "Trend",
+   "status": "bad",
+   "value": "RSI 41",
+   "note": "Stock is sliding (-7.8% vs its 20-day average). Puts sold into a slide often get assigned, and the shares can keep falling after."
+  },
+  {
+   "name": "Put/call (open interest)",
+   "status": "info",
+   "value": "0.80",
+   "note": "Balanced positioning between puts and calls."
+  }
+ ],
  "recommended_call": {
   "strike": 146.0,
   "bid": 1.0,
@@ -66,20 +97,20 @@
   "dte": 5
  },
  "recommended_put": {
-  "strike": 132.0,
-  "bid": 1.42,
-  "ask": 1.5,
-  "mid": 1.46,
+  "strike": 129.0,
+  "bid": 0.74,
+  "ask": 0.8,
+  "mid": 0.77,
   "live_quote": true,
-  "iv": 0.5489,
-  "delta": -0.264,
-  "prob_assign": 0.286,
-  "premium": 146.0,
-  "yield_pct": 1.106,
-  "ann_yield_pct": 80.7,
-  "cash_needed": 13200.0,
-  "open_interest": 649,
-  "volume": 1088,
+  "iv": 0.5483,
+  "delta": -0.161,
+  "prob_assign": 0.177,
+  "premium": 77.0,
+  "yield_pct": 0.597,
+  "ann_yield_pct": 43.6,
+  "cash_needed": 12900.0,
+  "open_interest": 214,
+  "volume": 319,
   "expiry": "2026-10-02",
   "dte": 5
  },
