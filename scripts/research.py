@@ -22,7 +22,6 @@ Output: data/research/<TICKER>.json, read by index.html.
 """
 from __future__ import annotations
 
-import csv
 import itertools
 import json
 import math
@@ -39,7 +38,7 @@ ROOT = Path(__file__).resolve().parent.parent
 OUT_DIR = ROOT / "data" / "research"
 WATCHLIST = ROOT / "watchlist.txt"
 CONFIG = ROOT / "research_config.json"
-FIDELITY_LOG = ROOT / "fidelity_log.csv"
+HEADLINES_DIR = ROOT / "data" / "headlines"
 
 MARKET = {"QQQ": "QQQ", "SMH": "SMH", "VIX": "^VIX", "VIX9D": "^VIX9D",
           "TNX": "^TNX", "DXY": "DX-Y.NYB", "OIL": "CL=F"}
@@ -76,9 +75,16 @@ LABELS = {
     "wiki_spike": "Wikipedia page views vs normal",
     "wiki_trend": "Wikipedia page views, week over week",
     "days_to_earn": "Days until next earnings",
+    "analyst_net_7d": "Analyst upgrades minus downgrades, past week",
+    "analyst_net_30d": "Analyst upgrades minus downgrades, past month",
+    "pt_net_30d": "Price-target raises minus cuts, past month",
+    "pt_gap": "Upside to analysts' recent price targets",
+    "days_since_rating": "Days since the last upgrade or downgrade",
+    "analyst_activity_7d": "Analyst notes in the past week",
 }
 FEATURES = list(LABELS)
-ENTRY_DAY_FEATURES = ("wiki_spike", "wiki_trend")
+ANALYST_FEATURES = ("analyst_net_7d", "analyst_net_30d", "pt_net_30d", "pt_gap", "days_since_rating", "analyst_activity_7d")
+ENTRY_DAY_FEATURES = ("wiki_spike", "wiki_trend") + ANALYST_FEATURES
 
 TARGETS = {
     "direction": "how far it rose (or fell)",
@@ -92,7 +98,8 @@ TRAIN_FRAC = 0.70
 FDR_Q = 0.10
 TEST_P = 0.10
 MIN_COND = 40
-FIDELITY_MIN = 20
+NEWS_MIN = 60          # trading days of headline scores before an early look
+NEWS_SPLIT_MIN = 250   # ...and before a proper held-out check
 STRIKE_STEPS = [0.5, 1, 1.5, 2, 2.5, 3, 4, 5, 6]
 PAIR_MIN_GROUP = 15    # smallest "both high" style group in the earlier years
 PAIR_MIN_GROUP_TEST = 10  # and in the recent years, where combinations are rarer
@@ -158,7 +165,64 @@ def _clean(df):
     return df[~df.index.duplicated(keep="last")].sort_index()
 
 
-def build_features(px: dict, ticker: str, peers: list, wiki: pd.Series | None, earn_dates: list):
+def analyst_features(actions: pd.DataFrame, index: pd.DatetimeIndex, close: pd.Series):
+    """Daily analyst-sentiment signals from Yahoo's upgrade/downgrade history.
+    Each value is 'known before that day's open': it counts actions dated up to the day before."""
+    A = actions.copy()
+    idx = pd.to_datetime(A.index)
+    if getattr(idx, "tz", None) is not None:
+        idx = idx.tz_convert("America/New_York").tz_localize(None)
+    A.index = idx
+    A = A.sort_index()
+    day = A.index.normalize()
+    cal = pd.date_range(day.min(), index[-1] + pd.Timedelta(days=1), freq="D")
+    act = A["Action"].astype(str).str.lower() if "Action" in A else pd.Series("", index=A.index)
+
+    def daily(mask):
+        return pd.Series(mask.values.astype(int), index=day).groupby(level=0).sum().reindex(cal, fill_value=0)
+
+    up, down = daily(act.eq("up")), daily(act.eq("down"))
+    notes = daily(pd.Series(True, index=A.index))
+    raise_ = lower = None
+    if "priceTargetAction" in A:
+        pta = A["priceTargetAction"].astype(str).str.lower()
+        raise_, lower = daily(pta.str.startswith("raise")), daily(pta.str.startswith("lower"))
+    elif {"currentPriceTarget", "priorPriceTarget"} <= set(A.columns):
+        cur, pri = pd.to_numeric(A["currentPriceTarget"], errors="coerce"), pd.to_numeric(A["priorPriceTarget"], errors="coerce")
+        ok = (cur > 0) & (pri > 0)
+        raise_, lower = daily(ok & (cur > pri)), daily(ok & (cur < pri))
+
+    out = pd.DataFrame(index=cal)
+    out["analyst_net_7d"] = (up - down).rolling(7, min_periods=1).sum()
+    out["analyst_net_30d"] = (up - down).rolling(30, min_periods=1).sum()
+    out["analyst_activity_7d"] = notes.rolling(7, min_periods=1).sum()
+    if raise_ is not None:
+        out["pt_net_30d"] = (raise_ - lower).rolling(30, min_periods=1).sum()
+    if "currentPriceTarget" in A:
+        tg = pd.to_numeric(A["currentPriceTarget"], errors="coerce")
+        tg = tg[tg > 0]
+        if len(tg) >= 10:
+            med = tg.rolling("90D").median()
+            med = med.groupby(med.index.normalize()).last().reindex(cal).ffill(limit=90)
+            out["_pt_median"] = med
+    changed = (up + down) > 0
+    last_change = pd.Series(np.where(changed, np.arange(len(cal)), np.nan), index=cal).ffill()
+    out["days_since_rating"] = np.arange(len(cal)) - last_change
+
+    now = out.iloc[-1].to_dict()
+    known = out.shift(1)                                  # through the day before
+    warm = cal < cal[0] + pd.Timedelta(days=30)           # first month: counts aren't complete yet
+    known.loc[warm] = np.nan
+    res = known.reindex(index)
+    if "_pt_median" in res:
+        res["pt_gap"] = res.pop("_pt_median") / close.shift(1) - 1
+        now["pt_gap"] = now.pop("_pt_median") / float(close.iloc[-1]) - 1 if now.get("_pt_median") == now.get("_pt_median") else None
+    now = {k: (None if v is None or v != v else float(v)) for k, v in now.items() if not k.startswith("_")}
+    return res, now
+
+
+def build_features(px: dict, ticker: str, peers: list, wiki: pd.Series | None, earn_dates: list,
+                   analyst: pd.DataFrame | None = None):
     s = _clean(px[ticker]).dropna(subset=["Open", "Close"])
     c = s["Close"]
     F = pd.DataFrame(index=s.index)
@@ -224,6 +288,14 @@ def build_features(px: dict, ticker: str, peers: list, wiki: pd.Series | None, e
         F["wiki_trend"] = trend.shift(1).reindex(F.index)
         F.attrs["wiki_now"] = {"wiki_spike": float(spike.dropna().iloc[-1]) if spike.notna().any() else None,
                                "wiki_trend": float(trend.dropna().iloc[-1]) if trend.notna().any() else None}
+    if analyst is not None and len(analyst) >= 20:
+        try:
+            af, now = analyst_features(analyst, F.index, c)
+            for col in af.columns:
+                F[col] = af[col]
+            F.attrs["analyst_now"] = now
+        except Exception as exc:
+            print(f"  analyst signals skipped: {exc}", file=sys.stderr)
     if earn_dates:
         ed = np.array(sorted(pd.Timestamp(x) for x in earn_dates), dtype="datetime64[ns]")
         pos = np.searchsorted(ed, F.index.values, side="left")
@@ -265,7 +337,7 @@ def make_events(F: pd.DataFrame, win: dict, earn_dates: list):
 
 
 # ------------------------------------------------------------------- study
-PROPER = ("Nasdaq", "VIX", "US ", "Wikipedia", "RSI", "Chip", "Oil", "Peer", "Fidelity")
+PROPER = ("Nasdaq", "VIX", "US ", "Wikipedia", "RSI", "Chip", "Oil", "Peer", "Yahoo")
 
 
 def in_sentence(label):
@@ -523,42 +595,62 @@ def suggest(ev: pd.DataFrame, holding: list, current: dict, sigma_now: float):
     }
 
 
-def fidelity_study(F: pd.DataFrame, ticker: str):
-    if not FIDELITY_LOG.exists():
-        return {"n": 0, "status": "collecting", "need": FIDELITY_MIN}
-    rows = []
-    with FIDELITY_LOG.open() as fh:
-        for r in csv.DictReader(fh):
-            if (r.get("ticker") or "").strip().upper() != ticker:
-                continue
-            try:
-                d = pd.Timestamp(r["date"].strip())
-                rows.append({"date": d, "starmine": float(r["starmine"]), "sscore": float(r["sscore"])})
-            except (KeyError, ValueError):
-                continue
+def headline_tone(ticker: str):
+    """Daily headline tone from data/headlines/<TICKER>.csv (written by scripts/headlines.py).
+    Value for day d = average tone of headlines published in the 3 calendar days before d."""
+    path = HEADLINES_DIR / f"{ticker}.csv"
+    if not path.exists():
+        return None, None
+    H = pd.read_csv(path)
+    if H.empty:
+        return None, None
+    t = pd.to_datetime(H["published_utc"], utc=True, errors="coerce").dt.tz_convert("America/New_York")
+    H = H.assign(day=t.dt.tz_localize(None).dt.normalize(), score=pd.to_numeric(H["score"], errors="coerce")).dropna(subset=["day", "score"])
+    if H.empty:
+        return None, None
+    cal = pd.date_range(H["day"].min(), pd.Timestamp.now().normalize() + pd.Timedelta(days=1), freq="D")
+    tot = H.groupby("day")["score"].sum().reindex(cal, fill_value=0.0)
+    cnt = H.groupby("day")["score"].count().reindex(cal, fill_value=0)
+    tone3 = tot.rolling(3, min_periods=1).sum() / cnt.rolling(3, min_periods=1).sum().replace(0, np.nan)
+    first = H["day"].min() + pd.Timedelta(days=3)
+    known = tone3.shift(1)
+    known[known.index < first] = np.nan
+    now = tone3.iloc[-1]
+    return known, (None if now != now else float(now))
+
+
+def daily_forward_study(F: pd.DataFrame, values: pd.Series, labels: dict, min_n: int, split_min: int | None = None):
+    """For signals recorded going forward: each trading day d with a value, compare it with the
+    move from d's open to the close two trading days later (like a Monday -> Wednesday trade)."""
     idx = list(F.index)
-    pos = {d: i for i, d in enumerate(idx)}
     data = []
-    for r in rows:
-        i = pos.get(r["date"])
-        if i is None or i + 2 >= len(idx) or i < 1:
+    for i in range(1, len(idx) - 2):
+        d = idx[i]
+        row = {k: (v.get(d) if isinstance(v, pd.Series) else None) for k, v in values.items()}
+        if all(x is None or x != x for x in row.values()):
             continue
         sig = F["hv20"].iloc[i - 1] * math.sqrt(3 / 252)
         ret = F["close"].iloc[i + 2] / F["open"].iloc[i] - 1
-        data.append({**r, "ret": ret, "size": abs(ret / sig) if sig > 0 else np.nan})
+        data.append({**row, "date": d, "ret": ret, "size": abs(ret / sig) if sig > 0 else np.nan})
     n = len(data)
-    out = {"n": n, "logged": len(rows)}
-    if n < FIDELITY_MIN:
-        out.update({"status": "collecting", "need": FIDELITY_MIN - n})
+    out = {"n": n}
+    if n < min_n:
+        out.update({"status": "collecting", "need": min_n - n})
         return out
-    D = pd.DataFrame(data)
+    D = pd.DataFrame(data).sort_values("date")
     res = []
-    for f, label in (("starmine", "Fidelity analyst score (StarMine)"), ("sscore", "Fidelity social sentiment (S-score)")):
+    split = int(len(D) * TRAIN_FRAC)
+    for f, label in labels.items():
         for tgt, col in (("direction", "ret"), ("size", "size")):
             r, p, nn = spearman(D[f], D[col])
-            res.append({"feature": f, "label": label, "target": tgt, "r": None if r != r else round(r, 3),
-                        "p": None if p != p else round(p, 4), "n": nn})
-    out.update({"status": "preliminary", "results": res})
+            item = {"feature": f, "label": label, "target": tgt, "r": None if r != r else round(r, 3),
+                    "p": None if p != p else round(p, 4), "n": nn}
+            if split_min and n >= split_min:
+                r1, p1, _ = spearman(D[f].iloc[:split], D[col].iloc[:split])
+                r2, p2, _ = spearman(D[f].iloc[split:], D[col].iloc[split:])
+                item["holds"] = bool(p1 == p1 and p2 == p2 and p1 < 0.05 and p2 < TEST_P and np.sign(r1) == np.sign(r2))
+            res.append(item)
+    out.update({"status": "tested" if split_min and n >= split_min else "preliminary", "results": res})
     return out
 
 
@@ -603,6 +695,20 @@ def load_earnings(ticker):
         return []
 
 
+def load_analyst(ticker):
+    import yfinance as yf
+    try:
+        df = yf.Ticker(ticker).upgrades_downgrades
+        if df is None or df.empty:
+            print(f"  no analyst history for {ticker}", file=sys.stderr)
+            return None
+        print(f"  analyst actions: {len(df)} since {pd.to_datetime(df.index).min().date()}; columns {list(df.columns)}")
+        return df
+    except Exception as exc:
+        print(f"  analyst history unavailable for {ticker}: {exc}", file=sys.stderr)
+        return None
+
+
 def run_ticker(ticker, cfg, px_market):
     tcfg = {**cfg.get("_default", {}), **cfg.get(ticker, {})}
     peers = [p for p in tcfg.get("peers", []) if p != ticker]
@@ -612,15 +718,22 @@ def run_ticker(ticker, cfg, px_market):
         raise RuntimeError("no price history")
     wiki = load_wiki(tcfg.get("wiki"))
     earn = load_earnings(ticker)
-    return analyze(ticker, px, peers, wiki, earn, tcfg.get("wiki"))
+    analyst = load_analyst(ticker)
+    return analyze(ticker, px, peers, wiki, earn, tcfg.get("wiki"), analyst)
 
 
-def analyze(ticker, px, peers, wiki, earn, wiki_article):
-    F = build_features(px, ticker, peers, wiki, earn)
+def analyze(ticker, px, peers, wiki, earn, wiki_article, analyst=None):
+    F = build_features(px, ticker, peers, wiki, earn, analyst)
     last = F.iloc[-1]
     current = {f: (None if pd.isna(last[f]) else float(last[f])) for f in FEATURES}
     current["gap_open"] = None  # unknown until the sell day opens
     current.update(F.attrs.get("wiki_now", {}))
+    current.update(F.attrs.get("analyst_now", {}))
+    tone, tone_now = headline_tone(ticker)
+    news = daily_forward_study(F, {"news_tone": tone} if tone is not None else {},
+                               {"news_tone": "Yahoo headline tone, past 3 days"}, NEWS_MIN, NEWS_SPLIT_MIN) \
+        if tone is not None else {"n": 0, "status": "collecting", "need": NEWS_MIN}
+    news["now"] = tone_now
 
     windows = []
     for win in WINDOWS:
@@ -648,7 +761,8 @@ def analyze(ticker, px, peers, wiki, earn, wiki_article):
         "peers": peers,
         "current": {k: (None if v is None else round(v, 5)) for k, v in current.items()},
         "windows": windows,
-        "fidelity": fidelity_study(F, ticker),
+        "news": news,
+        "analyst_history": bool(F[list(ANALYST_FEATURES)].notna().any().any()),
         "method": {"train_frac": TRAIN_FRAC, "fdr_q": FDR_Q, "test_p": TEST_P,
                    "target_assign": TARGET_ASSIGN, "min_conditioned_sample": MIN_COND},
     }
