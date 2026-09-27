@@ -234,16 +234,16 @@ def assess(ctx):
 
     bads = sum(1 for x in f if x["status"] == "bad" and x["name"] != "Earnings")
     if earnings_blocks:
-        verdict = {"level": "wait", "label": "Wait until after earnings",
-                   "summary": "Every near expiration spans the earnings report. Sell once earnings are out."}
+        verdict = {"level": "wait", "reason": "earnings", "label": "Hold off until after earnings",
+                   "summary": "Every near expiration spans the earnings report. Sell covered calls once earnings are out."}
     elif bads == 0:
-        verdict = {"level": "good", "label": "Good time to sell",
+        verdict = {"level": "good", "label": "Favorable to sell covered calls",
                    "summary": "No red flags. The recommended call below balances premium against keeping your shares."}
     elif bads == 1:
-        verdict = {"level": "caution", "label": "Sell, but go further out of the money",
-                   "summary": "One flag is up. The recommendation already uses a lower delta; consider a smaller position."}
+        verdict = {"level": "caution", "label": "Sell covered calls further out of the money",
+                   "summary": "One flag is up. The recommended call already uses a lower delta; consider selling fewer contracts."}
     else:
-        verdict = {"level": "wait", "label": "Wait",
+        verdict = {"level": "wait", "label": "Hold off on selling calls",
                    "summary": "Several flags are up. The premium isn't worth the risk to your shares right now."}
     return f, verdict, hot
 
@@ -285,7 +285,7 @@ def build_report(ticker, closes, price, prev_close, raw_expiries, earnings_date,
 
     before = earnings_date if earnings_date and earnings_date >= today else None
     call_target = CALL_TARGET_DELTA_HOT if hot else CALL_TARGET_DELTA
-    rec_call = None if verdict["level"] == "wait" and verdict["label"].startswith("Wait until") else \
+    rec_call = None if verdict.get("reason") == "earnings" else \
         pick(expiries, "calls", call_target, CALL_DELTA_BAND, before)
     rec_put = pick(expiries, "puts", PUT_TARGET_DELTA, PUT_DELTA_BAND, before)
 
