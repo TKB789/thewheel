@@ -1,0 +1,50 @@
+name: Update options data
+
+on:
+  schedule:
+    # Weekdays at about 10:45 AM, 1:45 PM and 4:45 PM Eastern (daylight time).
+    # GitHub runs cron in UTC and may start a few minutes late.
+    - cron: "45 14,17,20 * * 1-5"
+  push:
+    paths:
+      - "watchlist.txt"
+      - "research_config.json"
+      - "fidelity_log.csv"
+      - "scripts/**"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-data
+  cancel-in-progress: true
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Fetch option chains
+        run: python scripts/fetch_options.py
+
+      - name: Run correlation study
+        continue-on-error: true   # a study failure shouldn't block fresh option data
+        run: python scripts/research.py
+
+      - name: Commit data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898699+github-actions[bot]@users.noreply.github.com"
+          git add data
+          git diff --cached --quiet || git commit -m "Update options data"
+          git pull --rebase
+          git push
