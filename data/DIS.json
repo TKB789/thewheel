@@ -1,6 +1,6 @@
 {
  "ticker": "DIS",
- "updated": "2026-09-27T16:55:05+00:00",
+ "updated": "2026-09-27T17:41:02+00:00",
  "price": 106.15,
  "prev_close": 105.56,
  "change_pct": 0.56,
@@ -13,12 +13,12 @@
  "ex_div_date": null,
  "dividend_rate": 1.5,
  "put_call_oi": 0.94,
- "put_call_volume": 0.4,
+ "put_call_volume": 0.41,
  "call_target_delta": 0.2,
  "put_target_delta": 0.25,
  "verdict": {
   "level": "good",
-  "label": "Good time to sell",
+  "label": "Favorable to sell covered calls",
   "summary": "No red flags. The recommended call below balances premium against keeping your shares."
  },
  "factors": [
@@ -1017,6 +1017,22 @@
      "volume": 73
     },
     {
+     "strike": 114.0,
+     "bid": 0.25,
+     "ask": 0.42,
+     "mid": 0.33,
+     "live_quote": true,
+     "iv": 0.2487,
+     "delta": 0.117,
+     "prob_assign": 0.106,
+     "premium": 33.5,
+     "yield_pct": 0.316,
+     "ann_yield_pct": 6.1,
+     "cash_needed": null,
+     "open_interest": 0,
+     "volume": 14
+    },
+    {
      "strike": 115.0,
      "bid": 0.22,
      "ask": 0.35,
@@ -1067,6 +1083,22 @@
    ],
    "puts": [
     {
+     "strike": 91.0,
+     "bid": 0.0,
+     "ask": 0.75,
+     "mid": 0.11,
+     "live_quote": false,
+     "iv": 0.3734,
+     "delta": -0.03,
+     "prob_assign": 0.037,
+     "premium": 11.0,
+     "yield_pct": 0.121,
+     "ann_yield_pct": 2.3,
+     "cash_needed": 9100.0,
+     "open_interest": 1,
+     "volume": 0
+    },
+    {
      "strike": 92.0,
      "bid": 0.0,
      "ask": 0.79,
@@ -1081,6 +1113,22 @@
      "cash_needed": 9200.0,
      "open_interest": 3,
      "volume": 0
+    },
+    {
+     "strike": 94.0,
+     "bid": 0.0,
+     "ask": 0.5,
+     "mid": 0.1,
+     "live_quote": false,
+     "iv": 0.3023,
+     "delta": -0.034,
+     "prob_assign": 0.039,
+     "premium": 10.0,
+     "yield_pct": 0.106,
+     "ann_yield_pct": 2.0,
+     "cash_needed": 9400.0,
+     "open_interest": 7,
+     "volume": 1
     },
     {
      "strike": 95.0,
@@ -1257,6 +1305,22 @@
      "cash_needed": 10500.0,
      "open_interest": 3983,
      "volume": 257
+    },
+    {
+     "strike": 106.0,
+     "bid": 2.16,
+     "ask": 3.0,
+     "mid": 2.58,
+     "live_quote": true,
+     "iv": 0.2863,
+     "delta": -0.466,
+     "prob_assign": 0.492,
+     "premium": 258.0,
+     "yield_pct": 2.434,
+     "ann_yield_pct": 46.8,
+     "cash_needed": 10600.0,
+     "open_interest": 15,
+     "volume": 2
     }
    ]
   },
@@ -2281,6 +2345,174 @@
      "cash_needed": 10600.0,
      "open_interest": 7,
      "volume": 2
+    }
+   ]
+  },
+  {
+   "date": "2026-11-06",
+   "dte": 40,
+   "calls": [
+    {
+     "strike": 110.0,
+     "bid": 1.1,
+     "ask": 2.2,
+     "mid": 1.65,
+     "live_quote": true,
+     "iv": 0.2137,
+     "delta": 0.342,
+     "prob_assign": 0.317,
+     "premium": 165.0,
+     "yield_pct": 1.554,
+     "ann_yield_pct": 14.2,
+     "cash_needed": null,
+     "open_interest": 13,
+     "volume": 5
+    },
+    {
+     "strike": 112.0,
+     "bid": 0.83,
+     "ask": 1.42,
+     "mid": 1.12,
+     "live_quote": true,
+     "iv": 0.2154,
+     "delta": 0.256,
+     "prob_assign": 0.234,
+     "premium": 112.5,
+     "yield_pct": 1.06,
+     "ann_yield_pct": 9.7,
+     "cash_needed": null,
+     "open_interest": 0,
+     "volume": 3
+    },
+    {
+     "strike": 115.0,
+     "bid": 0.56,
+     "ask": 0.92,
+     "mid": 0.74,
+     "live_quote": true,
+     "iv": 0.2337,
+     "delta": 0.174,
+     "prob_assign": 0.155,
+     "premium": 74.0,
+     "yield_pct": 0.697,
+     "ann_yield_pct": 6.4,
+     "cash_needed": null,
+     "open_interest": 0,
+     "volume": 2
+    },
+    {
+     "strike": 125.0,
+     "bid": 0.02,
+     "ask": 1.05,
+     "mid": 0.54,
+     "live_quote": true,
+     "iv": 0.3529,
+     "delta": 0.096,
+     "prob_assign": 0.078,
+     "premium": 53.5,
+     "yield_pct": 0.504,
+     "ann_yield_pct": 4.6,
+     "cash_needed": null,
+     "open_interest": 0,
+     "volume": 1
+    }
+   ],
+   "puts": [
+    {
+     "strike": 85.0,
+     "bid": 0.0,
+     "ask": 0.6,
+     "mid": 0.68,
+     "live_quote": false,
+     "iv": 0.5131,
+     "delta": -0.078,
+     "prob_assign": 0.106,
+     "premium": 68.0,
+     "yield_pct": 0.8,
+     "ann_yield_pct": 7.3,
+     "cash_needed": 8500.0,
+     "open_interest": 0,
+     "volume": 1
+    },
+    {
+     "strike": 95.0,
+     "bid": 0.0,
+     "ask": 1.09,
+     "mid": 0.53,
+     "live_quote": false,
+     "iv": 0.2888,
+     "delta": -0.105,
+     "prob_assign": 0.123,
+     "premium": 53.0,
+     "yield_pct": 0.558,
+     "ann_yield_pct": 5.1,
+     "cash_needed": 9500.0,
+     "open_interest": 0,
+     "volume": 1
+    },
+    {
+     "strike": 97.0,
+     "bid": 0.53,
+     "ask": 1.24,
+     "mid": 0.89,
+     "live_quote": true,
+     "iv": 0.2962,
+     "delta": -0.156,
+     "prob_assign": 0.18,
+     "premium": 88.5,
+     "yield_pct": 0.912,
+     "ann_yield_pct": 8.3,
+     "cash_needed": 9700.0,
+     "open_interest": 2,
+     "volume": 2
+    },
+    {
+     "strike": 98.0,
+     "bid": 0.54,
+     "ask": 1.07,
+     "mid": 0.81,
+     "live_quote": true,
+     "iv": 0.2655,
+     "delta": -0.158,
+     "prob_assign": 0.18,
+     "premium": 80.5,
+     "yield_pct": 0.821,
+     "ann_yield_pct": 7.5,
+     "cash_needed": 9800.0,
+     "open_interest": 0,
+     "volume": 2
+    },
+    {
+     "strike": 100.0,
+     "bid": 0.9,
+     "ask": 1.51,
+     "mid": 1.21,
+     "live_quote": true,
+     "iv": 0.2633,
+     "delta": -0.218,
+     "prob_assign": 0.245,
+     "premium": 120.5,
+     "yield_pct": 1.205,
+     "ann_yield_pct": 11.0,
+     "cash_needed": 10000.0,
+     "open_interest": 0,
+     "volume": 1
+    },
+    {
+     "strike": 105.0,
+     "bid": 2.16,
+     "ask": 3.65,
+     "mid": 2.91,
+     "live_quote": true,
+     "iv": 0.2627,
+     "delta": -0.413,
+     "prob_assign": 0.447,
+     "premium": 290.5,
+     "yield_pct": 2.767,
+     "ann_yield_pct": 25.2,
+     "cash_needed": 10500.0,
+     "open_interest": 2,
+     "volume": 0
     }
    ]
   }

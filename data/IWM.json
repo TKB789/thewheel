@@ -1,6 +1,6 @@
 {
  "ticker": "IWM",
- "updated": "2026-09-27T16:55:12+00:00",
+ "updated": "2026-09-27T17:41:07+00:00",
  "price": 281.97,
  "prev_close": 281.66,
  "change_pct": 0.11,
@@ -12,13 +12,13 @@
  "earnings_date": null,
  "ex_div_date": null,
  "dividend_rate": null,
- "put_call_oi": 1.1,
- "put_call_volume": 0.93,
+ "put_call_oi": 1.06,
+ "put_call_volume": 0.94,
  "call_target_delta": 0.2,
  "put_target_delta": 0.25,
  "verdict": {
   "level": "good",
-  "label": "Good time to sell",
+  "label": "Favorable to sell covered calls",
   "summary": "No red flags. The recommended call below balances premium against keeping your shares."
  },
  "factors": [
@@ -43,7 +43,7 @@
   {
    "name": "Put/call (open interest)",
    "status": "info",
-   "value": "1.10",
+   "value": "1.06",
    "note": "Balanced positioning between puts and calls."
   }
  ],
@@ -2195,6 +2195,38 @@
    ],
    "puts": [
     {
+     "strike": 263.0,
+     "bid": 0.13,
+     "ask": 0.14,
+     "mid": 0.14,
+     "live_quote": true,
+     "iv": 0.259,
+     "delta": -0.032,
+     "prob_assign": 0.034,
+     "premium": 13.5,
+     "yield_pct": 0.051,
+     "ann_yield_pct": 2.3,
+     "cash_needed": 26300.0,
+     "open_interest": 501,
+     "volume": 671
+    },
+    {
+     "strike": 264.0,
+     "bid": 0.15,
+     "ask": 0.16,
+     "mid": 0.15,
+     "live_quote": true,
+     "iv": 0.2537,
+     "delta": -0.036,
+     "prob_assign": 0.039,
+     "premium": 15.5,
+     "yield_pct": 0.059,
+     "ann_yield_pct": 2.7,
+     "cash_needed": 26400.0,
+     "open_interest": 500,
+     "volume": 188
+    },
+    {
      "strike": 265.0,
      "bid": 0.17,
      "ask": 0.19,
@@ -2227,6 +2259,22 @@
      "volume": 16
     },
     {
+     "strike": 267.0,
+     "bid": 0.23,
+     "ask": 0.25,
+     "mid": 0.24,
+     "live_quote": true,
+     "iv": 0.2382,
+     "delta": -0.056,
+     "prob_assign": 0.06,
+     "premium": 24.0,
+     "yield_pct": 0.09,
+     "ann_yield_pct": 4.1,
+     "cash_needed": 26700.0,
+     "open_interest": 1,
+     "volume": 4
+    },
+    {
      "strike": 268.0,
      "bid": 0.26,
      "ask": 0.29,
@@ -2243,6 +2291,22 @@
      "volume": 1
     },
     {
+     "strike": 269.0,
+     "bid": 0.31,
+     "ask": 0.34,
+     "mid": 0.33,
+     "live_quote": true,
+     "iv": 0.228,
+     "delta": -0.075,
+     "prob_assign": 0.08,
+     "premium": 32.5,
+     "yield_pct": 0.121,
+     "ann_yield_pct": 5.5,
+     "cash_needed": 26900.0,
+     "open_interest": 14,
+     "volume": 2
+    },
+    {
      "strike": 270.0,
      "bid": 0.37,
      "ask": 0.4,
@@ -2257,6 +2321,22 @@
      "cash_needed": 27000.0,
      "open_interest": 101,
      "volume": 35
+    },
+    {
+     "strike": 271.0,
+     "bid": 0.44,
+     "ask": 0.47,
+     "mid": 0.45,
+     "live_quote": true,
+     "iv": 0.2194,
+     "delta": -0.103,
+     "prob_assign": 0.109,
+     "premium": 45.5,
+     "yield_pct": 0.168,
+     "ann_yield_pct": 7.7,
+     "cash_needed": 27100.0,
+     "open_interest": 7,
+     "volume": 242
     },
     {
      "strike": 272.0,

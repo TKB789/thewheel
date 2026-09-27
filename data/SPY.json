@@ -1,6 +1,6 @@
 {
  "ticker": "SPY",
- "updated": "2026-09-27T16:55:07+00:00",
+ "updated": "2026-09-27T17:41:04+00:00",
  "price": 771.35,
  "prev_close": 767.18,
  "change_pct": 0.54,
@@ -12,13 +12,13 @@
  "earnings_date": null,
  "ex_div_date": null,
  "dividend_rate": null,
- "put_call_oi": 2.44,
+ "put_call_oi": 2.43,
  "put_call_volume": 0.99,
  "call_target_delta": 0.2,
  "put_target_delta": 0.25,
  "verdict": {
   "level": "good",
-  "label": "Good time to sell",
+  "label": "Favorable to sell covered calls",
   "summary": "No red flags. The recommended call below balances premium against keeping your shares."
  },
  "factors": [
@@ -43,7 +43,7 @@
   {
    "name": "Put/call (open interest)",
    "status": "info",
-   "value": "2.44",
+   "value": "2.43",
    "note": "Heavy put positioning: traders are hedging against a drop."
   }
  ],
@@ -4033,6 +4033,22 @@
      "cash_needed": 73800.0,
      "open_interest": 168,
      "volume": 69
+    },
+    {
+     "strike": 739.0,
+     "bid": 0.33,
+     "ask": 0.34,
+     "mid": 0.34,
+     "live_quote": true,
+     "iv": 0.1718,
+     "delta": -0.042,
+     "prob_assign": 0.044,
+     "premium": 33.5,
+     "yield_pct": 0.045,
+     "ann_yield_pct": 2.1,
+     "cash_needed": 73900.0,
+     "open_interest": 15,
+     "volume": 953
     },
     {
      "strike": 740.0,

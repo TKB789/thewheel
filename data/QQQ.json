@@ -1,6 +1,6 @@
 {
  "ticker": "QQQ",
- "updated": "2026-09-27T16:55:10+00:00",
+ "updated": "2026-09-27T17:41:06+00:00",
  "price": 744.5,
  "prev_close": 741.1,
  "change_pct": 0.46,
@@ -18,7 +18,7 @@
  "put_target_delta": 0.25,
  "verdict": {
   "level": "good",
-  "label": "Good time to sell",
+  "label": "Favorable to sell covered calls",
   "summary": "No red flags. The recommended call below balances premium against keeping your shares."
  },
  "factors": [
