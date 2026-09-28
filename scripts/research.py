@@ -116,13 +116,39 @@ def norm_cdf(x):
     return 0.5 * (1 + math.erf(x / math.sqrt(2)))
 
 
-def spearman(a: pd.Series, b: pd.Series):
-    m = a.notna() & b.notna() & np.isfinite(a) & np.isfinite(b)
+def _rank_avg(x: np.ndarray):
+    """Ranks 1..n, ties get their average rank (same as pandas' rank())."""
+    order = np.argsort(x, kind="mergesort")
+    xs = x[order]
+    obs = np.r_[True, xs[1:] != xs[:-1]]
+    dense = np.cumsum(obs)
+    ends = np.r_[np.nonzero(obs)[0], len(xs)]
+    out = np.empty(len(x))
+    out[order] = (ends[dense - 1] + ends[dense] + 1) / 2
+    return out
+
+
+def _pct_rank(x: np.ndarray):
+    """pandas' rank(pct=True): average rank / number of values, NaN stays NaN."""
+    out = np.full(len(x), np.nan)
+    m = ~np.isnan(x)
+    if m.any():
+        out[m] = _rank_avg(x[m]) / m.sum()
+    return out
+
+
+def spearman(a, b):
+    # plain numpy (the study runs this tens of thousands of times per ticker)
+    a, b = np.asarray(a, float), np.asarray(b, float)
+    m = np.isfinite(a) & np.isfinite(b)
     a, b = a[m], b[m]
     n = len(a)
-    if n < 25 or a.nunique() < 5:
+    if n < 25 or len(np.unique(a)) < 5:
         return float("nan"), float("nan"), n
-    r = a.rank().corr(b.rank())
+    ra, rb = _rank_avg(a), _rank_avg(b)
+    if ra.std() == 0 or rb.std() == 0:
+        return float("nan"), float("nan"), n
+    r = float(np.corrcoef(ra, rb)[0, 1])
     if not np.isfinite(r):
         return float("nan"), float("nan"), n
     r_c = max(min(r, 0.999999), -0.999999)
@@ -146,12 +172,13 @@ def bh_pass(pvals, q=FDR_Q):
 def group_test(y: pd.Series, g: pd.Series, min_group=15):
     """Mann-Whitney: are y values different inside group g than outside it?
     Returns (rank-biserial effect, p, n_group). Positive = higher inside the group."""
-    m = y.notna() & np.isfinite(y) & g.notna()
+    y, g = np.asarray(y, float), np.asarray(g, float)
+    m = np.isfinite(y) & ~np.isnan(g)
     y, g = y[m], g[m].astype(bool)
     n1, n2 = int(g.sum()), int((~g).sum())
     if n1 < min_group or n2 < min_group:
         return float("nan"), float("nan"), n1
-    ranks = y.rank()
+    ranks = _rank_avg(y)
     u = ranks[g].sum() - n1 * (n1 + 1) / 2
     mu, sd = n1 * n2 / 2, math.sqrt(n1 * n2 * (n1 + n2 + 1) / 12)
     z = (u - mu) / sd
@@ -475,31 +502,42 @@ def study_pairs(ev, train, test, ticker, exit_day, single_tests):
     A pair only counts if it beats each of its two signals alone on the recent years."""
     usable = [f for f in FEATURES if train[f].notna().sum() >= 100 and train[f].nunique() >= 5]
     cuts = {f: (float(train[f].quantile(1 / 3)), float(train[f].quantile(2 / 3))) for f in usable}
-    pr_train = {f: train[f].rank(pct=True) - 0.5 for f in usable}
-    pr_test = {f: test[f].rank(pct=True) - 0.5 for f in usable}
+    tr = {f: train[f].to_numpy(float) for f in usable}
+    te = {f: test[f].to_numpy(float) for f in usable}
+    tr_y = {c: train[c].to_numpy(float) for c in ("ret", "size", "z")}
+    te_y = {c: test[c].to_numpy(float) for c in ("ret", "size", "z")}
+    pr_train = {f: _pct_rank(tr[f]) - 0.5 for f in usable}
+    pr_test = {f: _pct_rank(te[f]) - 0.5 for f in usable}
+
+    def third_np(v, f, side):
+        lo, hi = cuts[f]
+        g = (v >= hi) if side == "high" else (v <= lo)
+        return np.where(np.isnan(v), np.nan, g.astype(float))
+    th_tr = {(f, s): third_np(tr[f], f, s) for f in usable for s in ("high", "low")}
+    th_te = {(f, s): third_np(te[f], f, s) for f in usable for s in ("high", "low")}
     single_r = {}
     for f in usable:
         for tgt, col in (("direction", "ret"), ("size", "size")):
-            single_r[(f, tgt)] = spearman(test[f], test[col])[0]
+            single_r[(f, tgt)] = spearman(te[f], te_y[col])[0]
     single_third = {}
     for f in usable:
         for side in ("high", "low"):
-            single_third[(f, side)] = group_test(test["z"], _third(test, f, side, cuts))[0]
+            single_third[(f, side)] = group_test(te_y["z"], th_te[(f, side)])[0]
 
     tests = []
     for a, b in itertools.combinations(usable, 2):
         for tgt, col in (("direction", "ret"), ("size", "size")):
-            r1, p1, n1 = spearman(pr_train[a] * pr_train[b], train[col])
-            r2, p2, n2 = spearman(pr_test[a] * pr_test[b], test[col])
+            r1, p1, n1 = spearman(pr_train[a] * pr_train[b], tr_y[col])
+            r2, p2, n2 = spearman(pr_test[a] * pr_test[b], te_y[col])
             best_single = max(abs(single_r[(a, tgt)] or 0), abs(single_r[(b, tgt)] or 0))
             tests.append({"kind": "pair_product", "a": a, "b": b, "target": tgt,
                           "r_train": r1, "p_train": p1, "n_train": n1, "r_test": r2, "p_test": p2, "n_test": n2,
                           "beats_parts": bool(r2 == r2 and abs(r2) > best_single)})
         for key, (sa, sb) in CORNERS.items():
-            g1 = _third(train, a, sa, cuts) * _third(train, b, sb, cuts)
-            g2 = _third(test, a, sa, cuts) * _third(test, b, sb, cuts)
-            r1, p1, n1 = group_test(train["z"], g1, PAIR_MIN_GROUP)
-            r2, p2, n2 = group_test(test["z"], g2, PAIR_MIN_GROUP_TEST)
+            g1 = th_tr[(a, sa)] * th_tr[(b, sb)]
+            g2 = th_te[(a, sa)] * th_te[(b, sb)]
+            r1, p1, n1 = group_test(tr_y["z"], g1, PAIR_MIN_GROUP)
+            r2, p2, n2 = group_test(te_y["z"], g2, PAIR_MIN_GROUP_TEST)
             parts = [single_third[(a, sa)], single_third[(b, sb)]]
             parts = [x for x in parts if x == x]
             beats = bool(r2 == r2 and all(np.sign(r2) != np.sign(x) or abs(r2) > abs(x) for x in parts))

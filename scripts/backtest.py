@@ -31,10 +31,12 @@ shuffle test shows whether lookalikes predict assignment better than chance.
 
 Output: data/backtest/<TICKER>.json (read by index.html when a ticker loads) and
 data/backtest/<TICKER>_history.json (every trade since the start, loaded when you ask for it) and
-data/backtest/<TICKER>_policy.json (the wheel following the site's recommendation, loaded when picked).
+data/backtest/<TICKER>_policy.json (the wheel following the site's recommendation, loaded when picked) and
+data/backtest/<TICKER>_starts.json (the wheel started later: this year, 1, 2, 3 or 5 years ago).
 """
 from __future__ import annotations
 
+import bisect
 import json
 import math
 import sys
@@ -167,6 +169,29 @@ STUDY_CALL_RATE_LIMITS = (0.07, 0.25)
 STUDY_PUT_RATE_LIMITS = (0.12, 0.35)
 
 
+# Fast quantiles of a growing history: the history-based strike needs a quantile of every earlier
+# week, every week. Re-sorting each time made the backtest slow, so each history list keeps a
+# sorted copy that new values are inserted into (same answer as np.quantile's default).
+_QCACHE = {}
+
+
+def _hist_quantile(history, q):
+    key = id(history)
+    ent = _QCACHE.get(key)
+    n = len(history)
+    if ent is None or ent[0] > n or (n and ent[1] != history[0]):
+        srt = sorted(history)
+    else:
+        srt = ent[2]
+        for v in history[ent[0]:]:
+            bisect.insort(srt, v)
+    _QCACHE[key] = (n, history[0] if n else None, srt)
+    pos = q * (n - 1)
+    lo = int(math.floor(pos))
+    hi = min(lo + 1, n - 1)
+    return srt[lo] + (srt[hi] - srt[lo]) * (pos - lo)
+
+
 def call_strike(w, method, history, ratio=1.0):
     """ratio: how much likelier assignment looks from similar past weeks (1 = no adjustment)."""
     if method == "delta":
@@ -177,7 +202,7 @@ def call_strike(w, method, history, ratio=1.0):
     if len(history) < MIN_HISTORY_WEEKS:
         return None
     rate = min(max(HIST_RATE / ratio, STUDY_CALL_RATE_LIMITS[0]), STUDY_CALL_RATE_LIMITS[1]) if ratio != 1.0 else HIST_RATE
-    zq = float(np.quantile(history, 1 - rate))
+    zq = float(_hist_quantile(history, 1 - rate))
     k = round_up(w["S"] * (1 + max(zq, 0.0) * w["sig_w"]) + 1e-9, w["step"])
     return k if k > w["S"] else round_up(w["S"] + w["step"] / 2, w["step"])
 
@@ -191,7 +216,7 @@ def put_strike(w, method, history, ratio=1.0):
     if len(history) < MIN_HISTORY_WEEKS:
         return None
     rate = min(max(PUT_HIST_RATE / ratio, STUDY_PUT_RATE_LIMITS[0]), STUDY_PUT_RATE_LIMITS[1]) if ratio != 1.0 else PUT_HIST_RATE
-    zq = float(np.quantile(history, rate))
+    zq = float(_hist_quantile(history, rate))
     k = round_down(w["S"] * (1 + min(zq, 0.0) * w["sig_w"]) - 1e-9, w["step"])
     return k if k < w["S"] else round_down(w["S"] - w["step"] / 2, w["step"])
 
@@ -200,6 +225,7 @@ def run_trades(P: list):
     """Covered calls only: a call every period of the schedule, assigned or not, on the same
     100 shares. Each window (e.g. Mon -> Wed, Thu -> Fri) keeps its own history for the
     history-based strike, since a 2-day and a 5-day trade move by different amounts."""
+    _QCACHE.clear()
     rows, histories = [], {}        # history: z-scores of earlier non-earnings periods, per window
     for w in P:
         history = histories.setdefault(w["leg"], [])
@@ -285,6 +311,7 @@ def wheel_sim(weeks, method, tbill=None, topup=False, legs_per_week=1, policy=No
     the similar-weeks adjustment (walk-forward, see recommendation_backtest), and a trade is skipped
     when the verdict says so: mode "site" skips "hold off" (two flags), mode "favorable" skips any
     flag. A skipped call week keeps the shares; a skipped put week keeps the cash earning interest."""
+    _QCACHE.clear()
     shares, cash = 100, 0.0
     histories, timeline, events, log = {}, [], [], []
     for w in prior or []:            # periods before this start: they seed the history-based strike
@@ -939,6 +966,49 @@ def lookalike_now(F: pd.DataFrame, earn, news=None, news_now=None, now_et=None):
     return out
 
 
+# ------------------------------------------------------------ start the wheel later
+START_CHOICES = {"1w": "Last week", "1m": "1 month ago", "3m": "3 months ago", "6m": "6 months ago",
+                 "ytd": "Start of this year", "1y": "1 year ago", "2y": "2 years ago", "3y": "3 years ago",
+                 "5y": "5 years ago"}
+
+
+def start_date(key, last):
+    """last = the last finished expiration. "Last week" starts with the most recent finished week."""
+    if key == "ytd":
+        return pd.Timestamp(year=last.year, month=1, day=1)
+    n, unit = int(key[:-1]), key[-1]
+    if unit == "w":
+        return last - pd.Timedelta(days=7 * n)
+    if unit == "m":
+        return last - pd.DateOffset(months=n)
+    return last - pd.DateOffset(years=n)
+
+
+def later_starts(per, tbill):
+    """Every wheel again, as if you'd started it later (owning 100 shares that day). The history-based
+    strike still learns from everything before the start. Saved to its own file, loaded when picked."""
+    out = {}
+    for base, sk, legs in WHEEL_KEYS:
+        P = per[sk]
+        if not P:
+            continue
+        last = P[-1]["x"]
+        for suffix, kw in (("", {}), ("_topup", {"topup": True}), ("_cap", {"cap": True})):
+            for sk_start in START_CHOICES:
+                start = start_date(sk_start, last)
+                inside = [w for w in P if w["e"] >= start]
+                if not inside or start <= P[0]["e"]:
+                    continue
+                prior = [w for w in P if w["x"] < start]
+                for m in ("delta", "study"):
+                    W = wheel_sim(inside, m, tbill, legs_per_week=legs, prior=prior, **kw)
+                    if W:
+                        W["log_full"] = [pack_log(e) for e in W.pop("log_all")]
+                        W.pop("log", None)     # the page takes the recent weeks from log_full
+                        out.setdefault(base + suffix, {}).setdefault(sk_start, {})[m] = W
+    return out
+
+
 # ------------------------------------------------------------ 1 year vs 2 years ... vs 10 years
 ROLL_STEP_DAYS = 91      # rolling windows start every ~3 months
 
@@ -1134,6 +1204,8 @@ def backtest(ticker, px, earn, now_et=None, peers=(), wiki=None, analyst=None, n
     history = {"ticker": ticker, "updated": updated, "row_fields": ROW_FIELDS, "log_fields": LOG_FIELDS,
                "calls_only": hist_rows, "wheel_logs": hist_logs}
     report["_policy_wheels"] = {"ticker": ticker, "updated": updated, **policy_wheels}
+    report["start_choices"] = START_CHOICES
+    report["_starts"] = {"ticker": ticker, "updated": updated, "log_fields": LOG_FIELDS, "starts": later_starts(per, tbill)}
     return report, history
 
 
@@ -1162,9 +1234,11 @@ def main():
             rep, hist = backtest(tk, d["px"], d["earn"], peers=d["peers"], wiki=d["wiki"], analyst=d["analyst"],
                                  news=news, news_now=news_now)
             pol = rep.pop("_policy_wheels")
+            starts = rep.pop("_starts")
             (OUT_DIR / f"{tk}.json").write_text(json.dumps(rep, separators=(",", ":")))
             (OUT_DIR / f"{tk}_history.json").write_text(json.dumps(hist, separators=(",", ":")))
             (OUT_DIR / f"{tk}_policy.json").write_text(json.dumps(pol, separators=(",", ":")))
+            (OUT_DIR / f"{tk}_starts.json").write_text(json.dumps(starts, separators=(",", ":")))
             s = rep["schedules"]["weekly"]["calls_only"]["delta"]["rules"]
             wh = (rep["wheel"]["delta"] or {}).get("summary", {})
             print(f"{tk}: {s.get('assigned', 0)} of {s.get('n', 0)} Monday calls assigned (0.20-delta estimate); "

@@ -313,7 +313,14 @@ def build(auto_rows, manual_rows, closes, now_et):
     }
 
 
+AUTO_TRADES_ON = False    # the site's own picks are no longer logged: the backtest covers them, and your
+                    # own paper trades are kept in your browser (Paper trades tab)
+
+
 def main():
+    if not AUTO_TRADES_ON:
+        print("Automatic paper trades are off; nothing to do.")
+        return
     now_et = datetime.now(ET)
     auto_rows, added = auto_log(now_et)
     manual_rows = read_csv(MANUAL_LOG)
