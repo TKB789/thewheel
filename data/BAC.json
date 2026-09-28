@@ -1,6 +1,6 @@
 {
  "ticker": "BAC",
- "updated": "2026-09-28T05:18:44+00:00",
+ "updated": "2026-09-28T13:15:52+00:00",
  "price": 56.7,
  "prev_close": 56.03,
  "change_pct": 1.2,
@@ -12,7 +12,7 @@
  "earnings_date": "2026-10-14",
  "ex_div_date": null,
  "dividend_rate": 1.28,
- "put_call_oi": 335.5,
+ "put_call_oi": 0.82,
  "put_call_volume": 0.25,
  "call_target_delta": 0.2,
  "put_target_delta": 0.25,
@@ -43,8 +43,8 @@
   {
    "name": "Put/call (open interest)",
    "status": "info",
-   "value": "335.50",
-   "note": "Heavy put positioning: traders are hedging against a drop."
+   "value": "0.82",
+   "note": "Balanced positioning between puts and calls."
   }
  ],
  "put_verdict": {
@@ -74,8 +74,8 @@
   {
    "name": "Put/call (open interest)",
    "status": "info",
-   "value": "335.50",
-   "note": "Heavy put positioning: traders are hedging against a drop."
+   "value": "0.82",
+   "note": "Balanced positioning between puts and calls."
   }
  ],
  "recommended_call": {
@@ -91,7 +91,7 @@
   "yield_pct": 0.494,
   "ann_yield_pct": 45.1,
   "cash_needed": null,
-  "open_interest": 0,
+  "open_interest": 14130,
   "volume": 13612,
   "expiry": "2026-10-02",
   "dte": 4
@@ -109,7 +109,7 @@
   "yield_pct": 0.382,
   "ann_yield_pct": 34.8,
   "cash_needed": 5500.0,
-  "open_interest": 0,
+  "open_interest": 14622,
   "volume": 1016,
   "expiry": "2026-10-02",
   "dte": 4
@@ -132,7 +132,7 @@
      "yield_pct": 1.076,
      "ann_yield_pct": 98.2,
      "cash_needed": null,
-     "open_interest": 0,
+     "open_interest": 11445,
      "volume": 11801
     },
     {
@@ -148,7 +148,7 @@
      "yield_pct": 0.494,
      "ann_yield_pct": 45.1,
      "cash_needed": null,
-     "open_interest": 0,
+     "open_interest": 14130,
      "volume": 13612
     },
     {
@@ -164,7 +164,7 @@
      "yield_pct": 0.176,
      "ann_yield_pct": 16.1,
      "cash_needed": null,
-     "open_interest": 0,
+     "open_interest": 4031,
      "volume": 2708
     },
     {
@@ -180,7 +180,7 @@
      "yield_pct": 0.071,
      "ann_yield_pct": 6.4,
      "cash_needed": null,
-     "open_interest": 0,
+     "open_interest": 4102,
      "volume": 1935
     },
     {
@@ -196,7 +196,7 @@
      "yield_pct": 0.141,
      "ann_yield_pct": 12.9,
      "cash_needed": null,
-     "open_interest": 0,
+     "open_interest": 260,
      "volume": 3
     }
    ],
@@ -214,7 +214,7 @@
      "yield_pct": 0.094,
      "ann_yield_pct": 8.6,
      "cash_needed": 5300.0,
-     "open_interest": 0,
+     "open_interest": 591,
      "volume": 234
     },
     {
@@ -230,7 +230,7 @@
      "yield_pct": 0.185,
      "ann_yield_pct": 16.9,
      "cash_needed": 5400.0,
-     "open_interest": 0,
+     "open_interest": 4144,
      "volume": 414
     },
     {
@@ -246,7 +246,7 @@
      "yield_pct": 0.382,
      "ann_yield_pct": 34.8,
      "cash_needed": 5500.0,
-     "open_interest": 0,
+     "open_interest": 14622,
      "volume": 1016
     },
     {
@@ -262,7 +262,7 @@
      "yield_pct": 0.786,
      "ann_yield_pct": 71.7,
      "cash_needed": 5600.0,
-     "open_interest": 0,
+     "open_interest": 4072,
      "volume": 1017
     }
    ]
@@ -284,7 +284,7 @@
      "yield_pct": 1.605,
      "ann_yield_pct": 53.3,
      "cash_needed": null,
-     "open_interest": 0,
+     "open_interest": 1690,
      "volume": 856
     },
     {
@@ -300,7 +300,7 @@
      "yield_pct": 0.97,
      "ann_yield_pct": 32.2,
      "cash_needed": null,
-     "open_interest": 0,
+     "open_interest": 1900,
      "volume": 1835
     },
     {
@@ -316,7 +316,7 @@
      "yield_pct": 0.476,
      "ann_yield_pct": 15.8,
      "cash_needed": null,
-     "open_interest": 0,
+     "open_interest": 3025,
      "volume": 1351
     },
     {
@@ -332,7 +332,7 @@
      "yield_pct": 0.247,
      "ann_yield_pct": 8.2,
      "cash_needed": null,
-     "open_interest": 0,
+     "open_interest": 1459,
      "volume": 163
     },
     {
@@ -348,7 +348,7 @@
      "yield_pct": 0.088,
      "ann_yield_pct": 2.9,
      "cash_needed": null,
-     "open_interest": 0,
+     "open_interest": 415,
      "volume": 265
     }
    ],
@@ -366,7 +366,7 @@
      "yield_pct": 0.14,
      "ann_yield_pct": 4.6,
      "cash_needed": 5000.0,
-     "open_interest": 0,
+     "open_interest": 8,
      "volume": 1
     },
     {
@@ -382,7 +382,7 @@
      "yield_pct": 0.098,
      "ann_yield_pct": 3.3,
      "cash_needed": 5100.0,
-     "open_interest": 0,
+     "open_interest": 558,
      "volume": 22
     },
     {
@@ -398,7 +398,7 @@
      "yield_pct": 0.115,
      "ann_yield_pct": 3.8,
      "cash_needed": 5200.0,
-     "open_interest": 0,
+     "open_interest": 1657,
      "volume": 1358
     },
     {
@@ -414,7 +414,7 @@
      "yield_pct": 0.245,
      "ann_yield_pct": 8.1,
      "cash_needed": 5300.0,
-     "open_interest": 0,
+     "open_interest": 795,
      "volume": 144
     },
     {
@@ -430,7 +430,7 @@
      "yield_pct": 0.5,
      "ann_yield_pct": 16.6,
      "cash_needed": 5400.0,
-     "open_interest": 0,
+     "open_interest": 634,
      "volume": 161
     },
     {
@@ -446,7 +446,7 @@
      "yield_pct": 0.782,
      "ann_yield_pct": 25.9,
      "cash_needed": 5500.0,
-     "open_interest": 0,
+     "open_interest": 1640,
      "volume": 232
     },
     {
@@ -462,7 +462,7 @@
      "yield_pct": 1.321,
      "ann_yield_pct": 43.8,
      "cash_needed": 5600.0,
-     "open_interest": 0,
+     "open_interest": 1238,
      "volume": 284
     }
    ]
@@ -484,7 +484,7 @@
      "yield_pct": 2.522,
      "ann_yield_pct": 51.1,
      "cash_needed": null,
-     "open_interest": 0,
+     "open_interest": 1809,
      "volume": 985
     },
     {
@@ -500,7 +500,7 @@
      "yield_pct": 2.24,
      "ann_yield_pct": 45.4,
      "cash_needed": null,
-     "open_interest": 0,
+     "open_interest": 5366,
      "volume": 330
     },
     {
@@ -516,7 +516,7 @@
      "yield_pct": 1.817,
      "ann_yield_pct": 36.8,
      "cash_needed": null,
-     "open_interest": 0,
+     "open_interest": 1901,
      "volume": 1227
     },
     {
@@ -532,7 +532,7 @@
      "yield_pct": 1.217,
      "ann_yield_pct": 24.7,
      "cash_needed": null,
-     "open_interest": 0,
+     "open_interest": 1270,
      "volume": 70
     },
     {
@@ -548,7 +548,7 @@
      "yield_pct": 0.794,
      "ann_yield_pct": 16.1,
      "cash_needed": null,
-     "open_interest": 0,
+     "open_interest": 29433,
      "volume": 5227
     },
     {
@@ -564,7 +564,7 @@
      "yield_pct": 0.494,
      "ann_yield_pct": 10.0,
      "cash_needed": null,
-     "open_interest": 0,
+     "open_interest": 827,
      "volume": 47
     },
     {
@@ -580,7 +580,7 @@
      "yield_pct": 0.3,
      "ann_yield_pct": 6.1,
      "cash_needed": null,
-     "open_interest": 0,
+     "open_interest": 1680,
      "volume": 51
     },
     {
@@ -596,7 +596,7 @@
      "yield_pct": 0.194,
      "ann_yield_pct": 3.9,
      "cash_needed": null,
-     "open_interest": 0,
+     "open_interest": 17691,
      "volume": 1545
     },
     {
@@ -612,7 +612,7 @@
      "yield_pct": 0.159,
      "ann_yield_pct": 3.2,
      "cash_needed": null,
-     "open_interest": 0,
+     "open_interest": 58,
      "volume": 4
     },
     {
@@ -628,7 +628,7 @@
      "yield_pct": 0.123,
      "ann_yield_pct": 2.5,
      "cash_needed": null,
-     "open_interest": 0,
+     "open_interest": 470,
      "volume": 400
     }
    ],
@@ -646,7 +646,7 @@
      "yield_pct": 0.17,
      "ann_yield_pct": 3.5,
      "cash_needed": 4700.0,
-     "open_interest": 0,
+     "open_interest": 1015,
      "volume": 2
     },
     {
@@ -662,7 +662,7 @@
      "yield_pct": 0.163,
      "ann_yield_pct": 3.3,
      "cash_needed": 4900.0,
-     "open_interest": 0,
+     "open_interest": 1220,
      "volume": 2
     },
     {
@@ -678,7 +678,7 @@
      "yield_pct": 0.26,
      "ann_yield_pct": 5.3,
      "cash_needed": 5000.0,
-     "open_interest": 0,
+     "open_interest": 4010,
      "volume": 756
     },
     {
@@ -694,7 +694,7 @@
      "yield_pct": 0.49,
      "ann_yield_pct": 9.9,
      "cash_needed": 5100.0,
-     "open_interest": 0,
+     "open_interest": 548,
      "volume": 33
     },
     {
@@ -710,7 +710,7 @@
      "yield_pct": 0.558,
      "ann_yield_pct": 11.3,
      "cash_needed": 5200.0,
-     "open_interest": 0,
+     "open_interest": 71,
      "volume": 34
     },
     {
@@ -726,7 +726,7 @@
      "yield_pct": 0.686,
      "ann_yield_pct": 13.9,
      "cash_needed": 5250.0,
-     "open_interest": 0,
+     "open_interest": 6973,
      "volume": 1115
     },
     {
@@ -742,7 +742,7 @@
      "yield_pct": 0.774,
      "ann_yield_pct": 15.7,
      "cash_needed": 5300.0,
-     "open_interest": 0,
+     "open_interest": 303,
      "volume": 125
     },
     {
@@ -758,7 +758,7 @@
      "yield_pct": 1.148,
      "ann_yield_pct": 23.3,
      "cash_needed": 5400.0,
-     "open_interest": 0,
+     "open_interest": 2739,
      "volume": 773
     },
     {
@@ -774,7 +774,7 @@
      "yield_pct": 1.636,
      "ann_yield_pct": 33.2,
      "cash_needed": 5500.0,
-     "open_interest": 0,
+     "open_interest": 18121,
      "volume": 589
     },
     {
@@ -790,7 +790,7 @@
      "yield_pct": 2.232,
      "ann_yield_pct": 45.3,
      "cash_needed": 5600.0,
-     "open_interest": 0,
+     "open_interest": 3003,
      "volume": 452
     }
    ]
@@ -812,7 +812,7 @@
      "yield_pct": 2.011,
      "ann_yield_pct": 29.4,
      "cash_needed": null,
-     "open_interest": 0,
+     "open_interest": 359,
      "volume": 41
     },
     {
@@ -828,7 +828,7 @@
      "yield_pct": 1.446,
      "ann_yield_pct": 21.1,
      "cash_needed": null,
-     "open_interest": 0,
+     "open_interest": 285,
      "volume": 220
     },
     {
@@ -844,7 +844,7 @@
      "yield_pct": 0.988,
      "ann_yield_pct": 14.4,
      "cash_needed": null,
-     "open_interest": 0,
+     "open_interest": 1989,
      "volume": 470
     },
     {
@@ -860,7 +860,7 @@
      "yield_pct": 0.617,
      "ann_yield_pct": 9.0,
      "cash_needed": null,
-     "open_interest": 0,
+     "open_interest": 188,
      "volume": 6
     },
     {
@@ -876,7 +876,7 @@
      "yield_pct": 0.406,
      "ann_yield_pct": 5.9,
      "cash_needed": null,
-     "open_interest": 0,
+     "open_interest": 1132,
      "volume": 105
     },
     {
@@ -892,7 +892,7 @@
      "yield_pct": 0.335,
      "ann_yield_pct": 4.9,
      "cash_needed": null,
-     "open_interest": 0,
+     "open_interest": 429,
      "volume": 42
     },
     {
@@ -908,7 +908,7 @@
      "yield_pct": 0.159,
      "ann_yield_pct": 2.3,
      "cash_needed": null,
-     "open_interest": 0,
+     "open_interest": 125,
      "volume": 69
     },
     {
@@ -924,7 +924,7 @@
      "yield_pct": 0.088,
      "ann_yield_pct": 1.3,
      "cash_needed": null,
-     "open_interest": 0,
+     "open_interest": 307,
      "volume": 6
     },
     {
@@ -940,7 +940,7 @@
      "yield_pct": 0.194,
      "ann_yield_pct": 2.8,
      "cash_needed": null,
-     "open_interest": 0,
+     "open_interest": 285,
      "volume": 1
     },
     {
@@ -956,7 +956,7 @@
      "yield_pct": 0.176,
      "ann_yield_pct": 2.6,
      "cash_needed": null,
-     "open_interest": 0,
+     "open_interest": 18,
      "volume": 1
     },
     {
@@ -972,7 +972,7 @@
      "yield_pct": 0.159,
      "ann_yield_pct": 2.3,
      "cash_needed": null,
-     "open_interest": 0,
+     "open_interest": 3,
      "volume": 2
     },
     {
@@ -988,7 +988,7 @@
      "yield_pct": 0.159,
      "ann_yield_pct": 2.3,
      "cash_needed": null,
-     "open_interest": 0,
+     "open_interest": 1,
      "volume": 1
     }
    ],
@@ -1006,7 +1006,7 @@
      "yield_pct": 0.191,
      "ann_yield_pct": 2.8,
      "cash_needed": 4700.0,
-     "open_interest": 0,
+     "open_interest": 19,
      "volume": 11
     },
     {
@@ -1022,7 +1022,7 @@
      "yield_pct": 0.229,
      "ann_yield_pct": 3.3,
      "cash_needed": 4800.0,
-     "open_interest": 0,
+     "open_interest": 254,
      "volume": 251
     },
     {
@@ -1038,7 +1038,7 @@
      "yield_pct": 0.36,
      "ann_yield_pct": 5.3,
      "cash_needed": 5000.0,
-     "open_interest": 0,
+     "open_interest": 253,
      "volume": 122
     },
     {
@@ -1054,7 +1054,7 @@
      "yield_pct": 0.51,
      "ann_yield_pct": 7.4,
      "cash_needed": 5100.0,
-     "open_interest": 0,
+     "open_interest": 59,
      "volume": 21
     },
     {
@@ -1070,7 +1070,7 @@
      "yield_pct": 0.692,
      "ann_yield_pct": 10.1,
      "cash_needed": 5200.0,
-     "open_interest": 0,
+     "open_interest": 219,
      "volume": 86
     },
     {
@@ -1086,7 +1086,7 @@
      "yield_pct": 0.981,
      "ann_yield_pct": 14.3,
      "cash_needed": 5300.0,
-     "open_interest": 0,
+     "open_interest": 489,
      "volume": 41
     },
     {
@@ -1102,7 +1102,7 @@
      "yield_pct": 1.352,
      "ann_yield_pct": 19.7,
      "cash_needed": 5400.0,
-     "open_interest": 0,
+     "open_interest": 564,
      "volume": 19
     },
     {
@@ -1118,7 +1118,7 @@
      "yield_pct": 1.873,
      "ann_yield_pct": 27.3,
      "cash_needed": 5500.0,
-     "open_interest": 0,
+     "open_interest": 973,
      "volume": 46
     },
     {
@@ -1134,7 +1134,7 @@
      "yield_pct": 2.536,
      "ann_yield_pct": 37.0,
      "cash_needed": 5600.0,
-     "open_interest": 0,
+     "open_interest": 725,
      "volume": 85
     }
    ]
@@ -1156,7 +1156,7 @@
      "yield_pct": 2.381,
      "ann_yield_pct": 27.2,
      "cash_needed": null,
-     "open_interest": 0,
+     "open_interest": 1320,
      "volume": 172
     },
     {
@@ -1172,7 +1172,7 @@
      "yield_pct": 1.675,
      "ann_yield_pct": 19.1,
      "cash_needed": null,
-     "open_interest": 0,
+     "open_interest": 122,
      "volume": 40
     },
     {
@@ -1188,7 +1188,7 @@
      "yield_pct": 1.129,
      "ann_yield_pct": 12.9,
      "cash_needed": null,
-     "open_interest": 0,
+     "open_interest": 427,
      "volume": 81
     },
     {
@@ -1204,7 +1204,7 @@
      "yield_pct": 0.758,
      "ann_yield_pct": 8.7,
      "cash_needed": null,
-     "open_interest": 0,
+     "open_interest": 411,
      "volume": 335
     },
     {
@@ -1220,7 +1220,7 @@
      "yield_pct": 0.511,
      "ann_yield_pct": 5.8,
      "cash_needed": null,
-     "open_interest": 0,
+     "open_interest": 98,
      "volume": 4
     },
     {
@@ -1236,7 +1236,7 @@
      "yield_pct": 0.353,
      "ann_yield_pct": 4.0,
      "cash_needed": null,
-     "open_interest": 0,
+     "open_interest": 1456,
      "volume": 15
     },
     {
@@ -1252,7 +1252,7 @@
      "yield_pct": 0.229,
      "ann_yield_pct": 2.6,
      "cash_needed": null,
-     "open_interest": 0,
+     "open_interest": 1040,
      "volume": 6
     },
     {
@@ -1268,7 +1268,7 @@
      "yield_pct": 0.159,
      "ann_yield_pct": 1.8,
      "cash_needed": null,
-     "open_interest": 0,
+     "open_interest": 63,
      "volume": 1
     },
     {
@@ -1284,7 +1284,7 @@
      "yield_pct": 0.123,
      "ann_yield_pct": 1.4,
      "cash_needed": null,
-     "open_interest": 0,
+     "open_interest": 52,
      "volume": 8
     },
     {
@@ -1300,7 +1300,7 @@
      "yield_pct": 0.106,
      "ann_yield_pct": 1.2,
      "cash_needed": null,
-     "open_interest": 0,
+     "open_interest": 269,
      "volume": 20
     },
     {
@@ -1316,7 +1316,7 @@
      "yield_pct": 0.317,
      "ann_yield_pct": 3.6,
      "cash_needed": null,
-     "open_interest": 0,
+     "open_interest": 1,
      "volume": 0
     }
    ],
@@ -1334,7 +1334,7 @@
      "yield_pct": 0.362,
      "ann_yield_pct": 4.1,
      "cash_needed": 4700.0,
-     "open_interest": 0,
+     "open_interest": 266,
      "volume": 4
     },
     {
@@ -1350,7 +1350,7 @@
      "yield_pct": 0.417,
      "ann_yield_pct": 4.8,
      "cash_needed": 4800.0,
-     "open_interest": 0,
+     "open_interest": 251,
      "volume": 2
     },
     {
@@ -1366,7 +1366,7 @@
      "yield_pct": 0.429,
      "ann_yield_pct": 4.9,
      "cash_needed": 4900.0,
-     "open_interest": 0,
+     "open_interest": 358,
      "volume": 4
     },
     {
@@ -1382,7 +1382,7 @@
      "yield_pct": 0.68,
      "ann_yield_pct": 7.8,
      "cash_needed": 5000.0,
-     "open_interest": 0,
+     "open_interest": 174,
      "volume": 3
     },
     {
@@ -1398,7 +1398,7 @@
      "yield_pct": 0.765,
      "ann_yield_pct": 8.7,
      "cash_needed": 5100.0,
-     "open_interest": 0,
+     "open_interest": 21,
      "volume": 4
     },
     {
@@ -1414,7 +1414,7 @@
      "yield_pct": 0.885,
      "ann_yield_pct": 10.1,
      "cash_needed": 5200.0,
-     "open_interest": 0,
+     "open_interest": 168,
      "volume": 9
     },
     {
@@ -1430,7 +1430,7 @@
      "yield_pct": 1.189,
      "ann_yield_pct": 13.6,
      "cash_needed": 5300.0,
-     "open_interest": 0,
+     "open_interest": 425,
      "volume": 57
     },
     {
@@ -1446,7 +1446,7 @@
      "yield_pct": 1.537,
      "ann_yield_pct": 17.5,
      "cash_needed": 5400.0,
-     "open_interest": 0,
+     "open_interest": 242,
      "volume": 7
     },
     {
@@ -1462,7 +1462,7 @@
      "yield_pct": 2.073,
      "ann_yield_pct": 23.6,
      "cash_needed": 5500.0,
-     "open_interest": 0,
+     "open_interest": 573,
      "volume": 417
     },
     {
@@ -1478,7 +1478,7 @@
      "yield_pct": 2.821,
      "ann_yield_pct": 32.2,
      "cash_needed": 5600.0,
-     "open_interest": 0,
+     "open_interest": 134,
      "volume": 4
     }
    ]
@@ -1500,7 +1500,7 @@
      "yield_pct": 2.557,
      "ann_yield_pct": 23.9,
      "cash_needed": null,
-     "open_interest": 0,
+     "open_interest": 4,
      "volume": 4
     },
     {
@@ -1516,7 +1516,7 @@
      "yield_pct": 1.587,
      "ann_yield_pct": 14.9,
      "cash_needed": null,
-     "open_interest": 0,
+     "open_interest": 5,
      "volume": 1
     },
     {
@@ -1532,7 +1532,7 @@
      "yield_pct": 1.411,
      "ann_yield_pct": 13.2,
      "cash_needed": null,
-     "open_interest": 0,
+     "open_interest": 22,
      "volume": 22
     },
     {
@@ -1548,7 +1548,7 @@
      "yield_pct": 1.005,
      "ann_yield_pct": 9.4,
      "cash_needed": null,
-     "open_interest": 0,
+     "open_interest": 7,
      "volume": 7
     },
     {
@@ -1564,7 +1564,7 @@
      "yield_pct": 0.617,
      "ann_yield_pct": 5.8,
      "cash_needed": null,
-     "open_interest": 0,
+     "open_interest": 9,
      "volume": 7
     },
     {
@@ -1580,7 +1580,7 @@
      "yield_pct": 0.6,
      "ann_yield_pct": 5.6,
      "cash_needed": null,
-     "open_interest": 0,
+     "open_interest": 11,
      "volume": 0
     },
     {
@@ -1596,7 +1596,7 @@
      "yield_pct": 0.194,
      "ann_yield_pct": 1.8,
      "cash_needed": null,
-     "open_interest": 0,
+     "open_interest": 1,
      "volume": 1
     }
    ],
@@ -1614,7 +1614,7 @@
      "yield_pct": 1.932,
      "ann_yield_pct": 18.1,
      "cash_needed": 4400.0,
-     "open_interest": 0,
+     "open_interest": 3,
      "volume": 0
     },
     {
@@ -1630,7 +1630,7 @@
      "yield_pct": 0.213,
      "ann_yield_pct": 2.0,
      "cash_needed": 4700.0,
-     "open_interest": 0,
+     "open_interest": 253,
      "volume": 250
     },
     {
@@ -1646,7 +1646,7 @@
      "yield_pct": 0.396,
      "ann_yield_pct": 3.7,
      "cash_needed": 4800.0,
-     "open_interest": 0,
+     "open_interest": 256,
      "volume": 0
     },
     {
@@ -1662,7 +1662,7 @@
      "yield_pct": 0.902,
      "ann_yield_pct": 8.4,
      "cash_needed": 5100.0,
-     "open_interest": 0,
+     "open_interest": 5,
      "volume": 5
     },
     {
@@ -1678,7 +1678,7 @@
      "yield_pct": 1.192,
      "ann_yield_pct": 11.2,
      "cash_needed": 5200.0,
-     "open_interest": 0,
+     "open_interest": 1,
      "volume": 1
     },
     {
@@ -1694,7 +1694,7 @@
      "yield_pct": 1.434,
      "ann_yield_pct": 13.4,
      "cash_needed": 5300.0,
-     "open_interest": 0,
+     "open_interest": 10,
      "volume": 10
     },
     {
@@ -1710,7 +1710,7 @@
      "yield_pct": 1.778,
      "ann_yield_pct": 16.6,
      "cash_needed": 5400.0,
-     "open_interest": 0,
+     "open_interest": 5,
      "volume": 15
     },
     {
@@ -1726,7 +1726,7 @@
      "yield_pct": 2.582,
      "ann_yield_pct": 24.2,
      "cash_needed": 5500.0,
-     "open_interest": 0,
+     "open_interest": 8,
      "volume": 6
     }
    ]
