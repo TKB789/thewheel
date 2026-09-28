@@ -24,6 +24,11 @@ Mon->Wed then Thu->Fri): covered calls while holding shares,
 cash-secured puts after the shares are called away (paused in weeks when the cash doesn't
 cover the put), and compares the account's value with simply holding the shares.
 
+"Before each assignment": for every Monday -> Friday week it records the signal readings known
+at Monday's open, compares assigned weeks with weeks that expired worthless, and lists each
+assigned week's 10 most similar earlier weeks ("lookalikes") with how those turned out. A
+shuffle test shows whether lookalikes predict assignment better than chance.
+
 Output: data/backtest/<TICKER>.json, read by index.html.
 """
 from __future__ import annotations
@@ -328,8 +333,228 @@ def summarize(rows, method, rules=True):
     }
 
 
-def backtest(ticker, px, earn, now_et=None):
-    F = rs.build_features(px, ticker, [], None, earn)
+# ------------------------------------------------------------ before each assignment
+# "Lookalike" weeks: for every Monday -> Friday week, the signal readings known at Monday's open,
+# and which earlier weeks had the most similar readings. Similarity is measured on this fixed
+# set of core signals, chosen in advance (not picked after looking at the results).
+CORE = ["vix", "ret_5d", "rsi14", "hv20", "pct_ma20", "analyst_net_30d", "wiki_spike", "gap_open", "news_tone"]
+SIGNAL_LABELS = {**rs.LABELS, "news_tone": "Yahoo headline tone, past 3 days"}
+K_NEAR = 10            # lookalikes shown per week
+K_TEST = 50            # lookalikes used for the steadier rate and the chance test (10 is too noisy)
+MIN_POOL = 52          # a week needs a year of earlier weeks before it gets lookalikes
+MIN_SHARED = 4         # signals two weeks must both have to be compared
+SHUFFLES = 200
+DETAIL_WEEKS = 30      # assigned weeks listed in full, per side
+PCT_SIGNALS = {"ret_1d", "ret_5d", "ret_20d", "pct_ma20", "pct_ma50", "hv20", "rel_qqq_5d", "qqq_5d", "smh_5d",
+               "peers_1d", "peers_5d", "dxy_5d", "oil_5d", "gap_open", "pt_gap"}
+
+
+def shown(f, v):
+    if v is None or v != v:
+        return "—"
+    if f in PCT_SIGNALS:
+        return f"{v * 100:+.1f}%" if f != "hv20" else f"{v * 100:.0f}%"
+    if f in ("wiki_spike", "wiki_trend", "vix_term", "vol_expansion", "volume_ratio", "range_ratio"):
+        return f"{v:.2f}×"
+    if f in ("analyst_net_7d", "analyst_net_30d", "pt_net_30d", "analyst_activity_7d", "days_to_earn",
+             "days_since_rating"):
+        return f"{v:+.0f}" if f.startswith(("analyst_net", "pt_net")) else f"{v:.0f}"
+    if f in ("tnx_chg_5d", "vix_chg_5d"):
+        return f"{v:+.2f}"
+    if f == "news_tone":
+        return f"{v:+.2f}"
+    return f"{v:.1f}"
+
+
+def week_readings(F: pd.DataFrame, weeks: list, news: pd.Series | None):
+    """One row per non-earnings Monday -> Friday week: the readings known at Monday's open
+    (previous close for price-based signals; the entry day for page views, analysts, headlines)
+    and whether the site's standard call / put would have been assigned."""
+    pos = {d: i for i, d in enumerate(F.index)}
+    rows = []
+    for w in weeks:
+        if w["earnings"] or w["e"] not in pos:
+            continue
+        i = pos[w["e"]]
+        prev, cur = F.iloc[i - 1], F.iloc[i]
+        r = {f: prev[f] for f in rs.FEATURES}
+        for f in rs.ENTRY_DAY_FEATURES:
+            r[f] = cur[f]
+        r["gap_open"] = w["S"] / prev["close"] - 1 if prev["close"] > 0 else np.nan
+        r["news_tone"] = float(news.get(w["e"], np.nan)) if news is not None else np.nan
+        kc, kp = call_strike(w, "delta", []), put_strike(w, "delta", [])
+        r.update({"entry": w["e"], "expiry": w["x"], "S": w["S"], "close": w["close"],
+                  "ret": w["close"] / w["S"] - 1, "kc": kc, "kp": kp,
+                  "call": w["close"] > kc, "put": w["close"] < kp})
+        rows.append(r)
+    return pd.DataFrame(rows)
+
+
+def _pct_rank(values: pd.Series, v):
+    """Where v sits among the weeks' readings, 0-100 (50 = typical)."""
+    x = np.sort(values.dropna().values)
+    if v is None or v != v or len(x) == 0:
+        return np.nan
+    return 100.0 * (np.searchsorted(x, v, "left") + np.searchsorted(x, v, "right")) / (2 * len(x))
+
+
+def _distances(P: np.ndarray, q: np.ndarray):
+    """Mean absolute percentile gap between q and every row of P, over signals both have."""
+    d = np.abs(P - q)
+    shared = np.sum(~np.isnan(d), axis=1)
+    with np.errstate(invalid="ignore"):
+        dist = np.nanmean(np.where(np.isnan(d), np.nan, d), axis=1) if d.size else d
+    dist = np.where(shared >= MIN_SHARED, dist, np.nan)
+    return dist
+
+
+def lookalike_side(R: pd.DataFrame, P: pd.DataFrame, core: list, side: str, current: dict | None, rng):
+    y = R[side].astype(bool).values
+    n = len(R)
+    # ---- signal averages: assigned weeks vs weeks that expired worthless
+    sig_rows = []
+    for f in SIGNAL_LABELS:
+        if f not in R or R[f].notna().sum() < 40 or R[f].nunique() < 3:
+            continue
+        eff, p, n1 = rs.group_test(R[f].astype(float), R[side], min_group=10)
+        if p != p:
+            continue
+        a, b = R.loc[R[side], f].dropna(), R.loc[~R[side], f].dropna()
+        sig_rows.append({"key": f, "label": SIGNAL_LABELS[f],
+                         "pct_assigned": round(float(P.loc[R[side], f].mean()), 1),
+                         "pct_expired": round(float(P.loc[~R[side], f].mean()), 1),
+                         "median_assigned": shown(f, float(a.median())), "median_expired": shown(f, float(b.median())),
+                         "n_assigned": int(len(a)), "n_expired": int(len(b)),
+                         "effect": round(eff, 3), "p": round(p, 4)})
+    passed = rs.bh_pass([r["p"] for r in sig_rows])
+    for r, ok in zip(sig_rows, passed):
+        r["found"] = bool(ok)
+    sig_rows.sort(key=lambda r: r["p"])
+
+    # ---- lookalikes: each week's nearest earlier weeks
+    M = P[core].values.astype(float)
+    neigh, dists = {}, {}
+    for j in range(MIN_POOL, n):
+        dj = _distances(M[:j], M[j])
+        ok = np.where(~np.isnan(dj))[0]
+        if len(ok) < MIN_POOL // 2:
+            continue
+        if len(ok) < K_TEST:
+            continue
+        near = ok[np.argsort(dj[ok], kind="stable")[:K_TEST]]
+        neigh[j], dists[j] = near, dj[near]
+    J = np.array(sorted(neigh))
+    NB = np.array([neigh[j] for j in J]) if len(J) else np.empty((0, K_TEST), int)
+
+    def gap(labels):
+        rate = labels[NB].mean(axis=1)
+        t = labels[J]
+        if t.sum() == 0 or (~t).sum() == 0:
+            return np.nan, rate
+        return rate[t].mean() - rate[~t].mean(), rate
+
+    g, rate = gap(y)
+    sh = []
+    for _ in range(SHUFFLES):
+        s_, _r = gap(rng.permutation(y))
+        if s_ == s_:
+            sh.append(s_)
+    sh = np.array(sh)
+    t = y[J] if len(J) else np.array([], bool)
+    buckets = []
+    if len(J) >= 30:
+        # weeks split into thirds by how often their lookalikes were assigned
+        cuts = np.quantile(rate, [1 / 3, 2 / 3])
+        grp = np.searchsorted(cuts, rate, side="right")
+        for k, lab in enumerate(("Lookalikes least often assigned", "Middle third", "Lookalikes most often assigned")):
+            m = grp == k
+            buckets.append({"label": lab, "weeks": int(m.sum()), "assigned": int(t[m].sum()),
+                            "lookalike_rate": round(float(rate[m].mean()) * 100, 1) if m.sum() else None,
+                            "rate": round(float(t[m].mean()) * 100, 1) if m.sum() else None})
+    test = {
+        "weeks": int(len(J)), "assigned": int(t.sum()),
+        "base_rate": round(float(t.mean()) * 100, 1) if len(J) else None,
+        "rate_when_assigned": round(float(rate[t].mean()) * 100, 1) if t.sum() else None,
+        "rate_when_expired": round(float(rate[~t].mean()) * 100, 1) if (~t).sum() else None,
+        "gap": round(float(g) * 100, 1) if g == g else None,
+        "shuffle_mean": round(float(sh.mean()) * 100, 1) if len(sh) else None,
+        "shuffle_lo": round(float(np.quantile(sh, 0.025)) * 100, 1) if len(sh) else None,
+        "shuffle_hi": round(float(np.quantile(sh, 0.975)) * 100, 1) if len(sh) else None,
+        "p": round(float((np.sum(sh >= g) + 1) / (len(sh) + 1)), 4) if len(sh) and g == g else None,
+        "buckets": buckets,
+    }
+    test["beats_chance"] = bool(test["p"] is not None and test["p"] < 0.05 and (test["gap"] or 0) > 0)
+
+    def reading_list(get_raw, get_pct):
+        return [{"key": f, "value": shown(f, get_raw(f)),       # labels are in "core"
+                 "pct": None if get_pct(f) != get_pct(f) else round(float(get_pct(f)))} for f in core]
+
+    def neighbor_list(idx, dd):
+        out = []
+        for i, d in zip(idx, dd):
+            row = R.iloc[int(i)]
+            out.append({"monday": row["entry"].date().isoformat(), "assigned": bool(row[side]),
+                        "ret_pct": round(float(row["ret"]) * 100, 2), "similarity": round(100 - float(d), 1)})
+        return out
+
+    detail = []
+    for j in [j for j in range(n) if y[j] and j in neigh][-DETAIL_WEEKS:][::-1]:
+        row = R.iloc[j]
+        detail.append({"monday": row["entry"].date().isoformat(), "expiry": row["expiry"].date().isoformat(),
+                       "open": round(float(row["S"]), 2), "close": round(float(row["close"]), 2),
+                       "strike": round(float(row["kc" if side == "call" else "kp"]), 2),
+                       "ret_pct": round(float(row["ret"]) * 100, 2),
+                       "readings": reading_list(lambda f: row[f], lambda f: P.iloc[j][f]),
+                       "lookalikes": neighbor_list(neigh[j][:K_NEAR], dists[j][:K_NEAR]),
+                       "lookalikes_assigned": int(y[neigh[j][:K_NEAR]].sum()),
+                       "rate_wide": round(float(y[neigh[j]].mean()) * 100, 1)})
+    now = None
+    if current:
+        q = np.array([current["pct"].get(f, np.nan) for f in core], float)
+        dq = _distances(M, q)
+        ok = np.where(~np.isnan(dq))[0]
+        if len(ok) >= K_TEST:
+            near = ok[np.argsort(dq[ok], kind="stable")[:K_TEST]]
+            now = {"as_of": current["as_of"],
+                   "readings": reading_list(lambda f: current["raw"].get(f, np.nan), lambda f: current["pct"].get(f, np.nan)),
+                   "lookalikes": neighbor_list(near[:K_NEAR], dq[near[:K_NEAR]]),
+                   "lookalikes_assigned": int(y[near[:K_NEAR]].sum()),
+                   "rate_wide": round(float(y[near].mean()) * 100, 1)}
+    return {"signals": sig_rows, "test": test, "detail": detail, "now": now,
+            "assigned_weeks": int(y.sum()), "weeks": n}
+
+
+def lookalikes(F: pd.DataFrame, weeks: list, news: pd.Series | None, news_now=None, seed=7):
+    R = week_readings(F, weeks, news)
+    if len(R) < MIN_POOL + 20:
+        return None
+    sig = [f for f in SIGNAL_LABELS if f in R]
+    P = pd.DataFrame({f: R[f].astype(float).rank(pct=True) * 100 for f in sig})
+    core = [f for f in CORE if f in R and R[f].notna().mean() >= 0.3 and R[f].nunique() >= 3]
+    if len(core) < MIN_SHARED:
+        return None
+    # this week's readings as of the latest close (gap unknown until Monday's open)
+    last = F.iloc[-1]
+    raw = {f: last[f] for f in rs.FEATURES}
+    for f in rs.ENTRY_DAY_FEATURES:
+        raw[f] = np.nan
+    raw.update(F.attrs.get("wiki_now") or {})
+    raw.update({k: v for k, v in (F.attrs.get("analyst_now") or {}).items() if k in rs.ANALYST_FEATURES})
+    raw["gap_open"] = np.nan
+    raw["news_tone"] = news_now if news_now is not None else np.nan
+    raw = {k: (np.nan if v is None else v) for k, v in raw.items()}
+    current = {"as_of": F.index[-1].date().isoformat(), "raw": raw,
+               "pct": {f: _pct_rank(R[f], raw.get(f)) for f in core}}
+    rng = np.random.default_rng(seed)
+    return {"core": [{"key": f, "label": SIGNAL_LABELS[f]} for f in core],
+            "k": K_NEAR, "k_test": K_TEST, "min_pool": MIN_POOL, "shuffles": SHUFFLES,
+            "call_delta": DELTA, "call_delta_hot": DELTA_HOT, "put_delta": PUT_DELTA, "put_delta_sliding": PUT_DELTA_SLIDING,
+            "calls": lookalike_side(R, P, core, "call", current, rng),
+            "puts": lookalike_side(R, P, core, "put", current, rng)}
+
+
+def backtest(ticker, px, earn, now_et=None, peers=(), wiki=None, analyst=None, news=None, news_now=None):
+    F = rs.build_features(px, ticker, list(peers), wiki, earn, analyst)
     rows = run_weeks(F, earn, now_et)
     weeks = week_info(F, earn, now_et)
     twice = periods(F, earn, now_et, "twice")
@@ -354,22 +579,37 @@ def backtest(ticker, px, earn, now_et=None):
         "wheel2": {m: wheel_sim(twice, m, tbill, legs_per_week=2) for m in ("delta", "study")},
         "wheel2_topup": {m: wheel_sim(twice, m, tbill, topup=True, legs_per_week=2) for m in ("delta", "study")},
         "cash_interest": tbill is not None,
+        "lookalikes": _safe_lookalikes(F, weeks, news, news_now),
         # keeps the file small: the last year of weeks, plus every week that got assigned
         "weeks": [r for i, r in enumerate(rows)
                   if i >= len(rows) - 52 or any(r.get(m, {}).get("assigned") for m in ("delta", "study"))],
     }
 
 
+def _safe_lookalikes(F, weeks, news, news_now):
+    try:
+        return lookalikes(F, weeks, news, news_now)
+    except Exception as exc:          # the rest of the backtest is still worth saving
+        print(f"  lookalike analysis skipped: {exc}", file=sys.stderr)
+        return None
+
+
 def main():
     tickers, _ = rs.tickers_to_run(rs.WATCHLIST)
+    cfg = json.loads(rs.CONFIG.read_text()) if rs.CONFIG.exists() else {}
     OUT_DIR.mkdir(parents=True, exist_ok=True)
+    try:
+        px_market = rs.load_prices(list(rs.MARKET.values()))
+    except Exception as exc:
+        print(f"Market series unavailable: {exc}", file=sys.stderr)
+        px_market = {}
     failed = 0
     for tk in tickers:
         try:
-            px = rs.load_prices([tk])
-            if tk not in px:
-                raise RuntimeError("no price history")
-            rep = backtest(tk, px, rs.load_earnings(tk))
+            d = rs.load_inputs(tk, cfg, px_market)
+            news, news_now = rs.headline_tone(tk)
+            rep = backtest(tk, d["px"], d["earn"], peers=d["peers"], wiki=d["wiki"], analyst=d["analyst"],
+                           news=news, news_now=news_now)
             (OUT_DIR / f"{tk}.json").write_text(json.dumps(rep, separators=(",", ":")))
             s = rep["summary"]["delta"]["rules"]
             wh = (rep["wheel"]["delta"] or {}).get("summary", {})

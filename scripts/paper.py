@@ -38,11 +38,13 @@ SETTLE_AFTER = time(16, 30)      # an expiring trade settles once the close is i
 STRATEGY_NAMES = {
     "delta": "Call to sell (0.20 delta)",
     "mon_wed": "Schedule: Monday → Wednesday",
+    "mon_fri": "Schedule: Monday → Friday",
     "thu_fri": "Schedule: Thursday → Friday",
     "thu_mon": "Schedule: Thursday → next Monday",
     "put": "Wheel put",
     "csp": "Cash-secured put (0.25 delta)",
     "csp_mon_wed": "Put schedule: Monday → Wednesday",
+    "csp_mon_fri": "Put schedule: Monday → Friday",
     "csp_thu_fri": "Put schedule: Thursday → Friday",
     "csp_thu_mon": "Put schedule: Thursday → next Monday",
     "manual": "Your pick",
@@ -280,7 +282,7 @@ def build(auto_rows, manual_rows, closes, now_et):
     trades = [{k: v for k, v in t.items() if not k.startswith("_")} for t in trades if t.get("status") != "invalid"]
     trades.sort(key=lambda t: t.get("logged_at", ""), reverse=True)
 
-    schedule = ("mon_wed", "thu_fri", "thu_mon")
+    schedule = ("mon_wed", "mon_fri", "thu_fri", "thu_mon")
     auto = [t for t in trades if t["source"] == "auto"]
     # "followed" = the one call your routine would have sold each Monday / Thursday
     followed = [t for t in auto if t["strategy"] in schedule and t["decision"] == "sell"]

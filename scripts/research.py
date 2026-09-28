@@ -46,6 +46,7 @@ MARKET = {"QQQ": "QQQ", "SMH": "SMH", "VIX": "^VIX", "VIX9D": "^VIX9D",
 
 WINDOWS = [
     {"key": "mon_wed", "label": "Monday → Wednesday", "entry_dow": 0, "exit_offset": 2, "sessions": 3},
+    {"key": "mon_fri", "label": "Monday → Friday", "entry_dow": 0, "exit_offset": 4, "sessions": 5},
     {"key": "thu_fri", "label": "Thursday → Friday", "entry_dow": 3, "exit_offset": 1, "sessions": 2},
     {"key": "thu_mon", "label": "Thursday → next Monday", "entry_dow": 3, "exit_offset": 4, "sessions": 3},
 ]
@@ -720,18 +721,21 @@ def load_analyst(ticker):
         return None
 
 
-def run_ticker(ticker, cfg, px_market):
+def load_inputs(ticker, cfg, px_market):
+    """Everything the study needs for one ticker. px_market doubles as a cache, so a peer
+    shared by several tickers downloads once per run."""
     tcfg = {**cfg.get("_default", {}), **cfg.get(ticker, {})}
     peers = [p for p in tcfg.get("peers", []) if p != ticker]
-    # px_market doubles as a cache, so a peer shared by several tickers downloads once per run
     px_market.update(load_prices([t for t in [ticker] + peers if t not in px_market]))
-    px = px_market
-    if ticker not in px:
+    if ticker not in px_market:
         raise RuntimeError("no price history")
-    wiki = load_wiki(tcfg.get("wiki"))
-    earn = load_earnings(ticker)
-    analyst = load_analyst(ticker)
-    return analyze(ticker, px, peers, wiki, earn, tcfg.get("wiki"), analyst)
+    return {"px": px_market, "peers": peers, "wiki": load_wiki(tcfg.get("wiki")), "earn": load_earnings(ticker),
+            "analyst": load_analyst(ticker), "wiki_article": tcfg.get("wiki")}
+
+
+def run_ticker(ticker, cfg, px_market):
+    d = load_inputs(ticker, cfg, px_market)
+    return analyze(ticker, d["px"], d["peers"], d["wiki"], d["earn"], d["wiki_article"], d["analyst"])
 
 
 def decision_inputs(F: pd.DataFrame, now_et: datetime):
