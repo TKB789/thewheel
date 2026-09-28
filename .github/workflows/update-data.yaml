@@ -7,6 +7,7 @@ on:
     # one that lands in the right New York window and skips the other.
     - cron: "15 14,15 * * 1-5"   # 10:15 AM ET: after the opening swings settle; sell-time snapshot
     - cron: "15 17,18 * * 1-5"   # 1:15 PM ET: midday refresh
+    - cron: "20 19,20 * * 1-5"   # 3:20 PM ET: last look before the close (expiration-day check)
     - cron: "20 20,21 * * 1-5"   # 4:20 PM ET: after the close; final prices, study, trades settle (Fridays: backtest)
     - cron: "5 16,17 * * 0,6"    # 12:05 PM ET weekends: headlines only
   push:
@@ -54,6 +55,7 @@ jobs:
           if [ "$DOW" -le 5 ]; then
             if [ $HM -ge 1000 ] && [ $HM -lt 1100 ]; then MODE=full; fi
             if [ $HM -ge 1300 ] && [ $HM -lt 1400 ]; then MODE=full; fi
+            if [ $HM -ge 1515 ] && [ $HM -lt 1600 ]; then MODE=full; fi   # skipped if GitHub starts it after the close
             if [ $HM -ge 1615 ] && [ $HM -lt 1715 ]; then MODE=full; RESEARCH=true; [ "$DOW" -eq 5 ] && BACKTEST=true; fi
           else
             if [ $HM -ge 1200 ] && [ $HM -lt 1300 ]; then MODE=headlines; fi
