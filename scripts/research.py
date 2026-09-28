@@ -870,6 +870,15 @@ def main():
         except Exception as exc:
             failed += 1
             print(f"  FAILED: {exc}", file=sys.stderr)
+    if not single:                     # the Greeks study pools every ticker, so only on full runs
+        try:
+            import greeks_study
+            closes = {tk: _clean(px_market[tk])["Close"] for tk in tickers if tk in px_market}
+            g = greeks_study.run(closes)
+            print(f"Greeks study: {g.get('snapshot_days', 0)} days of chain snapshots, "
+                  f"status {(g.get('pooled') or {}).get('status', 'collecting')}")
+        except Exception as exc:
+            print(f"Greeks study skipped: {exc}", file=sys.stderr)
     if failed == len(tickers):
         sys.exit(1)
 

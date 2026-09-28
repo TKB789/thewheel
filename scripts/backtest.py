@@ -30,7 +30,8 @@ assigned week's 10 most similar earlier weeks ("lookalikes") with how those turn
 shuffle test shows whether lookalikes predict assignment better than chance.
 
 Output: data/backtest/<TICKER>.json (read by index.html when a ticker loads) and
-data/backtest/<TICKER>_history.json (every trade since the start, loaded when you ask for it).
+data/backtest/<TICKER>_history.json (every trade since the start, loaded when you ask for it) and
+data/backtest/<TICKER>_policy.json (the wheel following the site's recommendation, loaded when picked).
 """
 from __future__ import annotations
 
@@ -160,22 +161,36 @@ def week_info(F: pd.DataFrame, earn_dates: list, now_et=None):
     return periods(F, earn_dates, now_et, "weekly")
 
 
-def call_strike(w, method, history):
+# limits for the similar-weeks adjustment of the history-based target (same as the daily study)
+STUDY_CALL_RATE_LIMITS = (0.07, 0.25)
+STUDY_PUT_RATE_LIMITS = (0.12, 0.35)
+
+
+def call_strike(w, method, history, ratio=1.0):
+    """ratio: how much likelier assignment looks from similar past weeks (1 = no adjustment)."""
     if method == "delta":
-        return round_up(delta_strike(w["S"], w["T"], w["vol"], DELTA_HOT if w["hot"] else DELTA), w["step"])
+        d = DELTA_HOT if w["hot"] else DELTA
+        if ratio != 1.0:
+            d = min(max(d / ratio, fo.LK_CALL_DELTA_LIMITS[0]), fo.LK_CALL_DELTA_LIMITS[1])
+        return round_up(delta_strike(w["S"], w["T"], w["vol"], d), w["step"])
     if len(history) < MIN_HISTORY_WEEKS:
         return None
-    zq = float(np.quantile(history, 1 - HIST_RATE))
+    rate = min(max(HIST_RATE / ratio, STUDY_CALL_RATE_LIMITS[0]), STUDY_CALL_RATE_LIMITS[1]) if ratio != 1.0 else HIST_RATE
+    zq = float(np.quantile(history, 1 - rate))
     k = round_up(w["S"] * (1 + max(zq, 0.0) * w["sig_w"]) + 1e-9, w["step"])
     return k if k > w["S"] else round_up(w["S"] + w["step"] / 2, w["step"])
 
 
-def put_strike(w, method, history):
+def put_strike(w, method, history, ratio=1.0):
     if method == "delta":
-        return round_down(put_delta_strike(w["S"], w["T"], w["vol"], PUT_DELTA_SLIDING if w["sliding"] else PUT_DELTA), w["step"])
+        d = PUT_DELTA_SLIDING if w["sliding"] else PUT_DELTA
+        if ratio != 1.0:
+            d = min(max(d / ratio, fo.LK_PUT_DELTA_LIMITS[0]), fo.LK_PUT_DELTA_LIMITS[1])
+        return round_down(put_delta_strike(w["S"], w["T"], w["vol"], d), w["step"])
     if len(history) < MIN_HISTORY_WEEKS:
         return None
-    zq = float(np.quantile(history, PUT_HIST_RATE))
+    rate = min(max(PUT_HIST_RATE / ratio, STUDY_PUT_RATE_LIMITS[0]), STUDY_PUT_RATE_LIMITS[1]) if ratio != 1.0 else PUT_HIST_RATE
+    zq = float(np.quantile(history, rate))
     k = round_down(w["S"] * (1 + min(zq, 0.0) * w["sig_w"]) - 1e-9, w["step"])
     return k if k < w["S"] else round_down(w["S"] - w["step"] / 2, w["step"])
 
@@ -232,7 +247,19 @@ def pack_log(e):
             e["action"], e.get("strike"), e.get("premium"), e.get("outcome"), e.get("added"), e.get("cash")]
 
 
-def wheel_sim(weeks, method, tbill=None, topup=False, legs_per_week=1):
+POLICIES = {"site": "Follow the site", "favorable": "Favorable weeks only"}
+
+
+def _decision(policy, w, kind):
+    """The site's call for this trade: (similar-weeks ratio, number of flags)."""
+    d = ((policy or {}).get(w["leg"]) or {}).get(kind, {}).get(w["e"].date().isoformat())
+    trend = w["hot"] if kind == "call" else w["sliding"]
+    if d is None:                  # before the weighting's first fit: only the trend flag
+        return 1.0, int(trend)
+    return d
+
+
+def wheel_sim(weeks, method, tbill=None, topup=False, legs_per_week=1, policy=None, mode=None):
     """The wheel: start owning 100 shares with no cash. Holding shares -> sell a covered call each
     Monday. Called away -> hold the cash and sell a cash-secured put each Monday, but only if the
     cash covers strike x 100; otherwise that week is paused. Put assigned -> buy 100 shares at the
@@ -242,12 +269,18 @@ def wheel_sim(weeks, method, tbill=None, topup=False, legs_per_week=1):
 
     topup=True: instead of pausing, add just enough money to cover the put and keep going.
     The benchmark then also buys the stock with each deposit on the same day, so the
-    comparison isn't flattered by the extra money."""
+    comparison isn't flattered by the extra money.
+
+    policy / mode: follow the site's recommendation instead of trading every period. Strikes use
+    the similar-weeks adjustment (walk-forward, see recommendation_backtest), and a trade is skipped
+    when the verdict says so: mode "site" skips "hold off" (two flags), mode "favorable" skips any
+    flag. A skipped call week keeps the shares; a skipped put week keeps the cash earning interest."""
     shares, cash = 100, 0.0
     histories, timeline, events, log = {}, [], [], []
     c = {"call_weeks": 0, "put_weeks": 0, "paused": 0, "earnings_skipped": 0, "no_history": 0,
          "calls_assigned": 0, "puts_assigned": 0, "call_premium": 0.0, "put_premium": 0.0, "fees": 0.0,
-         "longest_pause": 0, "interest": 0.0, "added": 0.0, "topups": 0, "largest_topup": 0.0}
+         "longest_pause": 0, "interest": 0.0, "added": 0.0, "topups": 0, "largest_topup": 0.0,
+         "skipped_calls": 0, "skipped_puts": 0}
     bench_extra_shares = 0.0          # shares the benchmark buys with the same deposits
     run = 0
     for n_w, w in enumerate(weeks):
@@ -266,8 +299,15 @@ def wheel_sim(weeks, method, tbill=None, topup=False, legs_per_week=1):
         if w["earnings"]:
             c["earnings_skipped"] += 1
             entry["action"] = "skip_earnings"
+        elif shares and mode and _decision(policy, w, "call")[1] >= (2 if mode == "site" else 1):
+            c["skipped_calls"] += 1
+            entry.update({"action": "skip_flag", "outcome": "hold_off" if _decision(policy, w, "call")[1] >= 2 else "not_favorable"})
+            run = 0
+        elif not shares and mode and _decision(policy, w, "put")[1] >= (2 if mode == "site" else 1):
+            c["skipped_puts"] += 1
+            entry.update({"action": "skip_flag", "outcome": "hold_off" if _decision(policy, w, "put")[1] >= 2 else "not_favorable"})
         elif shares:
-            K = call_strike(w, method, history)
+            K = call_strike(w, method, history, _decision(policy, w, "call")[0] if mode else 1.0)
             if K is None:
                 c["no_history"] += 1
                 entry["action"] = "no_history"
@@ -283,7 +323,7 @@ def wheel_sim(weeks, method, tbill=None, topup=False, legs_per_week=1):
                     events.append({"date": day, "type": "called away", "strike": round(K, 2), "close": round(close, 2)})
             run = 0
         else:
-            K = put_strike(w, method, history)
+            K = put_strike(w, method, history, _decision(policy, w, "put")[0] if mode else 1.0)
             if K is None:
                 c["no_history"] += 1
                 entry["action"] = "no_history"
@@ -336,7 +376,7 @@ def wheel_sim(weeks, method, tbill=None, topup=False, legs_per_week=1):
               "ends_holding": bool(shares), "cash_now": round(cash, 2),
               "first": timeline_all[0][0], "last": timeline_all[-1][0],
               "last_leg": weeks[-1]["leg"], "last_expiry": weeks[-1]["x"].date().isoformat(),
-              "trades_per_week": legs_per_week})
+              "trades_per_week": legs_per_week, "policy": mode})
     timeline = [[t[0], round(t[1]), round(t[2]), t[3]] for t in timeline]     # whole dollars for the chart
     return {"summary": c, "timeline": timeline, "events": events[-200:], "events_total": len(events),
             "log": log[-52 * legs_per_week:], "log_all": log}
@@ -663,7 +703,9 @@ def recommendation_backtest(R: pd.DataFrame, y: np.ndarray, NB, J, rate, side: s
                 "net_if_sold": round(float(net.sum()), 2), "net_per_if_sold": round(float(net.mean()), 2) if m.sum() else None}
 
     first = pd.Timestamp(entries[J][use][0]).date().isoformat()
-    return {"since": first, "weeks": n_all, "refits": refits,
+    # per-trade decisions for the wheel simulation (not saved): entry date -> (ratio, flags)
+    decisions = {pd.Timestamp(entries[J[i]]).date().isoformat(): (float(ratio[i]), int(flags[i])) for i in range(len(J))}
+    return {"_decisions": decisions, "since": first, "weeks": n_all, "refits": refits,
             "weighting_on": int((use & applied).sum()),
             "flag_trend": int((use & flag_trend).sum()), "flag_lookalike": int((use & flag_lk).sum()),
             "base_rate": round(float(std[2][use].mean()) * 100, 1),
@@ -890,7 +932,7 @@ def backtest(ticker, px, earn, now_et=None, peers=(), wiki=None, analyst=None, n
     except Exception as exc:
         print(f"  T-bill rate unavailable, cash earns nothing: {exc}", file=sys.stderr)
 
-    schedules, hist_rows = {}, {}
+    schedules, hist_rows, policy = {}, {}, {}
     for sk, P in per.items():
         rows = run_trades(P)
         if not rows:
@@ -910,6 +952,11 @@ def backtest(ticker, px, earn, now_et=None, peers=(), wiki=None, analyst=None, n
             "lookalikes": {k: _safe_lookalikes(F, [w for w in P if w["leg"] == k], news, news_now) for k in legs},
         }
         hist_rows[sk] = [pack_row(r) for r in rows]
+        for leg, L in schedules[sk]["lookalikes"].items():
+            for side, kind in (("calls", "call"), ("puts", "put")):
+                st = (L or {}).get(side, {}).get("strategies") if L else None
+                if st and "_decisions" in st:
+                    policy.setdefault(leg, {})[kind] = st.pop("_decisions")
 
     wheels = {
         "wheel": {m: wheel_sim(per["weekly"], m, tbill) for m in ("delta", "study")},
@@ -917,6 +964,18 @@ def backtest(ticker, px, earn, now_et=None, peers=(), wiki=None, analyst=None, n
         "wheel2": {m: wheel_sim(per["twice"], m, tbill, legs_per_week=2) for m in ("delta", "study")},
         "wheel2_topup": {m: wheel_sim(per["twice"], m, tbill, topup=True, legs_per_week=2) for m in ("delta", "study")},
     }
+    # the same wheels, following the site's recommendation (see POLICIES). They go in a separate
+    # file the page loads only when you pick one; the main file keeps just their summaries.
+    policy_wheels = {}
+    for mode in POLICIES:
+        for base, sk, legs in (("wheel", "weekly", 1), ("wheel2", "twice", 2)):
+            for topup in (False, True):
+                key = base + ("_topup" if topup else "") + "_" + mode
+                policy_wheels[key] = {m: wheel_sim(per[sk], m, tbill, topup=topup, legs_per_week=legs, policy=policy, mode=mode)
+                                      for m in ("delta", "study")}
+                for W in policy_wheels[key].values():
+                    if W:              # every step, packed like the history file (see LOG_FIELDS)
+                        W["log_full"] = [pack_log(e) for e in W.pop("log_all")]
     hist_logs = {}
     for k, bym in wheels.items():
         for m, W in bym.items():
@@ -935,9 +994,12 @@ def backtest(ticker, px, earn, now_et=None, peers=(), wiki=None, analyst=None, n
         "summary": weekly.get("calls_only"),
         "cash_interest": tbill is not None,
         **wheels,
+        "policies": POLICIES,
+        "policy_summary": {k: {m: (W or {}).get("summary") for m, W in v.items()} for k, v in policy_wheels.items()},
     }
     history = {"ticker": ticker, "updated": updated, "row_fields": ROW_FIELDS, "log_fields": LOG_FIELDS,
                "calls_only": hist_rows, "wheel_logs": hist_logs}
+    report["_policy_wheels"] = {"ticker": ticker, "updated": updated, **policy_wheels}
     return report, history
 
 
@@ -965,8 +1027,10 @@ def main():
             news, news_now = rs.headline_tone(tk)
             rep, hist = backtest(tk, d["px"], d["earn"], peers=d["peers"], wiki=d["wiki"], analyst=d["analyst"],
                                  news=news, news_now=news_now)
+            pol = rep.pop("_policy_wheels")
             (OUT_DIR / f"{tk}.json").write_text(json.dumps(rep, separators=(",", ":")))
             (OUT_DIR / f"{tk}_history.json").write_text(json.dumps(hist, separators=(",", ":")))
+            (OUT_DIR / f"{tk}_policy.json").write_text(json.dumps(pol, separators=(",", ":")))
             s = rep["schedules"]["weekly"]["calls_only"]["delta"]["rules"]
             wh = (rep["wheel"]["delta"] or {}).get("summary", {})
             print(f"{tk}: {s.get('assigned', 0)} of {s.get('n', 0)} Monday calls assigned (0.20-delta estimate); "

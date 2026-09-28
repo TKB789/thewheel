@@ -539,6 +539,17 @@ def fetch(ticker):
                           today, datetime.now(timezone.utc).isoformat(timespec="seconds"), lk, lk_window)
     # the trading day these prices come from (differs from today on weekends and market holidays)
     report["session_date"] = hist.index[-1].date().isoformat()
+    # recent daily closes, so the page can score paper trades saved in your browser
+    report["closes"] = [[d.date().isoformat(), round(float(c), 2)] for d, c in hist["Close"].dropna().tail(90).items()]
+    try:                        # daily chain snapshot for the Greeks study (see chain_snapshot.py)
+        import chain_snapshot
+        n = chain_snapshot.maybe_snapshot(ticker, price, prev_close, raw, report["session_date"],
+                                          hv20=report["hv20"], rsi14=report["rsi14"],
+                                          pct_ma20=report["pct_vs_ma20"], put_call_oi=report["put_call_oi"])
+        if n:
+            print(f"  saved {n} contracts to the chain snapshot")
+    except Exception as exc:
+        print(f"  chain snapshot skipped: {exc}", file=sys.stderr)
     return report
 
 
