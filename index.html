@@ -84,9 +84,17 @@
     background: var(--accent); color: var(--accent-ink); cursor: pointer;
   }
   form.lookup button:hover { filter: brightness(1.08); }
-  form.lookup { flex-wrap: wrap; }
-  form.lookup select { padding: 10px 12px; font: 600 14px var(--sans); border: 1px solid var(--line); border-radius: 6px;
-    background: var(--surface); color: var(--ink); max-width: 100%; }
+  .combo { position: relative; }
+  form.lookup .combo input { width: 150px; padding-right: 38px; }
+  form.lookup .combo .caret { position: absolute; right: 2px; top: 2px; bottom: 2px; width: 34px; padding: 0; border: 0; border-radius: 5px;
+    background: transparent; color: var(--muted); font-size: 16px; cursor: pointer; filter: none; }
+  form.lookup .combo .caret:hover { color: var(--accent); background: var(--surface-2); }
+  .combo .menu { position: absolute; z-index: 40; top: calc(100% + 4px); left: 0; min-width: 100%; max-height: 300px; overflow-y: auto;
+    margin: 0; padding: 4px; list-style: none; background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.18); }
+  .combo .menu li { padding: 8px 10px; border-radius: 5px; font: 600 15px var(--mono); cursor: pointer; }
+  .combo .menu li[aria-selected="true"], .combo .menu li:hover { background: var(--surface-2); color: var(--accent); }
+  .combo .menu li.head { font: 600 11px var(--sans); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); cursor: default; background: none; }
   input:focus-visible, button:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
   .notice { padding: 12px 14px; border-radius: 6px; font-size: 14px; background: var(--info-bg); color: var(--ink); border: 1px solid var(--line); }
@@ -195,6 +203,12 @@
   .btn-paper:hover { background: var(--surface-2); }
   .ghost { padding: 9px 14px; font: 600 14px var(--sans); border-radius: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
   .tradepanel { border-color: var(--accent); }
+  .sheet { position: fixed; z-index: 60; left: 50%; bottom: 16px; transform: translateX(-50%); width: min(640px, calc(100vw - 24px));
+    max-height: calc(100vh - 32px); overflow-y: auto; margin: 0; box-shadow: 0 12px 40px rgba(0,0,0,.3); }
+  .sheet-backdrop { position: fixed; inset: 0; z-index: 55; background: rgba(0,0,0,.35); }
+  .logform select { padding: 8px 10px; font: 15px var(--sans); border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink); min-width: 170px; }
+  button.try { padding: 3px 9px; font: 600 12px var(--sans); border: 1px solid var(--accent); border-radius: 5px; background: transparent; color: var(--accent); cursor: pointer; }
+  button.try:hover { background: var(--surface-2); }
   .tp-actions { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
   .logform label.wide input { width: min(320px, 80vw); }
   .setup-steps { margin: 0 0 14px; padding-left: 20px; display: grid; gap: 4px; }
@@ -299,11 +313,13 @@
     </div>
     <form class="lookup" id="lookup" autocomplete="off">
       <label for="ticker" class="sr" hidden>Ticker</label>
-      <input id="ticker" name="ticker" list="tickerList" placeholder="GOOGL" maxlength="6" aria-label="Ticker symbol">
-      <datalist id="tickerList"></datalist>
+      <div class="combo" id="combo">
+        <input id="ticker" name="ticker" placeholder="GOOGL" maxlength="6" aria-label="Ticker symbol, or pick from the watchlist"
+               role="combobox" aria-expanded="false" aria-controls="tickerMenu" aria-autocomplete="list" autocomplete="off" autocapitalize="characters" spellcheck="false">
+        <button type="button" class="caret" id="tickerCaret" aria-label="Show the watchlist" tabindex="-1">▾</button>
+        <ul class="menu" id="tickerMenu" role="listbox" hidden></ul>
+      </div>
       <button type="submit" id="go">Check</button>
-      <label for="tickerPick" hidden>Watchlist</label>
-      <select id="tickerPick" aria-label="Tickers on the watchlist"><option value="">Watchlist</option></select>
     </form>
   </header>
 
@@ -362,20 +378,6 @@
         <div class="pick wheelsteps" id="wheelSteps"></div>
       </div>
 
-      <section class="card tradepanel" id="tradePanel" hidden>
-        <h3>Log a paper trade</h3>
-        <p class="sub" id="tpWhat"></p>
-        <div class="logform">
-          <label for="tpPremium">Premium per share<input type="number" id="tpPremium" step="0.01" min="0"></label>
-          <label for="tpContracts">Contracts<input type="number" id="tpContracts" step="1" min="1" value="1"></label>
-          <label for="tpNote" class="wide">Note (optional)<input type="text" id="tpNote" maxlength="80" placeholder="Fidelity bid at 9:40"></label>
-        </div>
-        <div class="tp-actions">
-          <button type="button" id="tpLog" class="btn2">Log paper trade</button>
-          <button type="button" id="tpCancel" class="ghost">Cancel</button>
-        </div>
-        <p class="sub" id="tpStatus" style="margin:12px 0 0"></p>
-      </section>
 
       <section class="card" id="schedule" hidden>
         <h3>Your schedule</h3>
@@ -674,9 +676,22 @@
     <p class="tabq">Practice without money at stake: log the trades you would actually make, and see how they turn out after expiration.</p>
     <div id="paperNotice" class="notice" hidden></div>
     <section class="card">
-      <h3>Your paper trades</h3>
-      <p class="sub">Trades you log with "Paper trade this" on the Covered calls or Cash-secured puts tab. Each is scored after its expiration day's close: the premium you entered, minus the $0.65 fee, minus any upside given up (calls) or loss below the strike (puts). How the site's own picks would have done over the years is in the Backtest tab.</p>
+      <div class="chain-head">
+        <h3>Your paper trades</h3>
+        <div class="controls">
+          <label for="pfShow" hidden>Portfolio</label>
+          <select id="pfShow" aria-label="Portfolio"></select>
+          <button type="button" id="pfNew" class="ghost">New portfolio</button>
+          <button type="button" id="pfRename" class="ghost">Rename</button>
+          <button type="button" id="pfDelete" class="ghost">Delete</button>
+        </div>
+      </div>
+      <p class="sub">Keep separate portfolios to try different strategies side by side: your usual routine in one, a closer strike or one-day trades in another. Log a trade with "Paper trade this" on a card, or "Try" on any row of an option chain, and choose its portfolio. Each is scored after its expiration day's close: the premium you entered, minus the $0.65 fee, minus any upside given up (calls) or loss below the strike (puts). How the site's own picks would have done over the years is in the Backtest tab.</p>
       <div class="tiles" id="paperTiles"></div>
+      <div id="pfCompareWrap">
+        <h4 class="subhead">Portfolios side by side</h4>
+        <div class="scroll"><table id="pfCompare" class="pin1"></table></div>
+      </div>
     </section>
     <section class="card">
       <div class="chain-head">
@@ -697,6 +712,23 @@
       <div class="scroll"><table id="paperTrades"></table></div>
     </section>
   </div>
+
+  <div class="sheet-backdrop" id="tpBackdrop" hidden></div>
+  <section class="card tradepanel sheet" id="tradePanel" hidden role="dialog" aria-modal="true" aria-labelledby="tpTitle">
+    <h3 id="tpTitle">Log a paper trade</h3>
+    <p class="sub" id="tpWhat"></p>
+    <div class="logform">
+      <label for="tpPortfolio">Portfolio<select id="tpPortfolio"></select></label>
+      <label for="tpPremium">Premium per share<input type="number" id="tpPremium" step="0.01" min="0"></label>
+      <label for="tpContracts">Contracts<input type="number" id="tpContracts" step="1" min="1" value="1"></label>
+      <label for="tpNote" class="wide">Note (optional)<input type="text" id="tpNote" maxlength="80" placeholder="Fidelity bid at 9:40"></label>
+    </div>
+    <div class="tp-actions">
+      <button type="button" id="tpLog" class="btn2">Log paper trade</button>
+      <button type="button" id="tpCancel" class="ghost">Close</button>
+    </div>
+    <p class="sub" id="tpStatus" style="margin:12px 0 0"></p>
+  </section>
 
   <footer>
     <p id="schedLine"></p>
@@ -742,9 +774,7 @@ async function init() {
   }
   state.tickers = tickers;
   $("coverage").textContent = tickers.length ? `Covers ${tickers.length} ticker${tickers.length === 1 ? "" : "s"} on the watchlist maintained by the site owner.` : "";
-  $("tickerList").innerHTML = tickers.map((t) => `<option value="${esc(t)}">`).join("");
-  $("tickerPick").innerHTML = `<option value="">Watchlist (${tickers.length})</option>` +
-    tickers.slice().sort().map((t) => `<option value="${esc(t)}">${esc(t)}</option>`).join("");
+  state.tickers = tickers;
 
   const start = recall("cca-ticker");
   const first = (start && tickers.includes(start)) ? start : tickers[0];
@@ -764,7 +794,6 @@ async function load(ticker) {
     catch (e) { state.backtest = null; }
     showNotice("");
     store("cca-ticker", ticker);
-    if ([...$("tickerPick").options].some((o) => o.value === ticker)) $("tickerPick").value = ticker;
     render(rep);
   } catch (e) {
     $("report").hidden = true;
@@ -895,7 +924,7 @@ function renderChain() {
   const rows = isCall ? e.calls : e.puts.slice().reverse();
   const rec = isCall ? r.recommended_call : r.recommended_put;
   const band = isCall ? [0.10, 0.30] : [0.15, 0.35];
-  const head = `<thead><tr><th>${T("strike", "Strike")}</th><th>${T("bid/ask", "Bid / Ask")}</th><th>${T("premium", "Premium")}</th><th>${T("delta", "Delta")}</th><th>${T("chance of assignment", isCall ? "Assignment" : "Buy shares")}</th><th>${T("annualized", "Annualized")}</th><th>${T("open interest", "Open int.")}</th></tr></thead>`;
+  const head = `<thead><tr><th>${T("strike", "Strike")}</th><th>${T("bid/ask", "Bid / Ask")}</th><th>${T("premium", "Premium")}</th><th>${T("delta", "Delta")}</th><th>${T("chance of assignment", isCall ? "Assignment" : "Buy shares")}</th><th>${T("annualized", "Annualized")}</th><th>${T("open interest", "Open int.")}</th><th>Paper</th></tr></thead>`;
   const body = rows.map((o) => {
     const inBand = Math.abs(o.delta) >= band[0] && Math.abs(o.delta) <= band[1];
     const isRec = rec && rec.expiry === e.date && rec.strike === o.strike;
@@ -903,9 +932,9 @@ function renderChain() {
     return `<tr class="${isRec ? "rec" : inBand ? "inband" : ""}">
       <td>${money(o.strike)}</td><td>${ba}</td><td>${money(o.premium, 0)}</td>
       <td>${o.delta.toFixed(2)}</td><td>${pct(o.prob_assign)}</td><td>${o.ann_yield_pct.toFixed(0)}%</td>
-      <td>${o.open_interest.toLocaleString("en-US")}</td></tr>`;
+      <td>${o.open_interest.toLocaleString("en-US")}</td><td>${paperBtn(o, isCall ? "call" : "put", "manual", e.date, "Try").replace('class="btn-paper"', 'class="btn-paper try"')}</td></tr>`;
   }).join("");
-  $("chain").innerHTML = head + "<tbody>" + (body || `<tr><td colspan="7">No strikes in range.</td></tr>`) + "</tbody>";
+  $("chain").innerHTML = head + "<tbody>" + (body || `<tr><td colspan="8">No strikes in range.</td></tr>`) + "</tbody>";
   $("legend").innerHTML = `<span class="sw" style="background:var(--band)"></span>Target range (${band[0].toFixed(2)}–${band[1].toFixed(2)} delta)
     &nbsp;&nbsp;<span class="sw" style="background:var(--rec)"></span>Recommended. Premium is per contract (100 shares). "Last" means the market was closed, so the last trade price is shown.`;
 }
@@ -916,6 +945,22 @@ const JS_DOW = (pyDow) => (pyDow + 1) % 7;          // Python Monday=0 -> JS Mon
 const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
 const DAY = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+// A schedule card for a later day (e.g. Thursday's trade, seen on Monday) can't use today's premium:
+// that contract still has extra days of time value that will have melted by the day you'd sell it.
+// So the premium and the market's odds are re-estimated for the trade itself (sold at the entry
+// day's open, held to the expiry close) from the option's implied volatility, at today's price.
+const normCdf = (x) => { const t = 1 / (1 + 0.2316419 * Math.abs(x)); const d = 0.3989423 * Math.exp(-x * x / 2);
+  const p = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274)))); return x > 0 ? 1 - p : p; };
+function windowQuote(o, kind, S, entry, expiry) {
+  const today = new Date(); today.setHours(12, 0, 0, 0);
+  const later = entry.toDateString() !== today.toDateString() && entry > today;
+  if (!o || !later || !(o.iv > 0)) return { premium: o ? o.premium : null, odds: o ? o.prob_assign : null, later };
+  const T = (Math.round((expiry - entry) / 864e5) + 6.5 / 24) / 365, r = 0.04, v = o.iv, K = o.strike;
+  const d1 = (Math.log(S / K) + (r + v * v / 2) * T) / (v * Math.sqrt(T)), d2 = d1 - v * Math.sqrt(T);
+  const px = kind === "call" ? S * normCdf(d1) - K * Math.exp(-r * T) * normCdf(d2) : K * Math.exp(-r * T) * normCdf(-d2) - S * normCdf(-d1);
+  return { premium: Math.max(0, px * 100), odds: kind === "call" ? normCdf(d2) : normCdf(-d2), later, est: true };
+}
 
 function nextEntry(pyDow) {
   const d = new Date(); d.setHours(12, 0, 0, 0);
@@ -960,8 +1005,9 @@ function renderResearch(r, R) {
       const ed = new Date(r.earnings_date + "T12:00:00");
       if (ed >= addDays(entry, -1) && ed <= expiry) earn = r.earnings_date;   // includes a report the evening before
     }
-    return { w, entry, expiry, exp, s, target, call, days, strikeMove, earn,
-             hist: histRate(s.exceed_table, strikeMove), perDay: call && !earn ? call.premium / days : null };
+    const q = windowQuote(call, "call", r.price, entry, expiry);
+    return { w, entry, expiry, exp, s, target, call, days, strikeMove, earn, q,
+             hist: histRate(s.exceed_table, strikeMove), perDay: call && !earn ? q.premium / days : null };
   });
   const soonest = slots.reduce((a, b) => (b.entry < a.entry ? b : a), slots[0]);   // skipped windows still show when they're next
   const thu = slots.filter((x) => x.w.entry_dow === 3 && x.perDay != null);
@@ -990,13 +1036,13 @@ function renderResearch(r, R) {
         ${c ? paperBtn(c, "call", w.key, iso(x.expiry), "Paper trade anyway") : ""}` : c ? `
         <div class="strike">${money(c.strike)}<small>+${x.strikeMove.toFixed(1)}%</small></div>
         <dl>
-          <dt>Premium today</dt><dd>${money(c.premium, 0)}</dd>
+          <dt>${x.q.est ? `Est. premium on ${DAY[x.entry.getDay()]}` : "Premium today"}</dt><dd>${money(x.q.premium, 0)}</dd>
           <dt>Premium per day held</dt><dd>${money(x.perDay, 0)}</dd>
           <dt>Rose past it (history)</dt><dd>${pct(x.hist)}</dd>
-          <dt>Market's odds</dt><dd>${pct(c.prob_assign)}</dd>
+          <dt>${T("chance of assignment", "Market's odds")}${x.q.est ? " (est.)" : ""}</dt><dd>${pct(x.q.odds)}</dd>
         </dl>
         ${earnWarn}
-        ${paperBtn(c, "call", w.key, iso(x.expiry))}` : `
+        ${x.q.later ? previewNote(x, "call") : paperBtn(c, "call", w.key, iso(x.expiry))}` : `
         <div class="strike">${money(x.target)}<small>+${s.move_pct.toFixed(1)}%</small></div>
         <div class="why">${x.exp ? "No listed strike that far out." : `The ${fmtDate(iso(x.expiry))} expiration isn't in today's chain yet. Round up to the next listed strike when it opens.`}</div>`;
     return `<div class="slot ${x === soonest ? "next" : ""}">
@@ -1139,8 +1185,13 @@ document.addEventListener("click", (ev) => { const b = ev.target.closest("button
   d.addEventListener("toggle", () => store("cca-learn-closed", d.open ? "0" : "1"));
 })();
 
+function previewNote(x, kind) {
+  const o = kind === "call" ? x.call : x.put;
+  return `<div class="why"><span class="chip neutral">Preview</span> This trade opens ${DAY[x.entry.getDay()]} ${fmtDate(iso(x.entry))}. The strike is set from today's price, so it moves with the stock and will be recalculated that morning. Selling the same ${money(o.strike)} ${kind} today would pay ${money(o.premium, 0)}, but that's a ${Math.round((x.expiry - new Date()) / 864e5)}-day trade, not this one.</div>`;
+}
+
 // ---------------------------------------------------------------- paper trading
-const PAPER_HEADER = "id,source,logged_at,ticker,type,strategy,expiry,strike,premium,contracts,stock_price,decision,verdict,note";
+const PAPER_HEADER = "id,source,logged_at,ticker,type,strategy,expiry,strike,premium,contracts,stock_price,decision,verdict,note,portfolio";
 const STRAT = { delta: "Call to sell (site's pick)", mon_wed: "Schedule: Monday → Wednesday", thu_fri: "Schedule: Thursday → Friday",
                 thu_mon: "Schedule: Thursday → next Monday", put: "Wheel put", manual: "Your pick",
                 csp: "Cash-secured put (site's pick)", csp_mon_wed: "Put schedule: Monday → Wednesday",
@@ -1164,9 +1215,40 @@ function openTradePanel(d) {
   $("tpContracts").value = 1;
   $("tpNote").value = "";
   $("tpStatus").textContent = "";
-  $("tradePanel").hidden = false;
-  $("tradePanel").scrollIntoView({ behavior: "smooth", block: "center" });
+  fillPortfolioSelect($("tpPortfolio"), recall("cca-pf-last") || portfolios()[0], true);
+  $("tradePanel").hidden = false; $("tpBackdrop").hidden = false;
+  $("tpPremium").focus();
 }
+function closeTradePanel() { $("tradePanel").hidden = true; $("tpBackdrop").hidden = true; pendingTrade = null; }
+
+// ---- portfolios (kept in this browser with the trades)
+const PF_KEY = "cca-portfolios", PF_DEFAULT = "My routine";
+function portfolios() {
+  let list = [];
+  try { list = JSON.parse(localStorage.getItem(PF_KEY) || "[]"); } catch (e) {}
+  for (const t of myTrades()) if (t.portfolio && !list.includes(t.portfolio)) list.push(t.portfolio);
+  if (!list.length) list = [PF_DEFAULT];
+  return list;
+}
+function savePortfolios(list) { try { localStorage.setItem(PF_KEY, JSON.stringify(list)); } catch (e) {} }
+const pfOf = (t) => t.portfolio || portfolios()[0];
+function fillPortfolioSelect(sel, value, withNew) {
+  const list = portfolios();
+  sel.innerHTML = list.map((n) => `<option value="${esc(n)}">${esc(n)}</option>`).join("") + (withNew ? `<option value="__new">+ New portfolio…</option>` : "");
+  sel.value = list.includes(value) ? value : list[0];
+}
+function askNewPortfolio() {
+  const name = (prompt("Name the new portfolio (e.g. \"One-day trades\" or \"0.30 delta\")") || "").trim().slice(0, 40);
+  if (!name) return null;
+  const list = portfolios();
+  if (!list.includes(name)) { list.push(name); savePortfolios(list); }
+  return name;
+}
+$("tpPortfolio").addEventListener("change", (ev) => {
+  if (ev.target.value !== "__new") return;
+  const n = askNewPortfolio();
+  fillPortfolioSelect(ev.target, n || portfolios()[0], true);
+});
 
 const clean = (s) => String(s ?? "").replace(/[,\r\n"]/g, " ").trim();
 
@@ -1185,10 +1267,13 @@ async function logTrade() {
   const now = new Date();
   const row = { id: "M-" + now.getTime(), source: "manual", logged_at: now.toISOString().slice(0, 16), ticker: t.ticker, type: t.type,
                 strategy: t.strategy, expiry: t.expiry, strike: t.strike, premium: prem.toFixed(2), contracts: n,
-                stock_price: t.stock_price, decision: "sell", verdict: clean(t.verdict), note: clean($("tpNote").value) };
+                stock_price: t.stock_price, decision: "sell", verdict: clean(t.verdict), note: clean($("tpNote").value),
+                portfolio: $("tpPortfolio").value };
+  store("cca-pf-last", row.portfolio);
   const list = myTrades(); list.unshift(row);
   if (!saveMine(list)) { $("tpStatus").textContent = "This browser isn't letting the page save (private browsing?). Nothing was logged."; return; }
-  $("tpStatus").innerHTML = `Saved in this browser. It's in <strong>Paper trades</strong> and gets scored after ${fmtDate(t.expiry)}'s close. Tap <strong>Export</strong> there now and then to keep a copy.`;
+  $("tpStatus").innerHTML = `Saved to <strong>${esc(row.portfolio)}</strong> in this browser. It's scored after ${fmtDate(t.expiry)}'s close on the Paper trades tab. Tap <strong>Export</strong> there now and then to keep a copy.`;
+  if (!$("paperView").hidden) loadPaper();
 }
 
 document.addEventListener("click", (ev) => {
@@ -1196,7 +1281,9 @@ document.addEventListener("click", (ev) => {
   if (b) openTradePanel({ ...b.dataset });
 });
 $("tpLog").addEventListener("click", logTrade);
-$("tpCancel").addEventListener("click", () => { $("tradePanel").hidden = true; pendingTrade = null; });
+$("tpCancel").addEventListener("click", closeTradePanel);
+$("tpBackdrop").addEventListener("click", closeTradePanel);
+document.addEventListener("keydown", (ev) => { if (ev.key === "Escape" && !$("tradePanel").hidden) closeTradePanel(); });
 
 // ---------------------------------------------------------------- paper trades view
 function parseCsv(text) {
@@ -1331,14 +1418,27 @@ function tile(label, s, lead, costLabel = "upside given up") {
 }
 
 function renderPaper() {
-  const mineAll = state.mineScored || [];
+  const pfSel = $("pfShow");
+  fillPortfolioSelect(pfSel, pfSel.value || recall("cca-pf-show") || portfolios()[0], false);
+  if (portfolios().length > 1) pfSel.insertAdjacentHTML("afterbegin", `<option value="__all">All portfolios</option>`);
+  const want = recall("cca-pf-show");
+  if (want && [...pfSel.options].some((o) => o.value === want)) pfSel.value = want;
+  const pf = pfSel.value;
+  const everything = state.mineScored || [];
+  const mineAll = pf === "__all" ? everything : everything.filter((t) => pfOf(t) === pf);
+  $("pfRename").hidden = $("pfDelete").hidden = pf === "__all";
+  const list = portfolios();
+  $("pfCompareWrap").hidden = list.length < 2;
+  $("pfCompare").innerHTML = `<thead><tr><th>Portfolio</th><th>Net result</th><th>Per trade</th><th>Settled</th><th>Assigned</th><th>Premium</th><th>Open</th></tr></thead><tbody>` +
+    list.map((n) => { const sm = mineSummary(everything.filter((t) => pfOf(t) === n));
+      return `<tr><td>${esc(n)}</td><td>${sm.n ? signed(sm.net) : "–"}</td><td>${sm.n ? signed(sm.avg_net) : "–"}</td><td>${sm.n}</td><td>${sm.n ? sm.assigned : "–"}</td><td>${money(sm.income, 0)}</td><td>${sm.open}</td></tr>`; }).join("") + `</tbody>`;
   const calls = mineAll.filter((t) => t.type !== "put"), puts = mineAll.filter((t) => t.type === "put");
   $("paperTiles").innerHTML =
     tile("All your trades", mineSummary(mineAll), "Net result of everything you've logged.", "given up or lost at the strike") +
     tile("Covered calls", mineSummary(calls), "Premium kept, minus upside given up when called away.") +
     tile("Cash-secured puts", mineSummary(puts), "Premium kept, minus the loss below the strike when assigned.", "loss below the strike");
   const f = $("paperFilter").value;
-  const all = [...(state.mineScored || [])];
+  const all = [...mineAll];
   renderMineNote();
   const shown = all.filter((t) => f === "all" || (f === "open" ? t.net == null : t.net != null));
   const mine = (t) => t.source === "manual" && myTrades().some((x) => x.id === t.id);
@@ -1352,7 +1452,7 @@ function renderPaper() {
     (shown.length ? shown.map((t) => `<tr>
       <td>${esc((t.logged_at || "").slice(0, 10))}</td>
       <td>${esc(t.ticker)} ${money(t.strike)} ${esc(t.type)} · ${fmtDate(t.expiry)}${Number(t.contracts) > 1 ? ` ×${t.contracts}` : ""}</td>
-      <td>${esc(STRAT[t.strategy] || t.strategy)}${t.note ? ` <span class="muted">${esc(t.note)}</span>` : ""}</td>
+      <td>${esc(STRAT[t.strategy] || t.strategy)}${pf === "__all" ? ` <span class="chip info">${esc(pfOf(t))}</span>` : ""}${t.note ? ` <span class="muted">${esc(t.note)}</span>` : ""}</td>
       <td>${money(t.premium)}${Number(t.contracts) > 1 ? ` <span class="muted">×${t.contracts}</span>` : ""}</td>
       <td>${status(t)}</td><td>${t.close != null ? money(t.close) : "–"}</td><td>${t.net != null ? signed(t.net) : "–"}</td></tr>`).join("")
       : `<tr><td colspan="7">Nothing here yet. Tap "Paper trade this" on a call or put to log one.</td></tr>`) + `</tbody>`;
@@ -1374,6 +1474,27 @@ $("navPuts").addEventListener("click", () => setView("puts"));
 $("navBacktest").addEventListener("click", () => setView("backtest"));
 $("navResearch").addEventListener("click", () => setView("research"));
 $("paperFilter").addEventListener("change", renderPaper);
+$("pfShow").addEventListener("change", (ev) => { store("cca-pf-show", ev.target.value); renderPaper(); });
+$("pfNew").addEventListener("click", () => { const n = askNewPortfolio(); if (n) { store("cca-pf-show", n); renderPaper(); } });
+$("pfRename").addEventListener("click", () => {
+  const old = $("pfShow").value; if (old === "__all") return;
+  const name = (prompt("New name for this portfolio", old) || "").trim().slice(0, 40);
+  if (!name || name === old) return;
+  const list = portfolios().map((n) => (n === old ? name : n));
+  savePortfolios([...new Set(list)]);
+  saveMine(myTrades().map((t) => (pfOf(t) === old ? { ...t, portfolio: name } : t)));
+  store("cca-pf-show", name); loadPaper();
+});
+$("pfDelete").addEventListener("click", () => {
+  const pf = $("pfShow").value; if (pf === "__all") return;
+  const mine = myTrades().filter((t) => pfOf(t) === pf);
+  if (!confirm(`Delete the portfolio "${pf}"${mine.length ? ` and its ${mine.length} trade${mine.length === 1 ? "" : "s"}` : ""}? Export first if you want a copy.`)) return;
+  const first = portfolios()[0];
+  saveMine(myTrades().filter((t) => pfOf(t) !== pf).map((t) => (t.portfolio ? t : { ...t, portfolio: first })));
+  const list = portfolios().filter((n) => n !== pf);
+  savePortfolios(list.length ? list : [PF_DEFAULT]);
+  store("cca-pf-show", "__all"); loadPaper();
+});
 
 document.addEventListener("click", (ev) => {
   const b = ev.target.closest(".tick");
@@ -1584,8 +1705,9 @@ function renderPuts(r, R) {
         const ed = new Date(r.earnings_date + "T12:00:00");
         if (ed >= addDays(entry, -1) && ed <= expiry) earn = r.earnings_date;
       }
-      return { w, entry, expiry, exp, s, target, put, days, move, earn,
-               hist: histRate(s.put_exceed_table, move), perDay: put && !earn ? put.premium / days : null };
+      const q = windowQuote(put, "put", r.price, entry, expiry);
+      return { w, entry, expiry, exp, s, target, put, days, move, earn, q,
+               hist: histRate(s.put_exceed_table, move), perDay: put && !earn ? q.premium / days : null };
     });
     const soonest = slots.reduce((a, b) => (b.entry < a.entry ? b : a), slots[0]);
     const thu = slots.filter((x) => x.w.entry_dow === 3 && x.perDay != null);
@@ -1613,13 +1735,13 @@ function renderPuts(r, R) {
           ${o ? paperBtn(o, "put", "csp_" + w.key, iso(x.expiry), "Paper trade anyway") : ""}` : o ? `
           <div class="strike">${money(o.strike)}<small>−${x.move.toFixed(1)}%</small></div>
           <dl>
-            <dt>Premium today</dt><dd>${money(o.premium, 0)}</dd>
+            <dt>${x.q.est ? `Est. premium on ${DAY[x.entry.getDay()]}` : "Premium today"}</dt><dd>${money(x.q.premium, 0)}</dd>
             <dt>Premium per day held</dt><dd>${money(x.perDay, 0)}</dd>
             <dt>Cash to set aside</dt><dd>${money(o.cash_needed, 0)}</dd>
             <dt>Fell below it (history)</dt><dd>${pct(x.hist)}</dd>
-            <dt>Market's odds</dt><dd>${pct(o.prob_assign)}</dd>
+            <dt>${T("chance of assignment", "Market's odds")}${x.q.est ? " (est.)" : ""}</dt><dd>${pct(x.q.odds)}</dd>
           </dl>
-          ${paperBtn(o, "put", "csp_" + w.key, iso(x.expiry))}` : `
+          ${x.q.later ? previewNote(x, "put") : paperBtn(o, "put", "csp_" + w.key, iso(x.expiry))}` : `
           <div class="strike">${money(x.target)}<small>−${s.put_move_pct.toFixed(1)}%</small></div>
           <div class="why">${x.exp ? "No listed strike that far down." : `The ${fmtDate(iso(x.expiry))} expiration isn't in today's chain yet. Round down to the next listed strike when it opens.`}</div>`;
       return `<div class="slot ${x === soonest ? "next" : ""}">${when}
@@ -1652,10 +1774,10 @@ function renderPutChain() {
     return `<tr class="${isRec ? "rec" : inBand ? "inband" : ""}">
       <td>${money(o.strike)}</td><td>${ba}</td><td>${money(o.premium, 0)}</td><td>${money(o.cash_needed, 0)}</td>
       <td>${o.delta.toFixed(2)}</td><td>${pct(o.prob_assign)}</td><td>${o.ann_yield_pct.toFixed(0)}%</td>
-      <td>${o.open_interest.toLocaleString("en-US")}</td></tr>`;
+      <td>${o.open_interest.toLocaleString("en-US")}</td><td>${paperBtn(o, "put", "manual", e.date, "Try").replace('class="btn-paper"', 'class="btn-paper try"')}</td></tr>`;
   }).join("");
-  $("pChain").innerHTML = `<thead><tr><th>${T("strike", "Strike")}</th><th>${T("bid/ask", "Bid / Ask")}</th><th>${T("premium", "Premium")}</th><th>Cash needed</th><th>${T("delta", "Delta")}</th><th>${T("chance of assignment", "Buy shares")}</th><th>${T("annualized", "Annualized")}</th><th>${T("open interest", "Open int.")}</th></tr></thead><tbody>` +
-    (rows || `<tr><td colspan="8">No strikes in range.</td></tr>`) + "</tbody>";
+  $("pChain").innerHTML = `<thead><tr><th>${T("strike", "Strike")}</th><th>${T("bid/ask", "Bid / Ask")}</th><th>${T("premium", "Premium")}</th><th>Cash needed</th><th>${T("delta", "Delta")}</th><th>${T("chance of assignment", "Buy shares")}</th><th>${T("annualized", "Annualized")}</th><th>${T("open interest", "Open int.")}</th><th>Paper</th></tr></thead><tbody>` +
+    (rows || `<tr><td colspan="9">No strikes in range.</td></tr>`) + "</tbody>";
   $("pLegend").innerHTML = `<span class="sw" style="background:var(--band)"></span>Target range (0.15–0.35 delta)
     &nbsp;&nbsp;<span class="sw" style="background:var(--rec)"></span>Recommended. Premium is per contract (100 shares). "Buy shares" is the market-implied chance the put is assigned. Annualized return is on the cash set aside.`;
 }
@@ -2326,7 +2448,40 @@ function setSide(side) {
 }
 
 $("lookup").addEventListener("submit", (ev) => { ev.preventDefault(); load($("ticker").value); });
-$("tickerPick").addEventListener("change", (ev) => { const t = ev.target.value; if (t) { $("ticker").value = t; load(t); } });
+// one box: type a ticker, or open the watchlist from the same box (▾, or tap into it)
+(function tickerCombo() {
+  const inp = $("ticker"), menu = $("tickerMenu"), caret = $("tickerCaret");
+  let active = -1, items = [];
+  const show = (all) => {
+    const q = all ? "" : inp.value.trim().toUpperCase();
+    items = (state.tickers || []).slice().sort().filter((t) => !q || t.startsWith(q));
+    active = -1;
+    menu.innerHTML = `<li class="head" aria-hidden="true">Watchlist · ${(state.tickers || []).length} tracked</li>` +
+      (items.length ? items.map((t, i) => `<li role="option" id="tk-${i}" data-t="${esc(t)}">${esc(t)}</li>`).join("")
+                    : `<li class="head">Not on the watchlist</li>`);
+    menu.hidden = false; inp.setAttribute("aria-expanded", "true");
+  };
+  const hide = () => { menu.hidden = true; inp.setAttribute("aria-expanded", "false"); inp.removeAttribute("aria-activedescendant"); };
+  const pick = (t) => { inp.value = t; hide(); load(t); };
+  const mark = () => menu.querySelectorAll('li[role="option"]').forEach((li, i) => {
+    li.setAttribute("aria-selected", i === active ? "true" : "false");
+    if (i === active) { inp.setAttribute("aria-activedescendant", li.id); li.scrollIntoView({ block: "nearest" }); }
+  });
+  caret.addEventListener("click", () => { if (menu.hidden) { show(true); inp.focus(); } else hide(); });
+  inp.addEventListener("focus", () => { inp.select(); show(true); });
+  inp.addEventListener("input", () => show(false));
+  inp.addEventListener("keydown", (ev) => {
+    if (menu.hidden && (ev.key === "ArrowDown" || ev.key === "ArrowUp")) { show(false); }
+    if (ev.key === "ArrowDown") { active = Math.min(items.length - 1, active + 1); mark(); ev.preventDefault(); }
+    else if (ev.key === "ArrowUp") { active = Math.max(0, active - 1); mark(); ev.preventDefault(); }
+    else if (ev.key === "Enter" && !menu.hidden && active >= 0) { ev.preventDefault(); pick(items[active]); }
+    else if (ev.key === "Escape") hide();
+  });
+  menu.addEventListener("mousedown", (ev) => ev.preventDefault());       // keep focus in the box
+  menu.addEventListener("click", (ev) => { const li = ev.target.closest("li[data-t]"); if (li) pick(li.dataset.t); });
+  document.addEventListener("click", (ev) => { if (!ev.target.closest("#combo")) hide(); });
+  $("lookup").addEventListener("submit", hide);
+})();
 $("expiry").addEventListener("change", (ev) => { state.expiry = ev.target.value; renderChain(); });
 $("tabCalls").addEventListener("click", () => setSide("calls"));
 $("tabPuts").addEventListener("click", () => setSide("puts"));
