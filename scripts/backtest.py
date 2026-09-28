@@ -19,7 +19,8 @@ estimates (Black-Scholes at realized volatility); real premiums are usually a bi
 because options tend to price in more movement than actually happens. Assignment is
 decided by the real Friday close.
 
-It also simulates the full wheel on the same weeks: covered calls while holding shares,
+It also simulates the full wheel, on two schedules (once a week Mon->Fri, and twice a week
+Mon->Wed then Thu->Fri): covered calls while holding shares,
 cash-secured puts after the shares are called away (paused in weeks when the cash doesn't
 cover the put), and compares the account's value with simply holding the shares.
 
@@ -88,10 +89,17 @@ def round_down(k, step):
     return math.floor(k / step + 1e-9) * step
 
 
-def week_info(F: pd.DataFrame, earn_dates: list, now_et=None):
-    """One entry per week that starts on a Monday trading day. Expiry is the last trading day
-    of that week (Friday, or Thursday when Friday is a market holiday). Every value is known
-    at Monday's open except `close`, which is only used to settle the week."""
+SCHEDULES = {
+    # leg key: (entry weekday, exit weekday or "last" = last trading day of the week, Thu/Fri)
+    "weekly": [("mon_fri", 0, "last")],
+    "twice": [("mon_wed", 0, 2), ("thu_fri", 3, 4)],
+}
+
+
+def periods(F: pd.DataFrame, earn_dates: list, now_et=None, schedule="weekly"):
+    """Every trade period in the schedule, in date order. Each is entered at the entry day's open
+    and settles at the exit day's close. Every value is known at the entry except `close`.
+    A period whose exit day is a market holiday is skipped (no expiration that day)."""
     idx = F.index
     earn = [pd.Timestamp(x) for x in earn_dates]
     iso = idx.isocalendar()
@@ -101,29 +109,48 @@ def week_info(F: pd.DataFrame, earn_dates: list, now_et=None):
     out = []
     for _, pos in groups:
         pos = list(pos)
-        i, j = pos[0], pos[-1]
-        e, x = idx[i], idx[j]
-        if e.weekday() != 0 or x.weekday() < 3 or i == 0:
-            continue
-        friday = e + pd.Timedelta(days=4)
-        if j == len(idx) - 1 and (today < friday or (today == friday and now_et.time() < rs.CLOSE_SETTLED)):
-            continue                  # this week hasn't finished yet; it settles after Friday's close
-        prev = F.iloc[i - 1]
-        S, close = float(F["open"].iloc[i]), float(F["close"].iloc[j])
-        vol = float(prev["hv20"])
-        if not (vol > 0 and S > 0):
-            continue
-        sessions = j - i + 1
-        out.append({
-            "e": e, "x": x, "S": S, "close": close, "vol": vol,
-            "T": ((x - e).days + 6.5 / 24) / 365.0,
-            "sig_w": vol * math.sqrt(sessions / 252),
-            "hot": bool((prev["rsi14"] > 70) or (prev["pct_ma20"] > 0.06)),
-            "sliding": bool((prev["rsi14"] < 30) or (prev["pct_ma20"] < -0.06)),
-            "earnings": any(idx[i - 1] <= d <= x for d in earn),
-            "step": strike_step(S),
-        })
+        days = {idx[k].weekday(): k for k in pos}
+        monday = idx[pos[0]] - pd.Timedelta(days=idx[pos[0]].weekday())
+        for leg, entry_dow, exit_dow in SCHEDULES[schedule]:
+            if entry_dow not in days:
+                continue
+            i = days[entry_dow]
+            if exit_dow == "last":
+                j = pos[-1]
+                if idx[j].weekday() < 3:
+                    continue
+                exit_cal = monday + pd.Timedelta(days=4)
+            else:
+                if exit_dow not in days:
+                    continue
+                j = days[exit_dow]
+                exit_cal = monday + pd.Timedelta(days=exit_dow)
+            if i == 0 or j < i:
+                continue
+            if j == len(idx) - 1 and (today < exit_cal or (today == exit_cal and now_et.time() < rs.CLOSE_SETTLED)):
+                continue                  # not finished yet; it settles after the exit day's close
+            e, x = idx[i], idx[j]
+            prev = F.iloc[i - 1]
+            S, close = float(F["open"].iloc[i]), float(F["close"].iloc[j])
+            vol = float(prev["hv20"])
+            if not (vol > 0 and S > 0):
+                continue
+            sessions = j - i + 1
+            out.append({
+                "leg": leg, "e": e, "x": x, "S": S, "close": close, "vol": vol,
+                "T": ((x - e).days + 6.5 / 24) / 365.0,
+                "sig_w": vol * math.sqrt(sessions / 252),
+                "hot": bool((prev["rsi14"] > 70) or (prev["pct_ma20"] > 0.06)),
+                "sliding": bool((prev["rsi14"] < 30) or (prev["pct_ma20"] < -0.06)),
+                "earnings": any(idx[i - 1] <= d <= x for d in earn),
+                "step": strike_step(S),
+            })
     return out
+
+
+def week_info(F: pd.DataFrame, earn_dates: list, now_et=None):
+    """Monday open -> last trading day of the week (Friday, or Thursday before a Friday holiday)."""
+    return periods(F, earn_dates, now_et, "weekly")
 
 
 def call_strike(w, method, history):
@@ -168,7 +195,7 @@ def run_weeks(F: pd.DataFrame, earn_dates: list, now_et=None):
     return rows
 
 
-def wheel_sim(weeks, method, tbill=None, topup=False):
+def wheel_sim(weeks, method, tbill=None, topup=False, legs_per_week=1):
     """The wheel: start owning 100 shares with no cash. Holding shares -> sell a covered call each
     Monday. Called away -> hold the cash and sell a cash-secured put each Monday, but only if the
     cash covers strike x 100; otherwise that week is paused. Put assigned -> buy 100 shares at the
@@ -180,7 +207,7 @@ def wheel_sim(weeks, method, tbill=None, topup=False):
     The benchmark then also buys the stock with each deposit on the same day, so the
     comparison isn't flattered by the extra money."""
     shares, cash = 100, 0.0
-    history, timeline, events, log = [], [], [], []
+    histories, timeline, events, log = {}, [], [], []
     c = {"call_weeks": 0, "put_weeks": 0, "paused": 0, "earnings_skipped": 0, "no_history": 0,
          "calls_assigned": 0, "puts_assigned": 0, "call_premium": 0.0, "put_premium": 0.0, "fees": 0.0,
          "longest_pause": 0, "interest": 0.0, "added": 0.0, "topups": 0, "largest_topup": 0.0}
@@ -196,7 +223,9 @@ def wheel_sim(weeks, method, tbill=None, topup=False):
                 earned = cash * (float(rate) / 100) * days / 365
                 cash += earned
                 c["interest"] += earned
-        entry = {"date": day, "holding": "shares" if shares else "cash", "open": round(S, 2), "close": round(close, 2)}
+        history = histories.setdefault(w["leg"], [])
+        entry = {"date": day, "expiry": w["x"].date().isoformat(), "leg": w["leg"],
+                 "holding": "shares" if shares else "cash", "open": round(S, 2), "close": round(close, 2)}
         if w["earnings"]:
             c["earnings_skipped"] += 1
             entry["action"] = "skip_earnings"
@@ -250,8 +279,15 @@ def wheel_sim(weeks, method, tbill=None, topup=False):
         log.append(entry)
     if not weeks:
         return None
+    # one chart point per week keeps the file small (the last period of each week)
+    weekly_tl = {}
+    for t in timeline:
+        d = pd.Timestamp(t[0])
+        weekly_tl[(d.isocalendar().year, d.isocalendar().week)] = t
+    timeline_all = timeline
+    timeline = list(weekly_tl.values())
     start = 100 * weeks[0]["S"]
-    end_wheel, end_hold = timeline[-1][1], timeline[-1][2]
+    end_wheel, end_hold = timeline_all[-1][1], timeline_all[-1][2]
     c = {k: (round(v, 2) if isinstance(v, float) else v) for k, v in c.items()}
     c.update({"topup_mode": topup, "bench_shares": round(100 + bench_extra_shares, 4),
               "net_of_added": round(end_wheel - c["added"], 2),
@@ -261,8 +297,12 @@ def wheel_sim(weeks, method, tbill=None, topup=False):
               "difference": round(end_wheel - end_hold, 2),
               "premium_total": round(c["call_premium"] + c["put_premium"], 2),
               "ends_holding": bool(shares), "cash_now": round(cash, 2),
-              "first": timeline[0][0], "last": timeline[-1][0]})
-    return {"summary": c, "timeline": timeline, "events": events, "log": log[-52:]}
+              "first": timeline_all[0][0], "last": timeline_all[-1][0],
+              "last_leg": weeks[-1]["leg"], "last_expiry": weeks[-1]["x"].date().isoformat(),
+              "trades_per_week": legs_per_week})
+    timeline = [[t[0], round(t[1]), round(t[2]), t[3]] for t in timeline]     # whole dollars for the chart
+    return {"summary": c, "timeline": timeline, "events": events[-200:], "events_total": len(events),
+            "log": log[-52 * legs_per_week:]}
 
 
 def summarize(rows, method, rules=True):
@@ -292,6 +332,7 @@ def backtest(ticker, px, earn, now_et=None):
     F = rs.build_features(px, ticker, [], None, earn)
     rows = run_weeks(F, earn, now_et)
     weeks = week_info(F, earn, now_et)
+    twice = periods(F, earn, now_et, "twice")
     tbill = None
     try:
         t = rs.load_prices(["^IRX"]).get("^IRX")
@@ -310,6 +351,8 @@ def backtest(ticker, px, earn, now_et=None):
         "earnings_weeks": sum(1 for r in rows if r["earnings"]),
         "wheel": {m: wheel_sim(weeks, m, tbill) for m in ("delta", "study")},
         "wheel_topup": {m: wheel_sim(weeks, m, tbill, topup=True) for m in ("delta", "study")},
+        "wheel2": {m: wheel_sim(twice, m, tbill, legs_per_week=2) for m in ("delta", "study")},
+        "wheel2_topup": {m: wheel_sim(twice, m, tbill, topup=True, legs_per_week=2) for m in ("delta", "study")},
         "cash_interest": tbill is not None,
         # keeps the file small: the last year of weeks, plus every week that got assigned
         "weeks": [r for i, r in enumerate(rows)
