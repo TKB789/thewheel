@@ -381,6 +381,15 @@
         <div class="pick" id="pickAssigned"></div>
       </div>
 
+      <section class="card" id="bbCard">
+        <h3>Buying back after your shares are called away</h3>
+        <p class="sub" id="bbSub" style="margin:0 0 10px"></p>
+        <div class="logform">
+          <label for="bbStrike">Called away at (call strike)<input type="number" id="bbStrike" step="0.5" min="0" placeholder="e.g. 355"></label>
+        </div>
+        <div id="bbBody"></div>
+      </section>
+
       <section class="card" id="pSchedule" hidden>
         <h3>Your schedule</h3>
         <p class="sub" id="pSchedSub"></p>
@@ -415,6 +424,7 @@
             <select id="wSched" aria-label="Trading schedule">
               <option value="weekly">Once a week: Mon → Fri</option>
               <option value="twice">Twice a week: Mon → Wed, Thu → Fri</option>
+              <option value="tuewed">One-day trades: Tue → Wed, Thu → Fri</option>
             </select>
           </div>
         </div>
@@ -450,6 +460,7 @@
             <select id="wShort" aria-label="When the cash doesn't cover the put">
               <option value="pause">Pause when cash is short</option>
               <option value="topup">Add money to keep going</option>
+              <option value="cap">Buy back at the call strike or lower</option>
             </select>
             <label for="wMethod" hidden>Strike method</label>
             <select id="wMethod" aria-label="Strike method">
@@ -596,7 +607,7 @@
     </section>
     <section class="card">
       <h3>By strategy</h3>
-      <p class="sub">Each way of picking a strike, tracked side by side. The alternatives weren't counted in the totals above, since you can only sell one call on 100 shares.</p>
+      <p class="sub">Each way of picking a strike, tracked side by side. The alternatives weren't counted in the totals above, since you can only sell one call on 100 shares. The Tuesday → Wednesday one-day trade is logged every Tuesday for comparison here only, since it would overlap your Monday trade.</p>
       <div class="scroll"><table id="paperStrat"></table></div>
     </section>
     <section class="card">
@@ -889,7 +900,7 @@ function renderResearch(r, R) {
   $("schedCards").innerHTML = slots.map((x) => {
     const w = x.w, c = x.call, s = x.s;
     if (x.noHist) return `<div class="slot"><div class="when"><b>${esc(w.label)}</b><span>${DAY[x.entry.getDay()]} ${fmtDate(iso(x.entry))} → ${DAY[x.expiry.getDay()]} ${fmtDate(iso(x.expiry))}</span></div>
-        <div class="why">Not enough price history yet. This window gets a strike suggestion once there's about a year of ${w.entry_dow === 0 ? "Mondays" : "Thursdays"} to study.</div></div>`;
+        <div class="why">Not enough price history yet. This window gets a strike suggestion once there's about a year of ${["Mondays", "Tuesdays", "Wednesdays", "Thursdays", "Fridays"][w.entry_dow]} to study.</div></div>`;
     const chips = [];
     if (x === soonest) chips.push(`<span class="chip info">Next up</span>`);
     if (x.earn) chips.push(`<span class="chip bad">Hold off: earnings</span>`);
@@ -986,7 +997,8 @@ const STRAT = { delta: "Call to sell (site's pick)", mon_wed: "Schedule: Monday 
                 thu_mon: "Schedule: Thursday → next Monday", put: "Wheel put", manual: "Your pick",
                 csp: "Cash-secured put (site's pick)", csp_mon_wed: "Put schedule: Monday → Wednesday",
                 csp_thu_fri: "Put schedule: Thursday → Friday", csp_thu_mon: "Put schedule: Thursday → next Monday",
-                mon_fri: "Schedule: Monday → Friday", csp_mon_fri: "Put schedule: Monday → Friday" };
+                mon_fri: "Schedule: Monday → Friday", csp_mon_fri: "Put schedule: Monday → Friday",
+                tue_wed: "Schedule: Tuesday → Wednesday", csp_tue_wed: "Put schedule: Tuesday → Wednesday" };
 state.previewTrades = [];
 let pendingTrade = null;
 
@@ -1293,6 +1305,72 @@ const PUT_TEXT = {
 };
 state.pExpiry = null;
 
+// ---- buy-back check: sell puts at the old call strike (or lower), or add money for the usual put?
+function calledAwayGuess(tk) {
+  const saved = recall("cca-called-" + tk);
+  if (saved) return Number(saved);
+  const mine = (state.mineScored || myTrades()).filter((t) => String(t.ticker).toUpperCase() === tk && t.type !== "put" && t.status === "assigned");
+  mine.sort((a, b) => String(b.expiry).localeCompare(String(a.expiry)));
+  return mine.length ? Number(mine[0].strike) : null;
+}
+function rtsRate(T, m, weeks) {
+  // interpolate "came back within N weeks" at m weekly moves above the strike
+  const wi = T.weeks.indexOf(weeks); if (wi < 0) return null;
+  const xs = T.moves, ys = T.rates.map((row) => row[wi]);
+  if (m <= xs[0]) return ys[0];
+  for (let i = 1; i < xs.length; i++) if (m <= xs[i]) return ys[i - 1] + (ys[i] - ys[i - 1]) * (m - xs[i - 1]) / (xs[i] - xs[i - 1]);
+  return ys[ys.length - 1];
+}
+function renderBuyBack(r) {
+  const tk = r.ticker, inp = $("bbStrike");
+  if (document.activeElement !== inp) { const g = calledAwayGuess(tk); inp.value = g ? g : ""; }
+  const K = Number(inp.value), S = r.price, B = state.backtest;
+  $("bbSub").innerHTML = `The usual put is set by delta (0.25) from today's price, which can be <em>above</em> the price your shares were called away at, so it needs more cash than the sale brought in. Enter the call strike to compare selling a put at that price or lower with adding money for the usual put.${recall("cca-called-" + tk) ? "" : " It's filled in from your paper trades when one of them was called away."}`;
+  if (!(K > 0)) { $("bbBody").innerHTML = ""; return; }
+  const std = r.recommended_put;
+  const near = (r.expiries || [])[0];
+  const under = near ? near.puts.filter((o) => o.strike <= K).sort((a, b) => b.strike - a.strike) : [];
+  const atK = under[0];
+  const lines = [];
+  const pay = (o) => money(o.live_quote && o.bid > 0 ? o.bid * 100 : o.premium, 0);
+  if (S <= K) {
+    lines.push(`<strong>${esc(tk)} is at or below your ${money(K)} call strike</strong> (${money(S)} now), so any put here buys back at your price or lower. ${std ? `The usual put, ${money(std.strike)} expiring ${fmtDate(std.expiry)}, pays about ${pay(std)} and needs no extra cash.` : ""}`);
+  } else {
+    const T = B && B.return_to_strike;
+    const hv = r.hv20, m = hv ? Math.log(S / K) / (hv * Math.sqrt(5 / 252)) : null;
+    const up = ((S / K - 1) * 100).toFixed(1);
+    lines.push(`<strong>${esc(tk)} is ${up}% above your ${money(K)} call strike</strong> (${money(S)} now${m != null ? `, about ${m.toFixed(1)} weeks' worth of typical movement` : ""}).`);
+    if (atK) lines.push(`<strong>Put at your price or lower:</strong> ${money(atK.strike)} expiring ${fmtDate(near.date)} pays about ${pay(atK)} (${atK.delta.toFixed(2)} delta, ${pct(atK.prob_assign)} chance you buy the shares). The sale money covers it.`);
+    if (std && std.strike > K) lines.push(`<strong>The usual put:</strong> ${money(std.strike)} expiring ${fmtDate(std.expiry)} pays about ${pay(std)}, but needs <strong>${money((std.strike - K) * 100, 0)} more</strong> than the ${money(K * 100, 0)} the shares sold for, and you'd buy back ${money(std.strike - K)} a share above your sale price.`);
+    let rec = "";
+    if (T && m != null) {
+      const w = [1, 2, 4, 8, 13].map((n) => [n, rtsRate(T, m, n)]);
+      lines.push(`<strong>Has it come back from this far?</strong> In ${esc(tk)}'s history, from about this distance above a price, it closed back at or below it within ${w.map(([n, v]) => `${n} week${n === 1 ? "" : "s"} <strong>${v == null ? "–" : Math.round(v)}%</strong>`).join(", ")} of the time.`);
+      const w4 = w[2][1], atKok = atK && atK.premium >= 20;
+      rec = atKok ? `Selling the put at ${money(atK.strike)} keeps your buy-back at or below your sale price and still pays something, so there's no need to add money.`
+          : w4 != null && w4 >= 50 ? `It has usually come back within a month from here (${Math.round(w4)}%), so waiting for puts at your price costs little. The put at your strike pays almost nothing right now; check again at the next update.`
+          : `From this far above, it has come back within a month only ${w4 == null ? "–" : Math.round(w4)}% of the time, so waiting could mean weeks in cash. If you'd rather be back in the stock, adding the extra money for the usual put is the way to keep collecting premium, at a higher buy-back price.`;
+    }
+    const sk = $("wSched").value, base = (SCHED[sk] || SCHED.twice).base;
+    const pick = (k) => B && B[k] && B[k].delta && B[k].delta.summary;
+    const rules = [["Pause", pick(base)], ["Add money", pick(base + "_topup")], ["Buy back at call strike or lower", pick(base + "_cap")]].filter((x) => x[1]);
+    if (rules.length === 3) {
+      const gain = (s) => s.end_wheel - (s.added || 0) - s.start_value;
+      const best = rules.reduce((a, b) => (gain(b[1]) > gain(a[1]) ? b : a));
+      lines.push(`<strong>Backtest, ${esc((SCHED[sk] || SCHED.twice).short)}:</strong> ${rules.map(([n, s]) => `${n} ${signed(gain(s))}`).join(" · ")} (gain on money put in since ${fmtYear(rules[0][1].first)}). <strong>${esc(best[0])}</strong> came out ahead for ${esc(tk)}.`);
+    }
+    if (rec) lines.push(`<span class="chip info">Suggestion</span> ${rec}`);
+  }
+  $("bbBody").innerHTML = lines.map((l) => `<p class="sub" style="margin:8px 0">${l}</p>`).join("") +
+    `<p class="sub muted" style="margin-top:10px">Your total buy-back cost is also lowered by the call premium you collected, and by each put's premium.</p>`;
+}
+$("bbStrike").addEventListener("input", () => {
+  const r = state.report; if (!r) return;
+  const v = $("bbStrike").value;
+  if (v) store("cca-called-" + r.ticker, v); else { try { localStorage.removeItem("cca-called-" + r.ticker); } catch (e) {} }
+  renderBuyBack(r);
+});
+
 function renderPuts(r, R) {
   const v = r.put_verdict;
   $("putsReport").hidden = !v;
@@ -1349,6 +1427,7 @@ function renderPuts(r, R) {
     $("toCalls").addEventListener("click", () => setView("analyzer"));
   }
 
+  renderBuyBack(r);
   $("pFactors").innerHTML = (r.put_factors || []).map((f) => `
     <li><span class="fname">${esc(f.name)}</span>
         <span class="chip ${esc(f.status)}">${esc(f.value)}</span>
@@ -1450,10 +1529,20 @@ function renderPutChain() {
 $("pExpiry").addEventListener("change", (ev) => { state.pExpiry = ev.target.value; renderPutChain(); });
 
 // ---------------------------------------------------------------- backtest
-const WIN_SHORT = { mon_fri: "Mon → Fri", mon_wed: "Mon → Wed", thu_fri: "Thu → Fri" };
+const WIN_SHORT = { mon_fri: "Mon → Fri", mon_wed: "Mon → Wed", tue_wed: "Tue → Wed", thu_fri: "Thu → Fri" };
+// each schedule's trades: [window, entry weekday (0 = Monday), exit weekday]
+const SCHED = {
+  weekly: { base: "wheel", legs: [["mon_fri", 0, 4]], short: "once a week", days: "Monday",
+            desc: "Once a week: a trade opened Monday that expires Friday." },
+  twice: { base: "wheel2", legs: [["mon_wed", 0, 2], ["thu_fri", 3, 4]], short: "twice a week", days: "Monday and Thursday",
+           desc: "Twice a week: a trade opened Monday that expires Wednesday, and one opened Thursday that expires Friday." },
+  tuewed: { base: "wheel3", legs: [["tue_wed", 1, 2], ["thu_fri", 3, 4]], short: "one-day trades twice a week", days: "Tuesday and Thursday",
+            desc: "One-day trades twice a week: opened Tuesday expiring Wednesday, and opened Thursday expiring Friday." },
+};
+const schedInfo = () => SCHED[$("wSched").value] || SCHED.weekly;
 const unpack = (fields, a) => { const o = {}; fields.forEach((f, i) => { o[f] = a[i]; }); return o; };
 const btSched = () => { const B = state.backtest; const k = $("wSched").value; return B && B.schedules ? (B.schedules[k] || B.schedules.weekly) : null; };
-const isTwice = () => $("wSched").value === "twice";
+const isTwice = () => $("wSched").value !== "weekly";     // two trades a week
 
 // Every trade since the start lives in a second file, fetched the first time you ask for it.
 async function loadHistory() {
@@ -1478,13 +1567,12 @@ function renderBacktest(r, B) {
   const scope = $("btScope").value;
   const D = SC.calls_only.delta[scope], S = SC.calls_only.study[scope];
   $("btTitle").textContent = `Backtest: ${B.ticker}`;
-  $("btBarSub").textContent = twice
-    ? "Twice a week: a trade opened Monday that expires Wednesday, and one opened Thursday that expires Friday. This schedule applies to every section below."
-    : "Once a week: a trade opened Monday that expires Friday. This schedule applies to every section below.";
-  $("btCallsTitle").textContent = twice ? "Covered calls only: Mon → Wed and Thu → Fri" : "Covered calls only: Mon → Fri";
+  const SI = schedInfo();
+  $("btBarSub").textContent = `${SI.desc} This schedule applies to every section below.`;
+  $("btCallsTitle").textContent = "Covered calls only: " + SI.legs.map((l) => WIN_SHORT[l[0]]).join(" and ");
   const unit = twice ? "trades" : "Mondays";
   $("btSub").textContent = twice
-    ? `Since ${D.first ? fmtYear(D.first) : "–"}, a covered call is sold at Monday's open expiring Wednesday, and another at Thursday's open expiring Friday, always on the same 100 shares (even after an assignment, to show how often each window gets assigned; the full wheel, with puts, is in the next section). A call counts as assigned if the close on expiry day was above the strike.`
+    ? `Since ${D.first ? fmtYear(D.first) : "–"}, a covered call is sold at the open on each trade day (${SI.legs.map((l) => WIN_SHORT[l[0]]).join(", ")}), always on the same 100 shares (even after an assignment, to show how often each window gets assigned; the full wheel, with puts, is in the next section). A call counts as assigned if the close on expiry day was above the strike.`
     : `Each Monday since ${D.first ? fmtYear(D.first) : "–"}, one covered call is sold at the opening price and held to Friday's close, always on the same 100 shares. It counts as assigned if Friday's close was above the strike. Two ways of picking the strike are compared.`;
   const perWin = (s) => twice && s.by_window && s.by_window.length > 1
     ? `<div class="t-line">${s.by_window.map((w) => `${WIN_SHORT[w.window] || w.window}: <strong>${w.assigned} of ${w.n}</strong> (${pct(w.rate)}), ${signed(w.est_net / w.n)} a trade`).join("<br>")}</div>` : "";
@@ -1536,7 +1624,7 @@ async function renderBtWeeks() {
   rows = rows.slice().reverse();
   $("btWeeksTitle").textContent = twice ? "Covered calls only, trade by trade" : "Covered calls only, week by week";
   if (f !== "all" || $("btWeeksSub").textContent.startsWith("Loading")) $("btWeeksSub").textContent =
-    `${rows.length} ${twice ? "trades" : "weeks"} shown${f === "all" ? `, back to ${rows.length ? fmtYear(rows[rows.length - 1].date) : "–"}` : ""}. A call every ${twice ? "Monday and Thursday" : "Monday"} on the same 100 shares, even after an assigned one, to show how often each strike method gets assigned. The full wheel, with puts, is further up.`;
+    `${rows.length} ${twice ? "trades" : "weeks"} shown${f === "all" ? `, back to ${rows.length ? fmtYear(rows[rows.length - 1].date) : "–"}` : ""}. A call every ${schedInfo().days} on the same 100 shares, even after an assigned one, to show how often each strike method gets assigned. The full wheel, with puts, is further up.`;
   const cell = (k, a, prem) => k == null ? `<td>–</td><td>–</td>` :
     `<td>${money(k)} <span class="muted">${prem != null ? money(prem * 100, 0) : ""}</span></td><td>${a ? `<span class="chip bad">call assigned</span>` : `<span class="chip good">kept shares</span>`}</td>`;
   $("btWeeks").innerHTML = `<thead><tr><th>Opened</th>${twice ? "<th>Window</th>" : ""}<th>Open</th><th>Close at expiry</th><th>0.20-delta strike, est. premium</th><th>0.20-delta result</th><th>History-based strike, est. premium</th><th>History-based result</th></tr></thead><tbody>` +
@@ -1731,19 +1819,24 @@ $("lkWeek").addEventListener("change", renderLookalikeWeek);
 function renderWheel() {
   const B = state.backtest;
   const method = $("wMethod").value;
-  const twiceAvail = !!(B && B.wheel2 && B.wheel2[method]);
-  $("wSched").querySelector('option[value="twice"]').disabled = !twiceAvail;
-  if (!twiceAvail) $("wSched").value = "weekly";
-  const twice = $("wSched").value === "twice";
-  const K = (topupFlag) => (twice ? "wheel2" : "wheel") + (topupFlag ? "_topup" : "");
-  const topupAvail = !!(B && B[K(true)] && B[K(true)][method]);
-  $("wShort").querySelector('option[value="topup"]').disabled = !topupAvail;
-  if (!topupAvail) $("wShort").value = "pause";
-  const topup = $("wShort").value === "topup";
-  const pol = $("wPolicy").value;
+  for (const [k, info] of Object.entries(SCHED)) {        // a schedule the data file doesn't have yet can't be picked
+    const ok = !!(B && B[info.base] && B[info.base][method]);
+    $("wSched").querySelector(`option[value="${k}"]`).disabled = !ok;
+    if (!ok && $("wSched").value === k) $("wSched").value = "weekly";
+  }
+  const twice = $("wSched").value !== "weekly";
+  const SUFFIX = { pause: "", topup: "_topup", cap: "_cap" };
+  for (const m of ["topup", "cap"]) {                    // a rule the data file doesn't have yet can't be picked
+    const ok = !!(B && B[schedInfo().base + SUFFIX[m]] && B[schedInfo().base + SUFFIX[m]][method]);
+    $("wShort").querySelector(`option[value="${m}"]`).disabled = !ok;
+    if (!ok && $("wShort").value === m) $("wShort").value = "pause";
+  }
+  const topup = $("wShort").value === "topup", cap = $("wShort").value === "cap";
+  const K = (topupFlag) => schedInfo().base + (topupFlag ? "_topup" : cap ? "_cap" : "");
   const polAvail = !!(B && B.policy_summary);
-  $("wPolicy").disabled = !polAvail;
-  if (!polAvail) $("wPolicy").value = "every";
+  $("wPolicy").disabled = !polAvail || cap;
+  if (!polAvail || cap) $("wPolicy").value = "every";
+  const pol = $("wPolicy").value;
   if (pol !== "every" && polAvail && !state.policy) {
     $("wSub").textContent = "Loading the wheel that follows the site's recommendation…";
     loadPolicy().then(() => { if (!state.policy) { $("wPolicy").value = "every"; } renderWheel(); });
@@ -1758,7 +1851,7 @@ function renderWheel() {
   renderWheelCompare(B, method);
   renderPolicyCompare(B, method, K(topup), topup, twice);
   renderHorizons(B, method, K(topup), topup, twice);
-  $("wSub").textContent = `Starts ${fmtYear(s.first)} owning 100 ${B.ticker} shares and no cash. ${twice ? "Two trades a week: one opened Monday that expires Wednesday, then one opened Thursday that expires Friday. Each is a covered call while holding shares, or a cash-secured put while holding cash, so a call assigned on Wednesday is followed by a put on Thursday." : "While holding shares, a covered call is sold each Monday. When the shares are called away, a cash-secured put is sold each Monday instead."} ${topup ? "When the cash doesn't cover the put, just enough money is added to sell it, so the wheel never stops." : "It's sold only in weeks when the cash covers the strike; otherwise that week is paused."} When a put is assigned, the shares are bought back and calls start again. Earnings weeks are skipped.${B.cash_interest ? " Cash earns the 3-month Treasury bill rate, roughly what a money market fund pays." : " Cash earns nothing here (the Treasury rate wasn't available)."}`;
+  $("wSub").textContent = `Starts ${fmtYear(s.first)} owning 100 ${B.ticker} shares and no cash. ${twice ? `${schedInfo().desc} Each is a covered call while holding shares, or a cash-secured put while holding cash, so a call assigned on Wednesday is followed by a put on Thursday.` : "While holding shares, a covered call is sold each Monday. When the shares are called away, a cash-secured put is sold each Monday instead."} ${topup ? "When the cash doesn't cover the put, just enough money is added to sell it, so the wheel never stops." : cap ? "Puts are only sold at or below the strike the shares were called away at, so you'd buy them back at that price or lower. The sale money always covers that, so nothing is added; when the stock has run far above it and that put pays almost nothing (under $5), the week is spent waiting." : "It's sold only in weeks when the cash covers the strike; otherwise that week is paused."} When a put is assigned, the shares are bought back and calls start again. Earnings weeks are skipped.${B.cash_interest ? " Cash earns the 3-month Treasury bill rate, roughly what a money market fund pays." : " Cash earns nothing here (the Treasury rate wasn't available)."}`;
   if (pol !== "every") $("wSub").textContent += ` Following the site's recommendation${pol === "favorable" ? " (favorable weeks only)" : ""}: ${s.skipped_calls || 0} call and ${s.skipped_puts || 0} put ${twice ? "trades" : "weeks"} skipped, and strikes adjusted for similar past weeks once there's enough history.`;
   const diffCls = s.difference >= 0 ? "pos" : "neg";
   $("wTiles").innerHTML = `
@@ -1774,7 +1867,7 @@ function renderWheel() {
     <div class="tile"><div class="t-label">${topup ? "Money added" : "Switches and pauses"}</div><div class="t-big">${topup ? money(s.added, 0) : `${s.calls_assigned} / ${s.puts_assigned}`}</div>
       ${topup ? `<div class="t-line">${s.topups} deposit${s.topups === 1 ? "" : "s"}, largest ${money(s.largest_topup, 0)}</div>` : ""}
       <div class="t-line">Called away ${s.calls_assigned} time${s.calls_assigned === 1 ? "" : "s"} · bought back ${s.puts_assigned} time${s.puts_assigned === 1 ? "" : "s"}</div>
-      <div class="t-line">${topup ? `Value minus money added: ${signed(s.net_of_added)}` : `${s.paused} ${twice ? "trade" : "week"}${s.paused === 1 ? "" : "s"} paused, cash short of the put${s.longest_pause ? ` (longest stretch ${twice ? Math.round(s.longest_pause / 2) : s.longest_pause} weeks)` : ""}`}</div></div>`;
+      <div class="t-line">${topup ? `Value minus money added: ${signed(s.net_of_added)}` : cap ? `${s.cap_waits || 0} ${twice ? "trade" : "week"}${s.cap_waits === 1 ? "" : "s"} waiting for the price to come back toward the call strike` : `${s.paused} ${twice ? "trade" : "week"}${s.paused === 1 ? "" : "s"} paused, cash short of the put${s.longest_pause ? ` (longest stretch ${twice ? Math.round(s.longest_pause / 2) : s.longest_pause} weeks)` : ""}`}</div></div>`;
   $("wLegend").innerHTML = `<span><span class="key" style="background:var(--series-1)"></span>Wheel account (cash + shares)</span>
     <span><span class="key" style="background:var(--series-2)"></span>${topup ? "Holding 100 shares, plus buying shares with each deposit" : "Just holding 100 shares"}</span>
     <span><span class="keybox"></span>Weeks in cash (selling puts or paused)</span>`;
@@ -1786,6 +1879,7 @@ function renderWheel() {
     put: (e) => [e.added ? `Added ${money(e.added, 0)}, sold cash-secured put` : "Sold cash-secured put", e.outcome === "bought" ? `<span class="chip info">assigned, bought shares</span>` : `<span class="chip good">expired, kept cash</span>`],
     paused: (e) => ["Paused", `<span class="chip neutral">cash ${money(e.cash, 0)} short of ${money(e.strike * 100, 0)}</span>`],
     skip_earnings: () => ["Skipped", `<span class="chip neutral">earnings week</span>`],
+    cap_wait: (e) => ["Waited", `<span class="chip neutral">put at ${money(e.strike)} or lower pays almost nothing</span>`],
     skip_flag: (e) => ["Skipped", `<span class="chip neutral">${e.outcome === "hold_off" ? "site said hold off" : "not a favorable week"}</span>`],
     no_history: () => ["Skipped", `<span class="chip neutral">not enough history yet</span>`],
   };
@@ -1809,7 +1903,7 @@ function renderHorizons(B, method, key, topup, twice) {
   const pctS = (v) => v == null ? "–" : `<span class="${v >= 0 ? "pos" : "neg"}">${v >= 0 ? "+" : ""}${v.toFixed(1)}%</span>`;
   const yrs = (r) => r.years >= 0.95 ? `${Math.round(r.years * 10) / 10} yr` : `${Math.round(r.years * 12)} mo`;
   const pol = $("wPolicy").value;
-  $("wHorSub").innerHTML = `The same wheel (${twice ? "twice a week" : "once a week"}, ${method === "delta" ? "0.20/0.25-delta strikes" : "history-based strikes"}, ${topup ? "adding money when cash is short" : "pausing when cash is short"}) started 1, 2, … 10 years ago and run to now, each starting with 100 shares, next to simply holding them over the same time.${topup ? " Returns are on everything put in, including money added." : ""}${pol !== "every" ? " These use trading every week; the recommendation menu doesn't change this table." : ""}`;
+  $("wHorSub").innerHTML = `The same wheel (${schedInfo().short}, ${method === "delta" ? "0.20/0.25-delta strikes" : "history-based strikes"}, ${topup ? "adding money when cash is short" : "pausing when cash is short"}) started 1, 2, … 10 years ago and run to now, each starting with 100 shares, next to simply holding them over the same time.${topup ? " Returns are on everything put in, including money added." : ""}${pol !== "every" ? " These use trading every week; the recommendation menu doesn't change this table." : ""}`;
   const best = H.ending_now.reduce((a, b) => (b.diff_pct > a.diff_pct ? b : a), H.ending_now[0] || {});
   $("wHorNow").innerHTML = `<thead><tr><th>Started</th><th>Wheel</th><th>Holding</th><th>Wheel minus holding</th><th>Wheel per year</th><th>Holding per year</th><th>Called away / bought back</th><th>Ends in</th></tr></thead><tbody>` +
     (H.ending_now.length ? H.ending_now.map((r) => `<tr${r === best ? ' class="bestrow"' : ""}><td>${r.n === H.ending_now.length && r.years < r.n - 0.2 ? `All history (${yrs(r)})` : `${r.n} year${r.n === 1 ? "" : "s"} ago`} <span class="muted">${fmtYear(r.start)}</span></td>
@@ -1848,7 +1942,7 @@ async function renderWheelLog(W, twice, key, method, act) {
   }
   $("wLogTitle").textContent = (twice ? "What the wheel did each trade" : "What the wheel did each week") +
     (all && !note ? `, ${log.length} ${twice ? "trades" : "weeks"} since ${log.length ? fmtYear(log[0].date) : "–"}` : note);
-  const LEG = { mon_fri: "Mon → Fri", mon_wed: "Mon → Wed", thu_fri: "Thu → Fri" };
+  const LEG = WIN_SHORT;
   $("wLog").innerHTML = `<thead><tr><th>Opened</th><th>Window</th><th>Holding</th><th>Trade</th><th>Strike</th><th>Est. premium</th><th>Open</th><th>Close at expiry</th><th>Outcome</th></tr></thead><tbody>` +
     log.slice().reverse().map((e) => {
       const [what, out] = (act[e.action] || (() => [e.action, ""]))(e);
@@ -1864,7 +1958,11 @@ function renderWheelCompare(B, method) {
   const px = state.report ? state.report.price : null;
   const pick = (k) => B[k] && B[k][method];
   const rows = [["wheel", "Once a week · pause when short", pick("wheel")], ["wheel_topup", "Once a week · add money", pick("wheel_topup")],
-                ["wheel2", "Twice a week · pause when short", pick("wheel2")], ["wheel2_topup", "Twice a week · add money", pick("wheel2_topup")]]
+                ["wheel2", "Mon → Wed, Thu → Fri · pause when short", pick("wheel2")], ["wheel2_topup", "Mon → Wed, Thu → Fri · add money", pick("wheel2_topup")],
+                ["wheel3", "Tue → Wed, Thu → Fri · pause when short", pick("wheel3")], ["wheel3_topup", "Tue → Wed, Thu → Fri · add money", pick("wheel3_topup")],
+                ["wheel_cap", "Once a week · buy back at call strike or lower", pick("wheel_cap")],
+                ["wheel2_cap", "Mon → Wed, Thu → Fri · buy back at call strike or lower", pick("wheel2_cap")],
+                ["wheel3_cap", "Tue → Wed, Thu → Fri · buy back at call strike or lower", pick("wheel3_cap")]]
     .filter((x) => x[2]).map(([key, label, W]) => {
       const s = W.summary;
       const val = px ? s.cash_now + (s.ends_holding ? 100 * px : 0) : s.end_wheel;
@@ -1896,7 +1994,7 @@ function renderPolicyCompare(B, method, base, topup, twice) {
   const rows = [["every", "Trade every week", B[base] && B[base][method] && B[base][method].summary],
                 ["site", "Follow the site's recommendation", PS[base + "_site"] && PS[base + "_site"][method]],
                 ["favorable", "Favorable weeks only", PS[base + "_favorable"] && PS[base + "_favorable"][method]]].filter((r) => r[2]);
-  if (!rows.length) { $("wPolWrap").hidden = true; return; }
+  if (rows.length < 2) { $("wPolWrap").hidden = true; return; }
   const gain = (s) => s.end_wheel - (s.added || 0) - s.start_value;
   const best = rows.reduce((a, b) => (gain(b[2]) > gain(a[2]) ? b : a), rows[0]);
   const cur = $("wPolicy").value;
@@ -1906,7 +2004,7 @@ function renderPolicyCompare(B, method, base, topup, twice) {
       <td>${k === "every" ? "–" : `<span class="${gain(s) - gain(rows[0][2]) >= 0 ? "pos" : "neg"}">${signed(gain(s) - gain(rows[0][2]))}</span>`}</td>
       <td>${signed(s.difference)}</td><td>${money(s.premium_total + s.interest, 0)}</td>
       <td>${s.calls_assigned} / ${s.puts_assigned}</td><td>${s.skipped_calls || 0} / ${s.skipped_puts || 0}</td>${topup ? `<td>${money(s.added || 0, 0)}</td>` : ""}</tr>`).join("") + `</tbody>`;
-  $("wPolNote").textContent = `Same start, schedule (${twice ? "twice a week" : "once a week"}), strike method and ${topup ? "add-money" : "pause"} rule; only the recommendation differs. "Follow the site" skips weeks the site would say to hold off (two flags) and uses strikes adjusted for similar past weeks; "Favorable weeks only" also skips weeks with one flag. A skipped call week keeps the shares; a skipped put week keeps the cash earning interest. Flags are the stock running hot (sliding, for puts) and similar weeks at least 1.25× likelier to be assigned; the similar-weeks part is refit each January from trades that had already expired, so it only kicks in after a couple of years of history. The premium-level flag can't be rebuilt without old option prices. Pick a row in the menu above to see its chart and log.`;
+  $("wPolNote").textContent = `Same start, schedule (${schedInfo().short}), strike method and ${topup ? "add-money" : "pause"} rule; only the recommendation differs. "Follow the site" skips weeks the site would say to hold off (two flags) and uses strikes adjusted for similar past weeks; "Favorable weeks only" also skips weeks with one flag. A skipped call week keeps the shares; a skipped put week keeps the cash earning interest. Flags are the stock running hot (sliding, for puts) and similar weeks at least 1.25× likelier to be assigned; the similar-weeks part is refit each January from trades that had already expired, so it only kicks in after a couple of years of history. The premium-level flag can't be rebuilt without old option prices. Pick a row in the menu above to see its chart and log.`;
 }
 $("wPolicy").addEventListener("change", renderWheel);
 
@@ -1921,12 +2019,12 @@ function renderWheelToday(B, W, s) {
   // the trade after the last settled one
   const lastExp = new Date((s.last_expiry || W.timeline[W.timeline.length - 1][0]) + "T12:00:00");
   let mon, fri, openLabel;
-  if (s.last_leg === "mon_wed") {                 // next: Thursday -> Friday of the same week
-    mon = addDays(lastExp, 1); fri = addDays(mon, 1);
-  } else {
-    const lastMon = addDays(lastExp, -((lastExp.getDay() + 6) % 7));
-    mon = addDays(lastMon, 7);
-    fri = addDays(mon, s.last_leg === "thu_fri" ? 2 : 4);   // twice a week: Monday -> Wednesday
+  {                                               // the schedule's next trade after the last settled one
+    const legs = schedInfo().legs;
+    const i = Math.max(0, legs.findIndex((l) => l[0] === (s.last_leg || "mon_fri")));
+    const weekMon = addDays(lastExp, -((lastExp.getDay() + 6) % 7));
+    const nxt = legs[(i + 1) % legs.length], wk = i + 1 >= legs.length ? 7 : 0;
+    mon = addDays(weekMon, wk + nxt[1]); fri = addDays(weekMon, wk + nxt[2]);
   }
   const today = new Date(); today.setHours(12, 0, 0, 0);
   openLabel = `${DAY[mon.getDay()]} ${fmtDate(iso(mon))} → ${DAY[fri.getDay()]} ${fmtDate(iso(fri))}`;
@@ -1944,6 +2042,13 @@ function renderWheelToday(B, W, s) {
     const c = exp.calls.filter((o) => o.delta > 0).sort((a, b) => Math.abs(a.delta - tgt) - Math.abs(b.delta - tgt))[0];
     move = c ? `<strong>${when}: sell the ${money(c.strike)} covered call</strong> expiring ${fmtDate(exp.date)}, about ${money(c.live_quote && c.bid > 0 ? c.bid * 100 : c.premium, 0)} at the latest prices (${c.delta.toFixed(2)} delta, ${pct(c.prob_assign)} chance of being called away).`
              : `<strong>${when}:</strong> no call near ${tgt.toFixed(2)} delta in the ${fmtDate(exp.date)} chain.`;
+  } else if (s.cap_mode && s.called_at) {
+    const tgt = r.put_target_delta || 0.25;
+    const under = exp.puts.filter((o) => o.delta < 0 && o.strike <= s.called_at);
+    const p = under.sort((a, b) => Math.abs(Math.abs(a.delta) - tgt) - Math.abs(Math.abs(b.delta) - tgt))[0];
+    move = p && p.premium >= 5
+      ? `<strong>${when}: sell the ${money(p.strike)} cash-secured put</strong> expiring ${fmtDate(exp.date)}, at or below the ${money(s.called_at)} the shares were called away at. About ${money(p.live_quote && p.bid > 0 ? p.bid * 100 : p.premium, 0)} at the latest prices (${p.delta.toFixed(2)} delta).`
+      : `<strong>${when}: wait.</strong> Puts at or below the ${money(s.called_at)} call strike pay almost nothing right now; the stock is ${((px / s.called_at - 1) * 100).toFixed(1)}% above it. See the buy-back check on the Cash-secured puts tab for how often it has come back from this far.`;
   } else {
     const tgt = r.put_target_delta || 0.25;
     const p = exp.puts.filter((o) => o.delta < 0).sort((a, b) => Math.abs(Math.abs(a.delta) - tgt) - Math.abs(Math.abs(b.delta) - tgt))[0];
