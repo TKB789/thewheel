@@ -39,8 +39,9 @@ SHOW_DELTA_RANGE = (0.03, 0.50)
 # Similar past trades ("lookalikes", from the daily study): when they've predicted assignment
 # better than chance for this ticker, the target delta is divided by how much likelier assignment
 # looks now, and a big difference counts as a flag in the verdict.
-LOOKALIKE_WINDOW = {0: "mon_wed", 3: "thu_fri"}    # your schedule: Monday -> Wednesday, Thursday -> Friday
-WINDOW_NAMES = {"mon_wed": "Monday → Wednesday", "thu_fri": "Thursday → Friday", "mon_fri": "Monday → Friday"}
+LOOKALIKE_WINDOW = {0: "mon_wed", 1: "tue_wed", 3: "thu_fri"}    # the trade you'd open that day
+WINDOW_NAMES = {"mon_wed": "Monday → Wednesday", "tue_wed": "Tuesday → Wednesday", "thu_fri": "Thursday → Friday",
+                "mon_fri": "Monday → Friday"}
 LK_CALL_DELTA_LIMITS = (0.10, 0.25)
 LK_PUT_DELTA_LIMITS = (0.15, 0.30)
 LK_FLAG_RATIO = 1.25      # at least this much likelier than usual -> counts as a flag

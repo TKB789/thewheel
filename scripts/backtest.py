@@ -101,6 +101,7 @@ SCHEDULES = {
     # leg key: (entry weekday, exit weekday or "last" = last trading day of the week, Thu/Fri)
     "weekly": [("mon_fri", 0, "last")],
     "twice": [("mon_wed", 0, 2), ("thu_fri", 3, 4)],
+    "tuewed": [("tue_wed", 1, 2), ("thu_fri", 3, 4)],     # one-day trades: Tuesday -> Wednesday, Thursday -> Friday
 }
 
 
@@ -259,7 +260,11 @@ def _decision(policy, w, kind):
     return d
 
 
-def wheel_sim(weeks, method, tbill=None, topup=False, legs_per_week=1, policy=None, mode=None, prior=None):
+MIN_CAP_PREMIUM = 5.0     # $0.05 a share: a put paying less than this isn't worth selling; wait instead
+
+
+def wheel_sim(weeks, method, tbill=None, topup=False, legs_per_week=1, policy=None, mode=None, prior=None,
+              cap=False):
     """The wheel: start owning 100 shares with no cash. Holding shares -> sell a covered call each
     Monday. Called away -> hold the cash and sell a cash-secured put each Monday, but only if the
     cash covers strike x 100; otherwise that week is paused. Put assigned -> buy 100 shares at the
@@ -270,6 +275,11 @@ def wheel_sim(weeks, method, tbill=None, topup=False, legs_per_week=1, policy=No
     topup=True: instead of pausing, add just enough money to cover the put and keep going.
     The benchmark then also buys the stock with each deposit on the same day, so the
     comparison isn't flattered by the extra money.
+
+    cap=True: "buy back at the call strike or lower". After shares are called away at strike K,
+    puts are only sold at K or below (the usual put strike if that's already lower). Cash from
+    the sale always covers it, so nothing is paused or added; if the stock has run far above K,
+    that put pays next to nothing and the week is spent waiting (cash earns interest).
 
     policy / mode: follow the site's recommendation instead of trading every period. Strikes use
     the similar-weeks adjustment (walk-forward, see recommendation_backtest), and a trade is skipped
@@ -283,7 +293,8 @@ def wheel_sim(weeks, method, tbill=None, topup=False, legs_per_week=1, policy=No
     c = {"call_weeks": 0, "put_weeks": 0, "paused": 0, "earnings_skipped": 0, "no_history": 0,
          "calls_assigned": 0, "puts_assigned": 0, "call_premium": 0.0, "put_premium": 0.0, "fees": 0.0,
          "longest_pause": 0, "interest": 0.0, "added": 0.0, "topups": 0, "largest_topup": 0.0,
-         "skipped_calls": 0, "skipped_puts": 0}
+         "skipped_calls": 0, "skipped_puts": 0, "cap_waits": 0}
+    called_at = None                  # strike the shares were last called away at
     bench_extra_shares = 0.0          # shares the benchmark buys with the same deposits
     run = 0
     for n_w, w in enumerate(weeks):
@@ -321,15 +332,21 @@ def wheel_sim(weeks, method, tbill=None, topup=False, legs_per_week=1, policy=No
                 entry.update({"action": "call", "strike": round(K, 2), "premium": round(prem, 2), "outcome": "kept"})
                 if close > K:
                     shares, cash = 0, cash + K * 100
+                    called_at = K
                     c["calls_assigned"] += 1
                     entry["outcome"] = "called_away"
                     events.append({"date": day, "type": "called away", "strike": round(K, 2), "close": round(close, 2)})
             run = 0
         else:
             K = put_strike(w, method, history, _decision(policy, w, "put")[0] if mode else 1.0)
+            if K is not None and cap and called_at is not None and K > called_at:
+                K = round_down(called_at + 1e-9, w["step"])
             if K is None:
                 c["no_history"] += 1
                 entry["action"] = "no_history"
+            elif cap and bs_put(S, K, T, vol) * 100 < MIN_CAP_PREMIUM:
+                c["cap_waits"] += 1           # the put at the old call strike pays almost nothing: wait
+                entry.update({"action": "cap_wait", "strike": round(K, 2), "cash": round(cash, 2)})
             elif cash < K * 100 and not topup:
                 c["paused"] += 1
                 entry.update({"action": "paused", "strike": round(K, 2), "cash": round(cash, 2)})
@@ -379,7 +396,8 @@ def wheel_sim(weeks, method, tbill=None, topup=False, legs_per_week=1, policy=No
               "ends_holding": bool(shares), "cash_now": round(cash, 2),
               "first": timeline_all[0][0], "last": timeline_all[-1][0],
               "last_leg": weeks[-1]["leg"], "last_expiry": weeks[-1]["x"].date().isoformat(),
-              "trades_per_week": legs_per_week, "policy": mode})
+              "trades_per_week": legs_per_week, "policy": mode, "cap_mode": cap,
+              "called_at": round(called_at, 2) if called_at is not None else None})
     timeline = [[t[0], round(t[1]), round(t[2]), t[3]] for t in timeline]     # whole dollars for the chart
     return {"summary": c, "timeline": timeline, "events": events[-200:], "events_total": len(events),
             "log": log[-52 * legs_per_week:], "log_all": log}
@@ -409,7 +427,8 @@ def summarize(rows, method, rules=True):
                        "rate": round(sum(1 for r in g if r[method]["assigned"]) / len(g), 4),
                        "est_premium": round(sum(r[method]["est_premium"] for r in g) * 100, 2),
                        "est_net": round(sum(r[method]["est_net"] for r in g), 2)}
-                      for leg in dict.fromkeys(r.get("leg", "mon_fri") for r in use)
+                      for leg in sorted(dict.fromkeys(r.get("leg", "mon_fri") for r in use),
+                                        key=lambda k: [l for sk in SCHEDULES.values() for l, _, _ in sk].index(k))
                       for g in [[r for r in use if r.get("leg", "mon_fri") == leg]]],
     }
 
@@ -909,9 +928,11 @@ def _calibrated_ratio(B, base_rate, r):
 def lookalike_now(F: pd.DataFrame, earn, news=None, news_now=None, now_et=None):
     """For the daily study: lookalike adjustments for each window, as of the latest close."""
     out = {}
-    for sk in ("weekly", "twice"):
+    for sk in SCHEDULES:
         P = periods(F, earn, now_et, sk)
         for leg, _, _ in SCHEDULES[sk]:
+            if leg in out:               # Thursday -> Friday is in two schedules
+                continue
             L = lookalikes(F, [w for w in P if w["leg"] == leg], news, news_now)
             if L:
                 out[leg] = {"calls": lookalike_adjustment(L["calls"]), "puts": lookalike_adjustment(L["puts"])}
@@ -986,15 +1007,52 @@ def horizons(P, method, tbill=None, topup=False, legs=1, max_years=10):
     return {"ending_now": ending, "rolling": rolling, "step_days": ROLL_STEP_DAYS}
 
 
-SCHEDULE_LABELS = {"weekly": "Once a week: Monday → Friday", "twice": "Twice a week: Monday → Wednesday, Thursday → Friday"}
-WINDOW_LABELS = {"mon_fri": "Monday → Friday", "mon_wed": "Monday → Wednesday", "thu_fri": "Thursday → Friday"}
+# ------------------------------------------------------------ after an assignment: does it come back?
+RTS_MOVES = [0.0, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0]          # distance above the old strike, in weekly expected moves
+RTS_WEEKS = [1, 2, 4, 8, 13]
+
+
+def return_to_strike(F: pd.DataFrame):
+    """How often the stock came back down to a strike some distance below it, within 1-13 weeks.
+    Distance is measured in weekly expected moves (recent volatility), so one table fits calm and
+    volatile stretches. Uses daily closes: 'came back' = closed at or below the strike."""
+    c = F["close"].values.astype(float)
+    hv = F["hv20"].values.astype(float)
+    wk = hv * math.sqrt(5 / 252)
+    n = len(c)
+    rates, counts = [], []
+    for m in RTS_MOVES:
+        row, cnt = [], []
+        K = c / np.exp(m * wk)                               # a strike m weekly moves below each day's close
+        for weeks in RTS_WEEKS:
+            h = weeks * 5
+            ok, hit = 0, 0
+            # lowest close over the next h trading days
+            fut = pd.Series(c[::-1]).rolling(h, min_periods=h).min().values[::-1]
+            fut = np.r_[fut[1:], np.nan]                    # starting the day after
+            valid = ~np.isnan(fut) & ~np.isnan(K)
+            ok = int(valid.sum())
+            hit = int((fut[valid] <= K[valid]).sum())
+            row.append(round(hit / ok * 100, 1) if ok else None)
+            cnt.append(ok)
+        rates.append(row)
+        counts.append(cnt)
+    return {"moves": RTS_MOVES, "weeks": RTS_WEEKS, "rates": rates, "days": counts[0][0] if counts else 0}
+
+
+SCHEDULE_LABELS = {"weekly": "Once a week: Monday → Friday", "twice": "Twice a week: Monday → Wednesday, Thursday → Friday",
+                   "tuewed": "Twice a week, one-day trades: Tuesday → Wednesday, Thursday → Friday"}
+WINDOW_LABELS = {"mon_fri": "Monday → Friday", "mon_wed": "Monday → Wednesday", "tue_wed": "Tuesday → Wednesday",
+                 "thu_fri": "Thursday → Friday"}
+WHEEL_KEYS = (("wheel", "weekly", 1), ("wheel2", "twice", 2), ("wheel3", "tuewed", 2))
 
 
 def backtest(ticker, px, earn, now_et=None, peers=(), wiki=None, analyst=None, news=None, news_now=None):
     """Returns (report, history). The report is what the page loads first; the history file holds
     every trade and every wheel step since the start, loaded only when you ask to see it all."""
     F = rs.build_features(px, ticker, list(peers), wiki, earn, analyst)
-    per = {"weekly": week_info(F, earn, now_et), "twice": periods(F, earn, now_et, "twice")}
+    per = {"weekly": week_info(F, earn, now_et), "twice": periods(F, earn, now_et, "twice"),
+           "tuewed": periods(F, earn, now_et, "tuewed")}
     tbill = None
     try:
         t = rs.load_prices(["^IRX"]).get("^IRX")
@@ -1003,7 +1061,7 @@ def backtest(ticker, px, earn, now_et=None, peers=(), wiki=None, analyst=None, n
     except Exception as exc:
         print(f"  T-bill rate unavailable, cash earns nothing: {exc}", file=sys.stderr)
 
-    schedules, hist_rows, policy = {}, {}, {}
+    schedules, hist_rows, policy, lk_cache = {}, {}, {}, {}
     for sk, P in per.items():
         rows = run_trades(P)
         if not rows:
@@ -1020,7 +1078,8 @@ def backtest(ticker, px, earn, now_et=None, peers=(), wiki=None, analyst=None, n
             "earnings_trades": sum(1 for r in rows if r["earnings"]),
             # the last year of trades, plus every assigned one; the rest is in the history file
             "rows": recent, "rows_total": len(rows),
-            "lookalikes": {k: _safe_lookalikes(F, [w for w in P if w["leg"] == k], news, news_now) for k in legs},
+            "lookalikes": {k: lk_cache[k] if k in lk_cache else lk_cache.setdefault(
+                k, _safe_lookalikes(F, [w for w in P if w["leg"] == k], news, news_now)) for k in legs},
         }
         hist_rows[sk] = [pack_row(r) for r in rows]
         for leg, L in schedules[sk]["lookalikes"].items():
@@ -1029,17 +1088,17 @@ def backtest(ticker, px, earn, now_et=None, peers=(), wiki=None, analyst=None, n
                 if st and "_decisions" in st:
                     policy.setdefault(leg, {})[kind] = st.pop("_decisions")
 
-    wheels = {
-        "wheel": {m: wheel_sim(per["weekly"], m, tbill) for m in ("delta", "study")},
-        "wheel_topup": {m: wheel_sim(per["weekly"], m, tbill, topup=True) for m in ("delta", "study")},
-        "wheel2": {m: wheel_sim(per["twice"], m, tbill, legs_per_week=2) for m in ("delta", "study")},
-        "wheel2_topup": {m: wheel_sim(per["twice"], m, tbill, topup=True, legs_per_week=2) for m in ("delta", "study")},
-    }
+    wheels = {}
+    for base, sk, legs in WHEEL_KEYS:
+        for topup in (False, True):
+            wheels[base + ("_topup" if topup else "")] = {m: wheel_sim(per[sk], m, tbill, topup=topup, legs_per_week=legs)
+                                                           for m in ("delta", "study")}
+        wheels[base + "_cap"] = {m: wheel_sim(per[sk], m, tbill, legs_per_week=legs, cap=True) for m in ("delta", "study")}
     # the same wheels, following the site's recommendation (see POLICIES). They go in a separate
     # file the page loads only when you pick one; the main file keeps just their summaries.
     policy_wheels = {}
     for mode in POLICIES:
-        for base, sk, legs in (("wheel", "weekly", 1), ("wheel2", "twice", 2)):
+        for base, sk, legs in WHEEL_KEYS:
             for topup in (False, True):
                 key = base + ("_topup" if topup else "") + "_" + mode
                 policy_wheels[key] = {m: wheel_sim(per[sk], m, tbill, topup=topup, legs_per_week=legs, policy=policy, mode=mode)
@@ -1064,10 +1123,11 @@ def backtest(ticker, px, earn, now_et=None, peers=(), wiki=None, analyst=None, n
         # kept for pages from before the schedule switch (Monday -> Friday only)
         "summary": weekly.get("calls_only"),
         "cash_interest": tbill is not None,
+        "return_to_strike": return_to_strike(F),
         **wheels,
         "horizons": {base + ("_topup" if topup else ""): {m: horizons(per[sk], m, tbill, topup=topup, legs=legs)
                                                          for m in ("delta", "study")}
-                     for base, sk, legs in (("wheel", "weekly", 1), ("wheel2", "twice", 2)) for topup in (False, True)},
+                     for base, sk, legs in WHEEL_KEYS for topup in (False, True)},
         "policies": POLICIES,
         "policy_summary": {k: {m: (W or {}).get("summary") for m, W in v.items()} for k, v in policy_wheels.items()},
     }

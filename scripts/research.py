@@ -47,6 +47,7 @@ MARKET = {"QQQ": "QQQ", "SMH": "SMH", "VIX": "^VIX", "VIX9D": "^VIX9D",
 WINDOWS = [
     {"key": "mon_wed", "label": "Monday → Wednesday", "entry_dow": 0, "exit_offset": 2, "sessions": 3},
     {"key": "mon_fri", "label": "Monday → Friday", "entry_dow": 0, "exit_offset": 4, "sessions": 5},
+    {"key": "tue_wed", "label": "Tuesday → Wednesday", "entry_dow": 1, "exit_offset": 1, "sessions": 2},
     {"key": "thu_fri", "label": "Thursday → Friday", "entry_dow": 3, "exit_offset": 1, "sessions": 2},
     {"key": "thu_mon", "label": "Thursday → next Monday", "entry_dow": 3, "exit_offset": 4, "sessions": 3},
 ]

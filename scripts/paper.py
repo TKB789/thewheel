@@ -39,6 +39,8 @@ STRATEGY_NAMES = {
     "delta": "Call to sell (0.20 delta)",
     "mon_wed": "Schedule: Monday → Wednesday",
     "mon_fri": "Schedule: Monday → Friday",
+    "tue_wed": "Schedule: Tuesday → Wednesday",
+    "csp_tue_wed": "Put schedule: Tuesday → Wednesday",
     "thu_fri": "Schedule: Thursday → Friday",
     "thu_mon": "Schedule: Thursday → next Monday",
     "put": "Wheel put",
@@ -120,7 +122,7 @@ SIDES = {
 def auto_log(now_et: datetime):
     today = now_et.date()
     rows = read_csv(AUTO_LOG)
-    if today.weekday() not in (0, 3):
+    if today.weekday() not in (0, 1, 3):       # Tuesday: only the Tuesday -> Wednesday comparison
         return rows, 0
     have = {(r["ticker"], r["strategy"], r["logged_at"][:10]) for r in rows}
     index = load_json(DATA / "index.json") or {}
@@ -144,7 +146,7 @@ def auto_log(now_et: datetime):
             level = verdict["level"]
 
             # 1) the delta-based card ("Call to sell" / the recommended cash-secured put)
-            if (tk, dkey, today.isoformat()) not in have:
+            if today.weekday() in (0, 3) and (tk, dkey, today.isoformat()) not in have:
                 rec = opt.get(rkey)
                 decision = "sell" if rec and level != "wait" else "wait"
                 pick = rec
