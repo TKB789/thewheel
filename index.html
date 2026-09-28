@@ -84,6 +84,9 @@
     background: var(--accent); color: var(--accent-ink); cursor: pointer;
   }
   form.lookup button:hover { filter: brightness(1.08); }
+  form.lookup { flex-wrap: wrap; }
+  form.lookup select { padding: 10px 12px; font: 600 14px var(--sans); border: 1px solid var(--line); border-radius: 6px;
+    background: var(--surface); color: var(--ink); max-width: 100%; }
   input:focus-visible, button:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
   .notice { padding: 12px 14px; border-radius: 6px; font-size: 14px; background: var(--info-bg); color: var(--ink); border: 1px solid var(--line); }
@@ -299,6 +302,8 @@
       <input id="ticker" name="ticker" list="tickerList" placeholder="GOOGL" maxlength="6" aria-label="Ticker symbol">
       <datalist id="tickerList"></datalist>
       <button type="submit" id="go">Check</button>
+      <label for="tickerPick" hidden>Watchlist</label>
+      <select id="tickerPick" aria-label="Tickers on the watchlist"><option value="">Watchlist</option></select>
     </form>
   </header>
 
@@ -738,6 +743,8 @@ async function init() {
   state.tickers = tickers;
   $("coverage").textContent = tickers.length ? `Covers ${tickers.length} ticker${tickers.length === 1 ? "" : "s"} on the watchlist maintained by the site owner.` : "";
   $("tickerList").innerHTML = tickers.map((t) => `<option value="${esc(t)}">`).join("");
+  $("tickerPick").innerHTML = `<option value="">Watchlist (${tickers.length})</option>` +
+    tickers.slice().sort().map((t) => `<option value="${esc(t)}">${esc(t)}</option>`).join("");
 
   const start = recall("cca-ticker");
   const first = (start && tickers.includes(start)) ? start : tickers[0];
@@ -757,6 +764,7 @@ async function load(ticker) {
     catch (e) { state.backtest = null; }
     showNotice("");
     store("cca-ticker", ticker);
+    if ([...$("tickerPick").options].some((o) => o.value === ticker)) $("tickerPick").value = ticker;
     render(rep);
   } catch (e) {
     $("report").hidden = true;
@@ -2318,6 +2326,7 @@ function setSide(side) {
 }
 
 $("lookup").addEventListener("submit", (ev) => { ev.preventDefault(); load($("ticker").value); });
+$("tickerPick").addEventListener("change", (ev) => { const t = ev.target.value; if (t) { $("ticker").value = t; load(t); } });
 $("expiry").addEventListener("change", (ev) => { state.expiry = ev.target.value; renderChain(); });
 $("tabCalls").addEventListener("click", () => setSide("calls"));
 $("tabPuts").addEventListener("click", () => setSide("puts"));
