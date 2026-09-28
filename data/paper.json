@@ -1,10 +1,12 @@
 {
- "updated": "2026-09-28T16:38:04+00:00",
+ "updated": "2026-09-28T19:18:05+00:00",
  "fee_per_contract": 0.65,
  "strategy_names": {
   "delta": "Call to sell (0.20 delta)",
   "mon_wed": "Schedule: Monday \u2192 Wednesday",
   "mon_fri": "Schedule: Monday \u2192 Friday",
+  "tue_wed": "Schedule: Tuesday \u2192 Wednesday",
+  "csp_tue_wed": "Put schedule: Tuesday \u2192 Wednesday",
   "thu_fri": "Schedule: Thursday \u2192 Friday",
   "thu_mon": "Schedule: Thursday \u2192 next Monday",
   "put": "Wheel put",
