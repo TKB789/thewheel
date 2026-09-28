@@ -1,6 +1,6 @@
 {
  "ticker": "MSFT",
- "updated": "2026-09-28T20:33:21+00:00",
+ "updated": "2026-09-28T20:59:23+00:00",
  "price": 509.22,
  "prev_close": 516.17,
  "change_pct": -1.35,
@@ -14,7 +14,7 @@
  "dividend_rate": 3.92,
  "put_call_oi": 0.52,
  "put_call_volume": 0.44,
- "call_target_delta": 0.18,
+ "call_target_delta": 0.2,
  "put_target_delta": 0.25,
  "call_base_delta": 0.2,
  "put_base_delta": 0.25,
@@ -24,20 +24,20 @@
    "beats_chance": true,
    "p": 0.005,
    "base_rate": 21.3,
-   "rate_now": 20.0,
-   "lookalikes_assigned": 1,
+   "rate_now": 16.0,
+   "lookalikes_assigned": 2,
    "as_of": "2026-09-28",
-   "ratio": 1.11,
-   "applied": true,
-   "group": "Lookalikes most often assigned",
-   "group_rate": 24.6,
+   "ratio": 0.97,
+   "applied": false,
+   "group": "Middle third",
+   "group_rate": 20.4,
    "group_trades": 142
   },
   "puts": {
    "beats_chance": false,
-   "p": 0.4776,
+   "p": 0.4577,
    "base_rate": 18.7,
-   "rate_now": 20.0,
+   "rate_now": 22.0,
    "lookalikes_assigned": 0,
    "as_of": "2026-09-28",
    "ratio": 1.0,
@@ -77,8 +77,8 @@
   {
    "name": "Similar past weeks",
    "status": "neutral",
-   "value": "1.1\u00d7 as likely",
-   "note": "1 of the 10 past Monday \u2192 Wednesday trades most like today ended with the call assigned (20% of the closest 50, vs 21% of all trades). Past trades in the same spot were actually assigned 25% of the time (142 trades). The recommended strike is adjusted slightly."
+   "value": "About usual",
+   "note": "2 of the 10 past Monday \u2192 Wednesday trades most like today ended with the call assigned (16% of the closest 50, vs 21% of all trades). Past trades in the same spot were actually assigned 20% of the time (142 trades). That's close to normal, so the strike isn't changed."
   }
  ],
  "put_verdict": {

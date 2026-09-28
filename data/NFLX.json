@@ -1,6 +1,6 @@
 {
  "ticker": "NFLX",
- "updated": "2026-09-28T20:33:31+00:00",
+ "updated": "2026-09-28T20:59:38+00:00",
  "price": 69.23,
  "prev_close": 71.15,
  "change_pct": -2.7,
@@ -22,7 +22,7 @@
   "window": "mon_wed",
   "calls": {
    "beats_chance": false,
-   "p": 0.7264,
+   "p": 0.7363,
    "base_rate": 18.1,
    "rate_now": 8.0,
    "lookalikes_assigned": 0,
@@ -32,7 +32,7 @@
   },
   "puts": {
    "beats_chance": false,
-   "p": 0.3582,
+   "p": 0.3333,
    "base_rate": 14.7,
    "rate_now": 20.0,
    "lookalikes_assigned": 2,

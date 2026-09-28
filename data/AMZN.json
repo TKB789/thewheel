@@ -1,6 +1,6 @@
 {
  "ticker": "AMZN",
- "updated": "2026-09-28T20:33:23+00:00",
+ "updated": "2026-09-28T20:59:26+00:00",
  "price": 246.15,
  "prev_close": 249.67,
  "change_pct": -1.41,
@@ -22,9 +22,9 @@
   "window": "mon_wed",
   "calls": {
    "beats_chance": false,
-   "p": 0.0896,
+   "p": 0.0846,
    "base_rate": 21.3,
-   "rate_now": 18.0,
+   "rate_now": 16.0,
    "lookalikes_assigned": 1,
    "as_of": "2026-09-28",
    "ratio": 1.0,
@@ -32,10 +32,10 @@
   },
   "puts": {
    "beats_chance": false,
-   "p": 0.3582,
+   "p": 0.3433,
    "base_rate": 18.9,
-   "rate_now": 18.0,
-   "lookalikes_assigned": 4,
+   "rate_now": 20.0,
+   "lookalikes_assigned": 5,
    "as_of": "2026-09-28",
    "ratio": 1.0,
    "applied": false

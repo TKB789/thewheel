@@ -1,6 +1,6 @@
 {
  "ticker": "GOOGL",
- "updated": "2026-09-28T20:33:18+00:00",
+ "updated": "2026-09-28T20:59:19+00:00",
  "price": 342.75,
  "prev_close": 343.92,
  "change_pct": -0.34,
@@ -15,33 +15,33 @@
  "put_call_oi": 0.43,
  "put_call_volume": 0.45,
  "call_target_delta": 0.2,
- "put_target_delta": 0.216,
+ "put_target_delta": 0.21,
  "call_base_delta": 0.2,
  "put_base_delta": 0.25,
  "lookalike": {
   "window": "mon_wed",
   "calls": {
    "beats_chance": false,
-   "p": 0.1045,
+   "p": 0.0945,
    "base_rate": 20.4,
-   "rate_now": 16.0,
-   "lookalikes_assigned": 2,
+   "rate_now": 18.0,
+   "lookalikes_assigned": 3,
    "as_of": "2026-09-28",
    "ratio": 1.0,
    "applied": false
   },
   "puts": {
    "beats_chance": true,
-   "p": 0.0149,
+   "p": 0.01,
    "base_rate": 16.9,
    "rate_now": 22.0,
-   "lookalikes_assigned": 4,
+   "lookalikes_assigned": 3,
    "as_of": "2026-09-28",
-   "ratio": 1.16,
+   "ratio": 1.19,
    "applied": true,
    "group": "Lookalikes most often assigned",
-   "group_rate": 20.5,
-   "group_trades": 166
+   "group_rate": 21.0,
+   "group_trades": 162
   }
  },
  "verdict": {
@@ -109,7 +109,7 @@
    "name": "Similar past weeks",
    "status": "neutral",
    "value": "1.2\u00d7 as likely",
-   "note": "4 of the 10 past Monday \u2192 Wednesday trades most like today ended with the put assigned (22% of the closest 50, vs 17% of all trades). Past trades in the same spot were actually assigned 20% of the time (166 trades). The recommended strike is adjusted slightly."
+   "note": "3 of the 10 past Monday \u2192 Wednesday trades most like today ended with the put assigned (22% of the closest 50, vs 17% of all trades). Past trades in the same spot were actually assigned 21% of the time (162 trades). The recommended strike is adjusted slightly."
   }
  ],
  "recommended_call": {

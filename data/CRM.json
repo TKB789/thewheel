@@ -1,6 +1,6 @@
 {
  "ticker": "CRM",
- "updated": "2026-09-28T20:33:30+00:00",
+ "updated": "2026-09-28T20:59:37+00:00",
  "price": 227.27,
  "prev_close": 234.02,
  "change_pct": -2.88,
@@ -24,7 +24,7 @@
    "beats_chance": false,
    "p": 0.2687,
    "base_rate": 17.7,
-   "rate_now": 22.0,
+   "rate_now": 26.0,
    "lookalikes_assigned": 2,
    "as_of": "2026-09-28",
    "ratio": 1.0,
@@ -32,9 +32,9 @@
   },
   "puts": {
    "beats_chance": false,
-   "p": 0.6169,
+   "p": 0.5522,
    "base_rate": 22.7,
-   "rate_now": 16.0,
+   "rate_now": 18.0,
    "lookalikes_assigned": 3,
    "as_of": "2026-09-28",
    "ratio": 1.0,

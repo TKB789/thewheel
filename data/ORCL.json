@@ -1,6 +1,6 @@
 {
  "ticker": "ORCL",
- "updated": "2026-09-28T20:33:29+00:00",
+ "updated": "2026-09-28T20:59:35+00:00",
  "price": 132.6,
  "prev_close": 137.1,
  "change_pct": -3.28,
@@ -14,7 +14,7 @@
  "dividend_rate": 2.0,
  "put_call_oi": 0.7,
  "put_call_volume": 0.42,
- "call_target_delta": 0.164,
+ "call_target_delta": 0.163,
  "put_target_delta": 0.15,
  "call_base_delta": 0.2,
  "put_base_delta": 0.15,
@@ -27,15 +27,15 @@
    "rate_now": 26.0,
    "lookalikes_assigned": 2,
    "as_of": "2026-09-28",
-   "ratio": 1.22,
+   "ratio": 1.23,
    "applied": true,
    "group": "Lookalikes most often assigned",
-   "group_rate": 20.5,
-   "group_trades": 161
+   "group_rate": 20.6,
+   "group_trades": 160
   },
   "puts": {
    "beats_chance": false,
-   "p": 0.1144,
+   "p": 0.0945,
    "base_rate": 15.9,
    "rate_now": 24.0,
    "lookalikes_assigned": 5,
@@ -78,7 +78,7 @@
    "name": "Similar past weeks",
    "status": "neutral",
    "value": "1.2\u00d7 as likely",
-   "note": "2 of the 10 past Monday \u2192 Wednesday trades most like today ended with the call assigned (26% of the closest 50, vs 16% of all trades). Past trades in the same spot were actually assigned 20% of the time (161 trades). The recommended strike is adjusted slightly."
+   "note": "2 of the 10 past Monday \u2192 Wednesday trades most like today ended with the call assigned (26% of the closest 50, vs 16% of all trades). Past trades in the same spot were actually assigned 21% of the time (160 trades). The recommended strike is adjusted slightly."
   }
  ],
  "put_verdict": {

@@ -1,6 +1,6 @@
 {
  "ticker": "JPM",
- "updated": "2026-09-28T20:33:32+00:00",
+ "updated": "2026-09-28T20:59:39+00:00",
  "price": 336.59,
  "prev_close": 343.06,
  "change_pct": -1.89,
@@ -22,20 +22,20 @@
   "window": "mon_wed",
   "calls": {
    "beats_chance": false,
-   "p": 0.0746,
+   "p": 0.0647,
    "base_rate": 21.1,
    "rate_now": 30.0,
-   "lookalikes_assigned": 2,
+   "lookalikes_assigned": 4,
    "as_of": "2026-09-28",
    "ratio": 1.0,
    "applied": false
   },
   "puts": {
    "beats_chance": false,
-   "p": 0.3682,
+   "p": 0.408,
    "base_rate": 19.2,
    "rate_now": 20.0,
-   "lookalikes_assigned": 3,
+   "lookalikes_assigned": 2,
    "as_of": "2026-09-28",
    "ratio": 1.0,
    "applied": false

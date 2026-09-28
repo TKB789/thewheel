@@ -1,6 +1,6 @@
 {
  "ticker": "BAC",
- "updated": "2026-09-28T20:33:33+00:00",
+ "updated": "2026-09-28T20:59:41+00:00",
  "price": 55.47,
  "prev_close": 56.7,
  "change_pct": -2.17,
@@ -24,8 +24,8 @@
    "beats_chance": true,
    "p": 0.01,
    "base_rate": 15.6,
-   "rate_now": 24.0,
-   "lookalikes_assigned": 5,
+   "rate_now": 26.0,
+   "lookalikes_assigned": 6,
    "as_of": "2026-09-28",
    "ratio": 1.17,
    "applied": true,
@@ -35,7 +35,7 @@
   },
   "puts": {
    "beats_chance": false,
-   "p": 0.1343,
+   "p": 0.1393,
    "base_rate": 13.5,
    "rate_now": 8.0,
    "lookalikes_assigned": 0,
@@ -78,7 +78,7 @@
    "name": "Similar past weeks",
    "status": "neutral",
    "value": "1.2\u00d7 as likely",
-   "note": "5 of the 10 past Monday \u2192 Wednesday trades most like today ended with the call assigned (24% of the closest 50, vs 16% of all trades). Past trades in the same spot were actually assigned 19% of the time (156 trades). The recommended strike is adjusted slightly."
+   "note": "6 of the 10 past Monday \u2192 Wednesday trades most like today ended with the call assigned (26% of the closest 50, vs 16% of all trades). Past trades in the same spot were actually assigned 19% of the time (156 trades). The recommended strike is adjusted slightly."
   }
  ],
  "put_verdict": {

@@ -1,6 +1,6 @@
 {
  "ticker": "AVGO",
- "updated": "2026-09-28T20:33:27+00:00",
+ "updated": "2026-09-28T20:59:32+00:00",
  "price": 349.57,
  "prev_close": 352.81,
  "change_pct": -0.92,
@@ -14,7 +14,7 @@
  "dividend_rate": 2.6,
  "put_call_oi": 0.61,
  "put_call_volume": 0.69,
- "call_target_delta": 0.156,
+ "call_target_delta": 0.155,
  "put_target_delta": 0.25,
  "call_base_delta": 0.2,
  "put_base_delta": 0.25,
@@ -27,15 +27,15 @@
    "rate_now": 26.0,
    "lookalikes_assigned": 3,
    "as_of": "2026-09-28",
-   "ratio": 1.28,
+   "ratio": 1.29,
    "applied": true,
    "group": "Lookalikes most often assigned",
-   "group_rate": 28.3,
-   "group_trades": 145
+   "group_rate": 28.5,
+   "group_trades": 144
   },
   "puts": {
    "beats_chance": false,
-   "p": 0.5821,
+   "p": 0.6119,
    "base_rate": 18.2,
    "rate_now": 16.0,
    "lookalikes_assigned": 2,
@@ -78,7 +78,7 @@
    "name": "Similar past weeks",
    "status": "bad",
    "value": "1.3\u00d7 likelier",
-   "note": "3 of the 10 past Monday \u2192 Wednesday trades most like today ended with the call assigned (26% of the closest 50, vs 20% of all trades). Past trades in the same spot were actually assigned 28% of the time (145 trades). Assignment looks 1.3\u00d7 as likely as usual, so the recommended call is moved further out."
+   "note": "3 of the 10 past Monday \u2192 Wednesday trades most like today ended with the call assigned (26% of the closest 50, vs 20% of all trades). Past trades in the same spot were actually assigned 28% of the time (144 trades). Assignment looks 1.3\u00d7 as likely as usual, so the recommended call is moved further out."
   }
  ],
  "put_verdict": {

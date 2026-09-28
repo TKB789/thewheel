@@ -1,6 +1,6 @@
 {
  "ticker": "PFE",
- "updated": "2026-09-28T20:33:35+00:00",
+ "updated": "2026-09-28T20:59:44+00:00",
  "price": 28.72,
  "prev_close": 28.67,
  "change_pct": 0.17,
@@ -22,10 +22,10 @@
   "window": "mon_wed",
   "calls": {
    "beats_chance": false,
-   "p": 0.1045,
+   "p": 0.1393,
    "base_rate": 9.3,
    "rate_now": 14.0,
-   "lookalikes_assigned": 1,
+   "lookalikes_assigned": 0,
    "as_of": "2026-09-28",
    "ratio": 1.0,
    "applied": false
@@ -35,7 +35,7 @@
    "p": 0.2836,
    "base_rate": 15.8,
    "rate_now": 18.0,
-   "lookalikes_assigned": 1,
+   "lookalikes_assigned": 2,
    "as_of": "2026-09-28",
    "ratio": 1.0,
    "applied": false

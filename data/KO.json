@@ -1,6 +1,6 @@
 {
  "ticker": "KO",
- "updated": "2026-09-28T20:33:34+00:00",
+ "updated": "2026-09-28T20:59:43+00:00",
  "price": 87.18,
  "prev_close": 87.81,
  "change_pct": -0.72,
@@ -22,20 +22,20 @@
   "window": "mon_wed",
   "calls": {
    "beats_chance": false,
-   "p": 0.5522,
+   "p": 0.607,
    "base_rate": 10.5,
-   "rate_now": 10.0,
-   "lookalikes_assigned": 1,
+   "rate_now": 12.0,
+   "lookalikes_assigned": 0,
    "as_of": "2026-09-28",
    "ratio": 1.0,
    "applied": false
   },
   "puts": {
    "beats_chance": false,
-   "p": 0.5721,
+   "p": 0.5423,
    "base_rate": 15.3,
-   "rate_now": 16.0,
-   "lookalikes_assigned": 0,
+   "rate_now": 18.0,
+   "lookalikes_assigned": 2,
    "as_of": "2026-09-28",
    "ratio": 1.0,
    "applied": false

@@ -1,6 +1,6 @@
 {
  "ticker": "TSLA",
- "updated": "2026-09-28T20:33:25+00:00",
+ "updated": "2026-09-28T20:59:29+00:00",
  "price": 357.45,
  "prev_close": 372.11,
  "change_pct": -3.94,
@@ -27,17 +27,17 @@
    "rate_now": 20.0,
    "lookalikes_assigned": 2,
    "as_of": "2026-09-28",
-   "ratio": 0.98,
+   "ratio": 0.99,
    "applied": false,
    "group": "Middle third",
-   "group_rate": 23.5,
-   "group_trades": 102
+   "group_rate": 24.0,
+   "group_trades": 100
   },
   "puts": {
    "beats_chance": false,
-   "p": 0.1642,
+   "p": 0.1194,
    "base_rate": 17.9,
-   "rate_now": 10.0,
+   "rate_now": 14.0,
    "lookalikes_assigned": 1,
    "as_of": "2026-09-28",
    "ratio": 1.0,
@@ -78,7 +78,7 @@
    "name": "Similar past weeks",
    "status": "neutral",
    "value": "About usual",
-   "note": "2 of the 10 past Monday \u2192 Wednesday trades most like today ended with the call assigned (20% of the closest 50, vs 24% of all trades). Past trades in the same spot were actually assigned 24% of the time (102 trades). That's close to normal, so the strike isn't changed."
+   "note": "2 of the 10 past Monday \u2192 Wednesday trades most like today ended with the call assigned (20% of the closest 50, vs 24% of all trades). Past trades in the same spot were actually assigned 24% of the time (100 trades). That's close to normal, so the strike isn't changed."
   }
  ],
  "put_verdict": {

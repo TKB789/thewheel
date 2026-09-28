@@ -1,6 +1,6 @@
 {
  "ticker": "NVDA",
- "updated": "2026-09-28T20:33:22+00:00",
+ "updated": "2026-09-28T20:59:25+00:00",
  "price": 228.86,
  "prev_close": 225.07,
  "change_pct": 1.68,
@@ -24,7 +24,7 @@
    "beats_chance": true,
    "p": 0.005,
    "base_rate": 17.5,
-   "rate_now": 22.0,
+   "rate_now": 24.0,
    "lookalikes_assigned": 3,
    "as_of": "2026-09-28",
    "ratio": 1.44,
@@ -37,8 +37,8 @@
    "beats_chance": true,
    "p": 0.01,
    "base_rate": 12.0,
-   "rate_now": 10.0,
-   "lookalikes_assigned": 0,
+   "rate_now": 12.0,
+   "lookalikes_assigned": 2,
    "as_of": "2026-09-28",
    "ratio": 1.33,
    "applied": true,
@@ -81,7 +81,7 @@
    "name": "Similar past weeks",
    "status": "bad",
    "value": "1.4\u00d7 likelier",
-   "note": "3 of the 10 past Monday \u2192 Wednesday trades most like today ended with the call assigned (22% of the closest 50, vs 18% of all trades). Past trades in the same spot were actually assigned 28% of the time (143 trades). Assignment looks 1.4\u00d7 as likely as usual, so the recommended call is moved further out."
+   "note": "3 of the 10 past Monday \u2192 Wednesday trades most like today ended with the call assigned (24% of the closest 50, vs 18% of all trades). Past trades in the same spot were actually assigned 28% of the time (143 trades). Assignment looks 1.4\u00d7 as likely as usual, so the recommended call is moved further out."
   }
  ],
  "put_verdict": {
@@ -118,7 +118,7 @@
    "name": "Similar past weeks",
    "status": "bad",
    "value": "1.3\u00d7 likelier",
-   "note": "0 of the 10 past Monday \u2192 Wednesday trades most like today ended with the put assigned (10% of the closest 50, vs 12% of all trades). Past trades in the same spot were actually assigned 17% of the time (150 trades). Assignment looks 1.3\u00d7 as likely as usual, so the recommended put is moved further out."
+   "note": "2 of the 10 past Monday \u2192 Wednesday trades most like today ended with the put assigned (12% of the closest 50, vs 12% of all trades). Past trades in the same spot were actually assigned 17% of the time (150 trades). Assignment looks 1.3\u00d7 as likely as usual, so the recommended put is moved further out."
   }
  ],
  "recommended_call": {

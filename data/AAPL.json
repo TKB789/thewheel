@@ -1,6 +1,6 @@
 {
  "ticker": "AAPL",
- "updated": "2026-09-28T20:33:20+00:00",
+ "updated": "2026-09-28T20:59:22+00:00",
  "price": 338.4,
  "prev_close": 341.07,
  "change_pct": -0.78,
@@ -21,24 +21,21 @@
  "lookalike": {
   "window": "mon_wed",
   "calls": {
-   "beats_chance": true,
-   "p": 0.0398,
+   "beats_chance": false,
+   "p": 0.0547,
    "base_rate": 22.1,
-   "rate_now": 18.0,
+   "rate_now": 22.0,
    "lookalikes_assigned": 0,
    "as_of": "2026-09-28",
-   "ratio": 0.96,
-   "applied": false,
-   "group": "Middle third",
-   "group_rate": 21.0,
-   "group_trades": 119
+   "ratio": 1.0,
+   "applied": false
   },
   "puts": {
    "beats_chance": false,
-   "p": 0.1741,
+   "p": 0.209,
    "base_rate": 12.5,
-   "rate_now": 14.0,
-   "lookalikes_assigned": 2,
+   "rate_now": 18.0,
+   "lookalikes_assigned": 3,
    "as_of": "2026-09-28",
    "ratio": 1.0,
    "applied": false
@@ -73,12 +70,6 @@
    "status": "info",
    "value": "0.65",
    "note": "Call-heavy positioning: traders are leaning bullish."
-  },
-  {
-   "name": "Similar past weeks",
-   "status": "neutral",
-   "value": "About usual",
-   "note": "0 of the 10 past Monday \u2192 Wednesday trades most like today ended with the call assigned (18% of the closest 50, vs 22% of all trades). Past trades in the same spot were actually assigned 21% of the time (119 trades). That's close to normal, so the strike isn't changed."
   }
  ],
  "put_verdict": {

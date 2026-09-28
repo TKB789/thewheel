@@ -1,6 +1,6 @@
 {
  "ticker": "META",
- "updated": "2026-09-28T20:33:24+00:00",
+ "updated": "2026-09-28T20:59:28+00:00",
  "price": 715.62,
  "prev_close": 751.66,
  "change_pct": -4.79,
@@ -32,7 +32,7 @@
   },
   "puts": {
    "beats_chance": false,
-   "p": 0.5572,
+   "p": 0.5721,
    "base_rate": 19.2,
    "rate_now": 16.0,
    "lookalikes_assigned": 2,
