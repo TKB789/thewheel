@@ -244,7 +244,7 @@
   table.fv td.third.worst { background: var(--bad-bg); }
   table.fv td.third.hi { background: var(--info-bg); }
   table.fv td.third.lo { background: var(--caution-bg); }
-  #stTable td:first-child { white-space: normal; min-width: 140px; max-width: 190px; font-size: 13px; }
+  #gkBody table.pin1 td:first-child, #wPolCompare td:first-child, #stTable td:first-child { white-space: normal; min-width: 140px; max-width: 190px; font-size: 13px; }
   tr.bestrow td { background: var(--good-bg); }
   .lknote { font-size: 13px; line-height: 1.5; color: var(--muted); margin: 10px 0; }
   .lknote .chip { margin-right: 4px; }
@@ -286,28 +286,6 @@
 
   <div id="analyzerView" class="wrap">
 
-  <section class="card" id="ghCard" hidden>
-    <h3>Connect your GitHub repository</h3>
-    <p class="sub" id="ghWhy"></p>
-    <ol class="setup-steps sub">
-      <li>On github.com: your profile picture → Settings → Developer settings → Personal access tokens → <strong>Fine-grained tokens</strong> → Generate new token.</li>
-      <li>Repository access: <strong>Only select repositories</strong>, then pick this one.</li>
-      <li>Repository permissions: <strong>Contents: Read and write</strong>. Leave everything else off.</li>
-      <li>Generate the token, copy it, and paste it below.</li>
-    </ol>
-    <div class="logform">
-      <label for="ghOwner">GitHub username<input id="ghOwner" type="text" autocapitalize="off" autocomplete="off" spellcheck="false"></label>
-      <label for="ghRepo">Repository<input id="ghRepo" type="text" autocapitalize="off" autocomplete="off" spellcheck="false"></label>
-      <label for="ghToken" class="wide">Token<input id="ghToken" type="password" autocomplete="off" placeholder="github_pat_..."></label>
-    </div>
-    <div class="tp-actions">
-      <button type="button" id="ghSave" class="btn2">Save and continue</button>
-      <button type="button" id="ghCancel" class="ghost">Cancel</button>
-      <button type="button" id="ghForget" class="linkish">Remove saved token</button>
-    </div>
-    <p class="sub" id="ghStatus" style="margin:12px 0 0">The token is kept only in this browser. Safari clears saved site data for sites you don't open for about a week, so you may need to paste it again now and then.</p>
-  </section>
-
   <div id="report" hidden>
     <div class="wrap">
       <div class="verdict" id="verdict">
@@ -339,7 +317,6 @@
         <div class="tp-actions">
           <button type="button" id="tpLog" class="btn2">Log paper trade</button>
           <button type="button" id="tpCancel" class="ghost">Cancel</button>
-          <button type="button" id="tpSettings" class="linkish">GitHub connection</button>
         </div>
         <p class="sub" id="tpStatus" style="margin:12px 0 0"></p>
       </section>
@@ -448,6 +425,7 @@
           <button type="button" data-to="wheelCard">Full wheel</button>
           <button type="button" data-to="lkCard">Recommendation test</button>
           <button type="button" data-to="btWeeksCard">Trade by trade</button>
+          <button type="button" data-to="gkCard">Greeks study</button>
         </div>
       </section>
       <section class="card" id="btCalls">
@@ -477,6 +455,12 @@
               <option value="delta">Calls 0.20 delta, puts 0.25 delta</option>
               <option value="study">History-based strikes</option>
             </select>
+            <label for="wPolicy" hidden>Which weeks to trade</label>
+            <select id="wPolicy" aria-label="Which weeks to trade">
+              <option value="every">Trade every week</option>
+              <option value="site">Follow the site's recommendation</option>
+              <option value="favorable">Favorable weeks only</option>
+            </select>
           </div>
         </div>
         <p class="sub" id="wSub"></p>
@@ -484,6 +468,11 @@
         <h4 class="subhead" style="margin-top:0">Pausing vs adding money</h4>
         <div class="scroll"><table id="wCompare"></table></div>
         <p class="sub" id="wCompareNote" style="margin:8px 0 14px"></p>
+        <div id="wPolWrap">
+          <h4 class="subhead" style="margin-top:0">Every week vs following the recommendation</h4>
+          <div class="scroll"><table id="wPolCompare" class="pin1"></table></div>
+          <p class="sub" id="wPolNote" style="margin:8px 0 14px"></p>
+        </div>
         <div class="tiles" id="wTiles"></div>
         <div class="chart-legend" id="wLegend"></div>
         <div class="chart-wrap" id="wChart"></div>
@@ -565,6 +554,25 @@
         <p class="sub" id="btWeeksSub" style="margin:0 0 10px"></p>
         <div class="scroll"><table id="btWeeks" class="pin1"></table></div>
       </section>
+      <section class="card" id="gkCard">
+        <div class="chain-head">
+          <h3>Option Greeks study: market odds vs what happened</h3>
+          <div class="controls">
+            <label for="gkSide" hidden>Option type</label>
+            <select id="gkSide" aria-label="Option type">
+              <option value="calls">Calls</option>
+              <option value="puts">Puts</option>
+            </select>
+            <label for="gkScope" hidden>Which tickers</label>
+            <select id="gkScope" aria-label="Which tickers">
+              <option value="pooled">All watchlist tickers</option>
+              <option value="ticker">This ticker</option>
+            </select>
+          </div>
+        </div>
+        <p class="sub" id="gkSub"></p>
+        <div id="gkBody"></div>
+      </section>
       <p class="sub" id="btCaveat"></p>
     </div>
   </div>
@@ -584,14 +592,20 @@
     <section class="card">
       <div class="chain-head">
         <h3>Trades</h3>
-        <label for="paperFilter" hidden>Show</label>
-        <select id="paperFilter" aria-label="Which trades to show">
-          <option value="all">All trades</option>
-          <option value="manual">Yours</option>
-          <option value="auto">Automatic</option>
-          <option value="open">Still open</option>
-        </select>
+        <div class="controls">
+          <label for="paperFilter" hidden>Show</label>
+          <select id="paperFilter" aria-label="Which trades to show">
+            <option value="all">All trades</option>
+            <option value="manual">Yours</option>
+            <option value="auto">Automatic</option>
+            <option value="open">Still open</option>
+          </select>
+          <button type="button" id="mineExport" class="ghost">Export yours</button>
+          <button type="button" id="mineImportBtn" class="ghost">Import</button>
+          <input type="file" id="mineImport" accept=".csv,.json,text/csv,application/json" hidden>
+        </div>
       </div>
+      <p class="sub" id="mineNote" style="margin:0 0 10px"></p>
       <div class="scroll"><table id="paperTrades"></table></div>
     </section>
   </div>
@@ -655,7 +669,7 @@ async function load(ticker) {
     const rep = await getJSON(`data/${encodeURIComponent(ticker)}.json`);
     try { state.research = await getJSON(`data/research/${encodeURIComponent(ticker)}.json`); }
     catch (e) { state.research = null; }
-    state.history = null;
+    state.history = null; state.policy = null;
     try { state.backtest = await getJSON(`data/backtest/${encodeURIComponent(ticker)}.json`); }
     catch (e) { state.backtest = null; }
     showNotice("");
@@ -971,18 +985,6 @@ function paperBtn(o, type, strategy, expiry, label) {
   return `<button type="button" class="btn-paper" data-type="${type}" data-strategy="${esc(strategy)}" data-strike="${o.strike}" data-expiry="${esc(expiry)}" data-premium="${prem}" data-live="${o.live_quote ? 1 : 0}">${label || "Paper trade this"}</button>`;
 }
 
-function ghConfig() {
-  let c = {};
-  try { c = JSON.parse(localStorage.getItem("cca-gh") || "{}"); } catch (e) {}
-  if (!c.owner && location.hostname.endsWith(".github.io")) {
-    c.owner = location.hostname.split(".")[0];
-    const first = location.pathname.split("/").filter(Boolean)[0];
-    c.repo = first && !first.includes(".") ? first : `${c.owner}.github.io`;
-  }
-  return c;
-}
-function saveGh(c) { try { localStorage.setItem("cca-gh", JSON.stringify(c)); } catch (e) {} }
-
 function openTradePanel(d) {
   const r = state.report;
   pendingTrade = { ...d, ticker: r.ticker, stock_price: r.price, verdict: verdictText(r.verdict).label };
@@ -996,25 +998,14 @@ function openTradePanel(d) {
   $("tradePanel").scrollIntoView({ behavior: "smooth", block: "center" });
 }
 
-const b64enc = (s) => btoa(unescape(encodeURIComponent(s)));
-const b64dec = (s) => decodeURIComponent(escape(atob(s.replace(/\s/g, ""))));
 const clean = (s) => String(s ?? "").replace(/[,\r\n"]/g, " ").trim();
 
-async function appendToRepo(line, message) {
-  const c = ghConfig();
-  const url = `https://api.github.com/repos/${encodeURIComponent(c.owner)}/${encodeURIComponent(c.repo)}/contents/paper_trades.csv`;
-  const headers = { Authorization: `Bearer ${c.token}`, Accept: "application/vnd.github+json" };
-  let sha = null, text = PAPER_HEADER + "\n";
-  const g = await fetch(url, { headers, cache: "no-store" });
-  if (g.ok) { const j = await g.json(); sha = j.sha; text = b64dec(j.content); }
-  else if (g.status === 401) throw new Error("GitHub rejected the token. Check that it hasn't expired and has Contents: Read and write for this repository.");
-  else if (g.status !== 404) throw new Error(`GitHub returned ${g.status} when reading paper_trades.csv.`);
-  if (!text.endsWith("\n")) text += "\n";
-  text += line + "\n";
-  const put = await fetch(url, { method: "PUT", headers, body: JSON.stringify(sha ? { message, content: b64enc(text), sha } : { message, content: b64enc(text) }) });
-  if (put.status === 404 || put.status === 403) throw new Error(`GitHub couldn't write to ${c.owner}/${c.repo}. Check the username and repository name, and that the token was given access to this repository.`);
-  if (put.status === 409) throw new Error("Someone else changed the log at the same moment. Tap Log paper trade again.");
-  if (!put.ok) throw new Error(`GitHub returned ${put.status} when saving.`);
+// Your paper trades live in this browser (no GitHub token needed). Export a copy now and then:
+// Safari clears a site's saved data after about a week without a visit.
+const MINE_KEY = "cca-paper-mine";
+function myTrades() { try { return JSON.parse(localStorage.getItem(MINE_KEY) || "[]"); } catch (e) { return []; } }
+function saveMine(list) {
+  try { localStorage.setItem(MINE_KEY, JSON.stringify(list)); return true; } catch (e) { return false; }
 }
 
 async function logTrade() {
@@ -1025,19 +1016,9 @@ async function logTrade() {
   const row = { id: "M-" + now.getTime(), source: "manual", logged_at: now.toISOString().slice(0, 16), ticker: t.ticker, type: t.type,
                 strategy: t.strategy, expiry: t.expiry, strike: t.strike, premium: prem.toFixed(2), contracts: n,
                 stock_price: t.stock_price, decision: "sell", verdict: clean(t.verdict), note: clean($("tpNote").value) };
-  const line = PAPER_HEADER.split(",").map((k) => row[k]).join(",");
-  if (!ghConfig().token) return openGhCard("Paper trades are saved to paper_trades.csv in your repository, so the page needs a GitHub token first.", logTrade);
-  $("tpLog").disabled = true;
-  $("tpStatus").textContent = "Saving to GitHub...";
-  try {
-    await appendToRepo(line, `Paper trade: ${t.ticker} ${t.strike} ${t.type} ${t.expiry}`);
-    $("tpStatus").innerHTML = `Logged. It's in <strong>Paper trades</strong> now, and gets scored after it expires and the next update runs.`;
-    state.previewTrades.unshift({ ...row, status: "open" });
-    renderPaper();
-  } catch (e) {
-    $("tpStatus").textContent = e.message || "Couldn't reach GitHub. Check your connection and try again.";
-    if (/token|access|username/i.test(e.message || "")) openGhCard(e.message, logTrade);
-  } finally { $("tpLog").disabled = false; }
+  const list = myTrades(); list.unshift(row);
+  if (!saveMine(list)) { $("tpStatus").textContent = "This browser isn't letting the page save (private browsing?). Nothing was logged."; return; }
+  $("tpStatus").innerHTML = `Saved in this browser. It's in <strong>Paper trades</strong> and gets scored after ${fmtDate(t.expiry)}'s close. Tap <strong>Export yours</strong> there now and then to keep a copy.`;
 }
 
 document.addEventListener("click", (ev) => {
@@ -1046,7 +1027,6 @@ document.addEventListener("click", (ev) => {
 });
 $("tpLog").addEventListener("click", logTrade);
 $("tpCancel").addEventListener("click", () => { $("tradePanel").hidden = true; pendingTrade = null; });
-$("tpSettings").addEventListener("click", () => openGhCard("", null));
 
 // ---------------------------------------------------------------- paper trades view
 function parseCsv(text) {
@@ -1063,10 +1043,112 @@ async function loadPaper() {
     const known = new Set((state.paper?.trades || []).map((t) => t.id));
     rows.forEach((t) => { if (!known.has(t.id) && !state.previewTrades.some((p) => p.id === t.id)) state.previewTrades.push({ ...t, status: "open" }); });
   } catch (e) {}
+  state.mineScored = await scoreMine(myTrades());
   const n = $("paperNotice");
   n.hidden = !!state.paper;
   if (!state.paper) n.textContent = "No paper trading results yet. The first automatic entries are logged on the next Monday or Thursday update.";
   renderPaper();
+}
+
+// ---- scoring your trades in the page: the close on expiry day comes from each ticker's data file
+const PAPER_FEE = 0.65;
+const closeCache = {};
+async function closesFor(tk) {
+  if (!(tk in closeCache)) {
+    try { const d = await getJSON(`data/${encodeURIComponent(tk)}.json`); closeCache[tk] = { map: Object.fromEntries(d.closes || []), updated: d.updated }; }
+    catch (e) { closeCache[tk] = null; }
+  }
+  return closeCache[tk];
+}
+// the moment a New York wall-clock time happens, e.g. etInstant("2026-10-02", 16, 15)
+function etInstant(iso, h, m) {
+  const noon = new Date(iso + "T12:00:00Z");
+  const nyHour = Number(new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "numeric", hour12: false }).format(noon));
+  return new Date(noon.getTime() + ((h - nyHour) * 60 + m) * 60000);
+}
+async function scoreMine(list) {
+  const out = [];
+  for (const t0 of list) {
+    const t = { ...t0, source: "manual", status: "open" };
+    const settleAt = etInstant(t.expiry, 16, 15);
+    if (Date.now() >= settleAt.getTime()) {
+      const C = await closesFor(String(t.ticker).toUpperCase());
+      if (!C) t.nodata = true;
+      else if (C.updated && new Date(C.updated) >= settleAt) {
+        let close = null;
+        for (let back = 0; back < 5 && close == null; back++) {       // holiday expirations: the last close before
+          const d = new Date(t.expiry + "T12:00:00Z"); d.setUTCDate(d.getUTCDate() - back);
+          close = C.map[d.toISOString().slice(0, 10)] ?? null;
+        }
+        if (close != null) {
+          const n = Number(t.contracts) || 1, K = Number(t.strike), put = t.type === "put";
+          const income = Number(t.premium) * 100 * n, fee = PAPER_FEE * n;
+          const cost = (put ? Math.max(0, K - close) : Math.max(0, close - K)) * 100 * n;
+          Object.assign(t, { status: (put ? close < K : close > K) ? "assigned" : "expired", close,
+                             income, fee, given_up: cost, net: income - fee - cost });
+        }
+      }
+    }
+    out.push(t);
+  }
+  return out;
+}
+function mineSummary(list) {
+  const done = list.filter((t) => t.net != null);
+  const sum = (k) => done.reduce((a, t) => a + t[k], 0);
+  return { n: done.length, assigned: done.filter((t) => t.status === "assigned").length, net: sum("net"),
+           avg_net: done.length ? sum("net") / done.length : 0, income: sum("income"), fees: sum("fee"),
+           given_up: sum("given_up"), open: list.length - done.length };
+}
+
+// ---- export / import
+function downloadFile(name, text, type) {
+  const url = URL.createObjectURL(new Blob([text], { type }));
+  const a = document.createElement("a"); a.href = url; a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+}
+$("mineExport").addEventListener("click", () => {
+  const list = myTrades();
+  if (!list.length) { $("mineNote").textContent = "You haven't logged any paper trades in this browser yet."; return; }
+  const cols = PAPER_HEADER.split(",");
+  const csv = [PAPER_HEADER, ...list.map((t) => cols.map((k) => clean(t[k])).join(","))].join("\n") + "\n";
+  downloadFile(`paper-trades-${new Date().toISOString().slice(0, 10)}.csv`, csv, "text/csv");
+  store("cca-paper-exported", new Date().toISOString());
+  renderMineNote();
+});
+$("mineImportBtn").addEventListener("click", () => $("mineImport").click());
+$("mineImport").addEventListener("change", async (ev) => {
+  const f = ev.target.files && ev.target.files[0]; ev.target.value = "";
+  if (!f) return;
+  let rows = [];
+  try {
+    const text = await f.text();
+    rows = text.trim().startsWith("[") ? JSON.parse(text) : parseCsv(text);
+  } catch (e) { $("mineNote").textContent = "Couldn't read that file. Use a CSV exported from this page."; return; }
+  const list = myTrades(), have = new Set(list.map((t) => t.id));
+  let added = 0;
+  rows.forEach((r, i) => {
+    if (!r || !r.ticker || !r.expiry || !r.strike || !r.premium) return;
+    const t = { ...r, id: r.id || `M-imp-${Date.now()}-${i}`, source: "manual", type: r.type === "put" ? "put" : "call", contracts: Number(r.contracts) || 1 };
+    if (have.has(t.id)) return;
+    have.add(t.id); list.push(t); added++;
+  });
+  list.sort((a, b) => String(b.logged_at).localeCompare(String(a.logged_at)));
+  saveMine(list);
+  state.mineMsg = `Imported ${added} trade${added === 1 ? "" : "s"}${rows.length - added ? ` (${rows.length - added} already here or unreadable)` : ""}.`;
+  loadPaper();
+});
+document.addEventListener("click", (ev) => {
+  const b = ev.target.closest(".mine-del"); if (!b) return;
+  if (!confirm("Delete this paper trade from this browser?")) return;
+  saveMine(myTrades().filter((t) => t.id !== b.dataset.id));
+  loadPaper();
+});
+function renderMineNote() {
+  const n = myTrades().length, last = recall("cca-paper-exported");
+  $("mineNote").innerHTML = `Your paper trades are saved only in this browser (${n} so far). Safari clears a site's saved data after about a week without a visit, so export a copy now and then. <strong>Import</strong> brings a copy back, or onto another device.${last ? ` Last export: ${fmtDate(last.slice(0, 10))}.` : ""}${state.mineMsg ? ` <strong>${esc(state.mineMsg)}</strong>` : ""}`;
+  state.mineMsg = "";
 }
 
 function signed(v) { return v == null ? "–" : `<span style="white-space:nowrap" class="${v >= 0 ? "pos" : "neg"}">${v >= 0 ? "+" : "−"}${money(Math.abs(v))}</span>`; }
@@ -1087,7 +1169,7 @@ function renderPaper() {
     tile("Weeks it said hold off", S.skipped, "What selling anyway would have made. Below zero means holding off was right.") +
     tile("Selling puts on the routine", S.puts_followed, "Net result from the cash-secured puts the page recommended.") +
     tile("Put weeks it said hold off", S.puts_skipped, "What selling puts anyway would have made.") +
-    tile("Your paper trades", S.mine, "Trades you logged from the page.");
+    tile("Your paper trades", mineSummary(state.mineScored || []), "Trades you logged from the page, saved in this browser.");
   const strat = Object.entries(S.by_strategy || {});
   $("paperStrat").innerHTML = strat.length
     ? `<thead><tr><th>Strategy</th><th>Settled</th><th>Assigned</th><th>Net</th><th>Per trade</th></tr></thead><tbody>` +
@@ -1095,10 +1177,16 @@ function renderPaper() {
     : `<tbody><tr><td>No automatic trades have settled yet.</td></tr></tbody>`;
 
   const f = $("paperFilter").value;
-  const all = [...state.previewTrades, ...(P.trades || [])];
+  const all = [...(state.mineScored || []), ...state.previewTrades, ...(P.trades || [])];
+  renderMineNote();
   const shown = all.filter((t) => f === "all" || (f === "open" ? t.status === "open" : t.source === f));
   const decision = { sell: "Sell", wait: "Hold off (hypothetical)", alternative: "Alternative" };
-  const status = (t) => t.status === "assigned" ? `<span class="chip bad">assigned</span>` : t.status === "expired" ? `<span class="chip good">expired, kept shares</span>` : `<span class="chip info">${t.id && t.id.startsWith("M-") && !(P.trades || []).some((x) => x.id === t.id) ? "open · syncing" : "open"}</span>`;
+  const mine = (t) => t.source === "manual" && myTrades().some((x) => x.id === t.id);
+  const status = (t) => (t.status === "assigned" ? `<span class="chip bad">assigned</span>`
+    : t.status === "expired" ? `<span class="chip good">${t.type === "put" ? "expired, kept cash" : "expired, kept shares"}</span>`
+    : t.nodata ? `<span class="chip neutral">can't score: not on the watchlist</span>`
+    : `<span class="chip info">open</span>`) +
+    (mine(t) ? ` <button type="button" class="linkish mine-del" data-id="${esc(t.id)}" title="Delete this trade">delete</button>` : "");
   $("paperTrades").innerHTML = `<thead><tr><th>Logged</th><th>Contract</th><th>Strategy</th><th>Premium</th><th>Decision</th><th>Status</th><th>Close</th><th>Net</th></tr></thead><tbody>` +
     (shown.length ? shown.map((t) => `<tr>
       <td>${esc((t.logged_at || "").slice(0, 10))}</td>
@@ -1123,46 +1211,6 @@ $("navPaper").addEventListener("click", () => setView("paper"));
 $("navPuts").addEventListener("click", () => setView("puts"));
 $("navBacktest").addEventListener("click", () => setView("backtest"));
 $("paperFilter").addEventListener("change", renderPaper);
-
-// ---------------------------------------------------------------- GitHub connection
-let ghThen = null;
-function openGhCard(why, then) {
-  const c = ghConfig();
-  $("ghOwner").value = c.owner || ""; $("ghRepo").value = c.repo || ""; $("ghToken").value = c.token || "";
-  $("ghWhy").textContent = why || "Paper trades you log by hand are saved to your GitHub repository, using a token that can only touch this one repository.";
-  ghThen = then;
-  $("ghCard").hidden = false;
-  if ($("analyzerView").hidden) setView("analyzer");
-  $("ghCard").scrollIntoView({ behavior: "smooth", block: "start" });
-}
-async function ghApi(path, opts = {}) {
-  const c = ghConfig();
-  return fetch(`https://api.github.com/repos/${encodeURIComponent(c.owner)}/${encodeURIComponent(c.repo)}${path}`, {
-    ...opts, cache: "no-store",
-    headers: { Authorization: `Bearer ${c.token}`, Accept: "application/vnd.github+json", ...(opts.headers || {}) },
-  });
-}
-$("ghSave").addEventListener("click", async () => {
-  const c = { owner: $("ghOwner").value.trim(), repo: $("ghRepo").value.trim(), token: $("ghToken").value.trim() };
-  if (!c.owner || !c.repo || !c.token) { $("ghStatus").textContent = "Fill in your GitHub username, repository and token."; return; }
-  saveGh(c);
-  $("ghStatus").textContent = "Checking with GitHub...";
-  try {
-    const r = await ghApi("");
-    if (r.status === 401) throw new Error("GitHub rejected the token. Copy it again, and check it hasn't expired.");
-    if (r.status === 404) throw new Error(`GitHub can't see ${c.owner}/${c.repo} with this token. Check the spelling, and that the token was given access to this repository.`);
-    if (!r.ok) throw new Error(`GitHub returned ${r.status}.`);
-    $("ghStatus").textContent = "Connected.";
-    $("ghCard").hidden = true;
-    const next = ghThen; ghThen = null;
-    if (next) next();
-  } catch (e) { $("ghStatus").textContent = e.message || "Couldn't reach GitHub. Check your connection."; }
-});
-$("ghCancel").addEventListener("click", () => { $("ghCard").hidden = true; ghThen = null; });
-$("ghForget").addEventListener("click", () => {
-  const c = ghConfig(); delete c.token; saveGh(c); $("ghToken").value = "";
-  $("ghStatus").textContent = "Token removed from this browser.";
-});
 
 document.addEventListener("click", (ev) => {
   const b = ev.target.closest(".tick");
@@ -1447,6 +1495,7 @@ function renderBacktest(r, B) {
   renderBtWeeks();
   renderWheel();
   renderLookalikes(true);
+  renderGreeks();
   $("btCaveat").innerHTML = `<strong>How to read this.</strong> Assignments use real closing prices on expiry day. Premiums and delta are estimates: free historical option prices don't exist, so they're worked out from how much ${esc(B.ticker)} had actually been moving. Real premiums are usually a bit higher, because options tend to price in more movement than happens. Sales are assumed at the opening price, and strikes are rounded to typical listed strikes. The estimated result compares selling calls with simply holding the shares: premium kept, minus the gain you'd have given up above the strike, minus $0.65 per contract. Earnings weeks are skipped when following the rules, and the call strike moves to 0.15 delta when the stock was running hot, as on the live page.`;
 }
 const fmtYear = (iso) => new Date(iso + "T12:00:00").toLocaleDateString("en-US", { month: "short", year: "numeric" });
@@ -1480,6 +1529,52 @@ async function renderBtWeeks() {
 $("btScope").addEventListener("change", () => state.report && renderBacktest(state.report, state.backtest));
 $("btFilter").addEventListener("change", renderBtWeeks);
 $("btJump").addEventListener("click", (e) => { const b = e.target.closest("button[data-to]"); if (b && !$(b.dataset.to).hidden) $(b.dataset.to).scrollIntoView({ behavior: "smooth", block: "start" }); });
+
+// ---------------------------------------------------------------- Greeks study
+async function renderGreeks() {
+  if (state.greeks === undefined) {
+    $("gkSub").textContent = "Loading…";
+    try { state.greeks = await getJSON("data/greeks_study.json"); } catch (e) { state.greeks = null; }
+  }
+  const G = state.greeks, tk = state.backtest && state.backtest.ticker;
+  const addDays = (iso, n) => { const d = new Date(iso + "T12:00:00"); let k = 0; while (k < n) { d.setDate(d.getDate() + 1); if (d.getDay() % 6) k++; } return d.toISOString().slice(0, 10); };
+  if (!G || !G.snapshot_days) {
+    $("gkSub").innerHTML = `Collecting starts with the next update after 9:45 AM New York time on a trading day. Once a day, the site saves every out-of-the-money call and put expiring in the next 10 days (0.05–0.50 delta) with its implied volatility, delta, gamma, theta and vega. After each expiration it checks whether the contract finished in the money, to see if those readings predicted assignment better than the market's odds. First look after ${60} trading days, full check after ${250}.`;
+    $("gkBody").innerHTML = ""; return;
+  }
+  const scope = $("gkScope").value, side = $("gkSide").value;
+  const P = scope === "ticker" ? (G.by_ticker || {})[tk] : G.pooled;
+  const first = G.first_day;
+  const when = (n) => fmtDate(addDays(first, n)) + " " + addDays(first, n).slice(0, 4);
+  let head = `Saving since ${fmtDate(first)} ${first.slice(0, 4)}: <strong>${G.snapshot_days}</strong> trading day${G.snapshot_days === 1 ? "" : "s"}, ${G.contracts_saved.toLocaleString()} contracts across ${(G.tickers || []).length} tickers. `;
+  if (!P) {
+    head += scope === "ticker" ? `${esc(tk)} needs ${60} trading days of its own before it gets a separate look; the pooled view covers every ticker.` : "No expirations have finished yet.";
+    $("gkSub").innerHTML = head; $("gkBody").innerHTML = ""; return;
+  }
+  const S = P[side] || {};
+  if (P.status === "collecting") head += `First look around <strong>${when(P.need_early)}</strong> (${P.need_early} trading days), full check with held-out testing around <strong>${when(P.need_full)}</strong> (${P.need_full}). So far, contracts the market gave ${S.market ?? "–"}% odds on average finished in the money ${S.actual ?? "–"}% of the time (${S.contracts || 0} contracts, ${S.expirations || 0} expirations), too few to read anything into.`;
+  else head += P.status === "early" ? `Early look: patterns here can still be chance, and nothing feeds the recommendation until the full check around ${when(P.need_full)}.` : "Full check, including testing on the most recent days the patterns weren't found on.";
+  $("gkSub").innerHTML = head;
+  if (P.status === "collecting" || !S.calibration) { $("gkBody").innerHTML = ""; return; }
+  const what = side === "calls" ? "call finished above the strike" : "put finished below the strike";
+  const cal = `<h4 class="subhead">The market's odds vs what happened</h4>
+    <p class="sub" style="margin:0 0 8px">Contracts grouped by the market's chance of finishing in the money (from each option's own price, at the ~10 AM snapshot), and how often the ${what}. The range resamples whole expirations, since contracts expiring together share one outcome.</p>
+    <div class="scroll"><table><thead><tr><th>Market's odds</th><th>Contracts</th><th>Market said</th><th>Actually happened</th><th>Likely range</th><th>Reading</th></tr></thead><tbody>` +
+    S.calibration.map((b) => b.actual == null ? `<tr><td>${Math.round(b.lo * 100)}–${Math.round(b.hi * 100)}%</td><td>${b.n}</td><td colspan="4" class="muted">Too few contracts</td></tr>` : `<tr><td>${Math.round(b.lo * 100)}–${Math.round(b.hi * 100)}%</td><td>${b.n} <span class="muted">(${b.expirations} exp.)</span></td><td>${b.market}%</td><td><strong>${b.actual}%</strong></td><td>${b.ci[0]}–${b.ci[1]}%</td>
+      <td>${b.market < b.ci[0] ? `<span class="chip bad">riskier than priced</span>` : b.market > b.ci[1] ? `<span class="chip good">safer than priced</span>` : `<span class="muted">about as priced</span>`}</td></tr>`).join("") + `</tbody></table></div>`;
+  const rd = (S.readings || []).map((r) => `<tr><td>${esc(r.label)}</td>
+      <td>${r.low.actual}% <span class="muted">vs ${r.low.market}%</span></td><td>${r.high.actual}% <span class="muted">vs ${r.high.market}%</span></td>
+      <td>${r.gap_pts > 0 ? "+" : ""}${r.gap_pts} pts</td>
+      <td>${r.found ? `<span class="chip ${r.gap_pts > 0 ? "bad" : "good"}">${r.gap_pts > 0 ? "high = riskier than priced" : "high = safer than priced"}</span>` : r.passed && r.recent_same === false ? `<span class="chip neutral">Faded recently</span>` : `<span class="muted">Could be chance</span>`}</td></tr>`).join("");
+  const readings = `<h4 class="subhead">Which readings add to the market's odds</h4>
+    <p class="sub" style="margin:0 0 8px">For each reading, the bottom and top third of contracts: how often they actually finished in the money, vs what the market said (smaller number). The gap is how much more (or less) often assignment happened than priced in the top third, compared with the bottom third.</p>
+    <div class="scroll"><table class="pin1"><thead><tr><th>Reading</th><th>Low third</th><th>High third</th><th>Gap</th><th>Result</th></tr></thead><tbody>${rd || `<tr><td colspan="5">Not enough contracts yet.</td></tr>`}</tbody></table></div>`;
+  const M = S.model;
+  const model = !M ? "" : `<p class="sub" style="margin-top:10px"><strong>Held-out check:</strong> on days from ${fmtDate(M.test_from)} on, adding ${M.readings.length} reading${M.readings.length === 1 ? "" : "s"} to the market's odds ${M.helps ? `predicted assignment better (${M.improvement_pct}% lower prediction error).` : `didn't predict assignment meaningfully better (${M.improvement_pct}% change in prediction error).`}</p>`;
+  $("gkBody").innerHTML = cal + readings + model;
+}
+$("gkSide").addEventListener("change", renderGreeks);
+$("gkScope").addEventListener("change", renderGreeks);
 
 // ---------------------------------------------------------------- assigned vs expired
 const ordinal = (n) => { const v = n % 100; return n + (["th", "st", "nd", "rd"][(v - 20) % 10] || ["th", "st", "nd", "rd"][v] || "th"); };
@@ -1570,7 +1665,7 @@ function renderFavorable(FV, calls, winLabel) {
     (calls ? `For covered calls, the favorable third is the one <strong>least often assigned</strong>: you kept the shares and the premium. ` : `For puts, whether assignment is good depends on whether you want the shares back, so the thirds are marked <strong>least</strong> and <strong>most often assigned</strong> rather than good and bad. `) +
     `Across all ${FV.n} trades: <strong>${FV.rate}%</strong> assigned, average estimated result ${signed(FV.avg_net)} per contract. Colors appear only on signals that pass the check: top third vs bottom third, controlled for testing many signals, and pointing the same way in the most recent ${Math.round(FV.recent_frac * 100)}% of trades.`;
   const verdict = (r) => !r.found ? `<span class="muted">Could be chance</span>`
-    : r.recent_same === false ? `<span class="chip neutral">Faded recently</span>` : `<span class="chip good">Holds up</span>`;
+    : r.passed && r.recent_same === false ? `<span class="chip neutral">Faded recently</span>` : `<span class="chip good">Holds up</span>`;
   const row = (r) => {
     const mark = r.found && r.recent_same !== false;
     const nb = r.bins.length;
@@ -1626,12 +1721,25 @@ function renderWheel() {
   $("wShort").querySelector('option[value="topup"]').disabled = !topupAvail;
   if (!topupAvail) $("wShort").value = "pause";
   const topup = $("wShort").value === "topup";
-  const W = B && B[K(topup)] && B[K(topup)][method];
-  $("wheelCard").hidden = !W;
+  const pol = $("wPolicy").value;
+  const polAvail = !!(B && B.policy_summary);
+  $("wPolicy").disabled = !polAvail;
+  if (!polAvail) $("wPolicy").value = "every";
+  if (pol !== "every" && polAvail && !state.policy) {
+    $("wSub").textContent = "Loading the wheel that follows the site's recommendation…";
+    loadPolicy().then(() => { if (!state.policy) { $("wPolicy").value = "every"; } renderWheel(); });
+    return;
+  }
+  const src = pol === "every" ? B : state.policy;
+  const key = K(topup) + (pol === "every" ? "" : "_" + pol);
+  const W = src && src[key] && src[key][method];
+  $("wheelCard").hidden = !(B && B[K(topup)] && B[K(topup)][method]);
   if (!W) return;
   const s = W.summary;
   renderWheelCompare(B, method);
+  renderPolicyCompare(B, method, K(topup), topup, twice);
   $("wSub").textContent = `Starts ${fmtYear(s.first)} owning 100 ${B.ticker} shares and no cash. ${twice ? "Two trades a week: one opened Monday that expires Wednesday, then one opened Thursday that expires Friday. Each is a covered call while holding shares, or a cash-secured put while holding cash, so a call assigned on Wednesday is followed by a put on Thursday." : "While holding shares, a covered call is sold each Monday. When the shares are called away, a cash-secured put is sold each Monday instead."} ${topup ? "When the cash doesn't cover the put, just enough money is added to sell it, so the wheel never stops." : "It's sold only in weeks when the cash covers the strike; otherwise that week is paused."} When a put is assigned, the shares are bought back and calls start again. Earnings weeks are skipped.${B.cash_interest ? " Cash earns the 3-month Treasury bill rate, roughly what a money market fund pays." : " Cash earns nothing here (the Treasury rate wasn't available)."}`;
+  if (pol !== "every") $("wSub").textContent += ` Following the site's recommendation${pol === "favorable" ? " (favorable weeks only)" : ""}: ${s.skipped_calls || 0} call and ${s.skipped_puts || 0} put ${twice ? "trades" : "weeks"} skipped, and strikes adjusted for similar past weeks once there's enough history.`;
   const diffCls = s.difference >= 0 ? "pos" : "neg";
   $("wTiles").innerHTML = `
     <div class="tile"><div class="t-label">Wheel account now</div><div class="t-big">${money(s.end_wheel, 0)}</div>
@@ -1658,9 +1766,10 @@ function renderWheel() {
     put: (e) => [e.added ? `Added ${money(e.added, 0)}, sold cash-secured put` : "Sold cash-secured put", e.outcome === "bought" ? `<span class="chip info">assigned, bought shares</span>` : `<span class="chip good">expired, kept cash</span>`],
     paused: (e) => ["Paused", `<span class="chip neutral">cash ${money(e.cash, 0)} short of ${money(e.strike * 100, 0)}</span>`],
     skip_earnings: () => ["Skipped", `<span class="chip neutral">earnings week</span>`],
+    skip_flag: (e) => ["Skipped", `<span class="chip neutral">${e.outcome === "hold_off" ? "site said hold off" : "not a favorable week"}</span>`],
     no_history: () => ["Skipped", `<span class="chip neutral">not enough history yet</span>`],
   };
-  renderWheelLog(W, twice, K(topup), method, act);
+  renderWheelLog(W, twice, key, method, act);
 
   const years = {};
   for (const t of W.timeline) years[t[0].slice(0, 4)] = t;
@@ -1679,11 +1788,15 @@ async function renderWheelLog(W, twice, key, method, act) {
   let log = W.log || [];
   let note = "";
   if (all) {
-    $("wLogTitle").textContent = "Loading every trade…";
-    const H = await loadHistory();
-    if ($("wRange").value !== "all") return;
-    const packed = H && H.wheel_logs && H.wheel_logs[key] && H.wheel_logs[key][method];
-    if (packed) log = packed.map((a) => unpack(H.log_fields, a)).map((e) => ({ ...e, leg: e.window, holding: e.holding ? "shares" : "cash" }));
+    let packed = W.log_full, fields = state.backtest && state.backtest.log_fields;   // policy wheels carry their own
+    if (!packed) {
+      $("wLogTitle").textContent = "Loading every trade…";
+      const H = await loadHistory();
+      if ($("wRange").value !== "all") return;
+      packed = H && H.wheel_logs && H.wheel_logs[key] && H.wheel_logs[key][method];
+      fields = H && H.log_fields;
+    }
+    if (packed && fields) log = packed.map((a) => unpack(fields, a)).map((e) => ({ ...e, leg: e.window, holding: e.holding ? "shares" : "cash" }));
     else note = " (full history not saved yet; showing the last 52 weeks)";
   }
   $("wLogTitle").textContent = (twice ? "What the wheel did each trade" : "What the wheel did each week") +
@@ -1719,6 +1832,36 @@ function renderWheelCompare(B, method) {
 $("wShort").addEventListener("change", renderWheel);
 $("wSched").addEventListener("change", () => state.report && renderBacktest(state.report, state.backtest));
 $("wRange").addEventListener("change", renderWheel);
+
+// Lazily loaded: the wheel following the site's recommendation.
+async function loadPolicy() {
+  if (state.policy) return state.policy;
+  const B = state.backtest; if (!B) return null;
+  try { state.policy = await getJSON(`data/backtest/${encodeURIComponent(B.ticker)}_policy.json`); }
+  catch (e) { state.policy = null; }
+  return state.policy;
+}
+
+function renderPolicyCompare(B, method, base, topup, twice) {
+  const PS = B.policy_summary;
+  $("wPolWrap").hidden = !PS;
+  if (!PS) return;
+  const rows = [["every", "Trade every week", B[base] && B[base][method] && B[base][method].summary],
+                ["site", "Follow the site's recommendation", PS[base + "_site"] && PS[base + "_site"][method]],
+                ["favorable", "Favorable weeks only", PS[base + "_favorable"] && PS[base + "_favorable"][method]]].filter((r) => r[2]);
+  if (!rows.length) { $("wPolWrap").hidden = true; return; }
+  const gain = (s) => s.end_wheel - (s.added || 0) - s.start_value;
+  const best = rows.reduce((a, b) => (gain(b[2]) > gain(a[2]) ? b : a), rows[0]);
+  const cur = $("wPolicy").value;
+  $("wPolCompare").innerHTML = `<thead><tr><th>Which weeks</th><th>Account now</th><th>Gain on money put in</th><th>vs trading every week</th><th>Wheel vs holding</th><th>Income</th><th>Called away / bought back</th><th>Skipped (calls / puts)</th>${topup ? "<th>Money added</th>" : ""}</tr></thead><tbody>` +
+    rows.map(([k, label, s]) => `<tr${k === best[0] ? ' class="bestrow"' : ""}><td>${label}${k === cur ? ` <span class="chip info">shown</span>` : ""}${k === best[0] ? ` <span class="chip good">best</span>` : ""}</td>
+      <td>${money(s.end_wheel, 0)}</td><td><strong class="${gain(s) >= 0 ? "pos" : "neg"}">${signed(gain(s))}</strong></td>
+      <td>${k === "every" ? "–" : `<span class="${gain(s) - gain(rows[0][2]) >= 0 ? "pos" : "neg"}">${signed(gain(s) - gain(rows[0][2]))}</span>`}</td>
+      <td>${signed(s.difference)}</td><td>${money(s.premium_total + s.interest, 0)}</td>
+      <td>${s.calls_assigned} / ${s.puts_assigned}</td><td>${s.skipped_calls || 0} / ${s.skipped_puts || 0}</td>${topup ? `<td>${money(s.added || 0, 0)}</td>` : ""}</tr>`).join("") + `</tbody>`;
+  $("wPolNote").textContent = `Same start, schedule (${twice ? "twice a week" : "once a week"}), strike method and ${topup ? "add-money" : "pause"} rule; only the recommendation differs. "Follow the site" skips weeks the site would say to hold off (two flags) and uses strikes adjusted for similar past weeks; "Favorable weeks only" also skips weeks with one flag. A skipped call week keeps the shares; a skipped put week keeps the cash earning interest. Flags are the stock running hot (sliding, for puts) and similar weeks at least 1.25× likelier to be assigned; the similar-weeks part is refit each January from trades that had already expired, so it only kicks in after a couple of years of history. The premium-level flag can't be rebuilt without old option prices. Pick a row in the menu above to see its chart and log.`;
+}
+$("wPolicy").addEventListener("change", renderWheel);
 
 function renderWheelToday(B, W, s) {
   const r = state.report;
