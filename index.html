@@ -244,8 +244,39 @@
   table.fv td.third.worst { background: var(--bad-bg); }
   table.fv td.third.hi { background: var(--info-bg); }
   table.fv td.third.lo { background: var(--caution-bg); }
-  #gkBody table.pin1 td:first-child, #wHorNow td:first-child, #wPolCompare td:first-child, #stTable td:first-child { white-space: normal; min-width: 140px; max-width: 190px; font-size: 13px; }
+  #gkBody table.pin1 td:first-child, #wPolCompare td:first-child, #stTable td:first-child { white-space: normal; min-width: 140px; max-width: 190px; font-size: 13px; }
   tr.bestrow td { background: var(--good-bg); }
+  button.term { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: help;
+    text-decoration: underline dotted; text-decoration-color: var(--muted); text-underline-offset: 3px; }
+  button.term:hover, button.term:focus-visible { color: var(--accent); text-decoration-color: var(--accent); }
+  #glossPop { position: absolute; z-index: 50; max-width: min(340px, calc(100vw - 32px)); background: var(--surface); color: var(--ink);
+    border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; box-shadow: 0 8px 24px rgba(0,0,0,.18); font-size: 13px; line-height: 1.5; }
+  #glossPop strong { display: block; margin-bottom: 4px; font-size: 14px; }
+  #glossPop p { margin: 0; color: var(--muted); }
+  .learn { margin-bottom: 16px; }
+  .learn > summary { font-weight: 600; font-size: 15px; color: var(--ink); list-style: none; cursor: pointer; margin: 0; }
+  .learn > summary::-webkit-details-marker { display: none; }
+  .learn > summary::before { content: "▸ "; color: var(--accent); }
+  .learn[open] > summary::before { content: "▾ "; }
+  .cycle { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 14px 0 6px; counter-reset: step; }
+  .cycle > div { border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; background: var(--surface-2); position: relative; }
+  .cycle > div b { display: block; margin-bottom: 4px; }
+  .cycle > div p { margin: 0; font-size: 13px; color: var(--muted); line-height: 1.5; }
+  .cycle > div::after { content: "→"; position: absolute; right: -9px; top: 50%; transform: translateY(-50%); color: var(--accent); font-weight: 700; background: var(--bg); line-height: 1; }
+  .cycle > div:last-child::after { content: "↺"; }
+  @media (max-width: 700px) { .cycle { grid-template-columns: minmax(0, 1fr); } .cycle > div::after { content: "↓"; right: auto; left: 50%; top: auto; bottom: -11px; transform: translateX(-50%); } .cycle > div:last-child::after { content: "↺"; } }
+  .learn .cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 24px; font-size: 14px; color: var(--muted); line-height: 1.55; }
+  .learn .cols p { margin: 6px 0; }
+  @media (max-width: 700px) { .learn .cols { grid-template-columns: minmax(0, 1fr); } }
+  .tabq { font-size: 15px; color: var(--ink); margin: 0 0 14px; max-width: 75ch; }
+  .wheelsteps ol { margin: 0; padding-left: 20px; display: grid; gap: 8px; font-size: 14px; }
+  .wheelsteps li { color: var(--muted); }
+  .wheelsteps li.on { color: var(--ink); font-weight: 600; }
+  .btctl { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px 16px; }
+  .btctl label { display: grid; gap: 4px; font-size: 12px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+  .btctl label > span button.term { text-transform: none; letter-spacing: 0; }
+  .btctl select { width: 100%; }
+  details.more > summary { margin: 10px 0 4px; }
   .lknote { font-size: 13px; line-height: 1.5; color: var(--muted); margin: 10px 0; }
   .lknote .chip { margin-right: 4px; }
   .lkgrid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; align-items: start; }
@@ -276,7 +307,26 @@
     <button type="button" id="navPuts" aria-pressed="false">Cash-secured puts</button>
     <button type="button" id="navPaper" aria-pressed="false">Paper trades</button>
     <button type="button" id="navBacktest" aria-pressed="false">Backtest</button>
+    <button type="button" id="navResearch" aria-pressed="false">Research</button>
   </nav>
+
+  <details class="card learn" id="learn">
+    <summary>How the wheel works, and what this site does</summary>
+    <div class="cycle">
+      <div><b>1 · Own 100 shares: sell a <button type="button" class="term" data-term="covered call">covered call</button></b>
+        <p>You're paid a <button type="button" class="term" data-term="premium">premium</button> now for agreeing to sell your shares at a set price, the <button type="button" class="term" data-term="strike">strike</button>, if the stock closes above it on the <button type="button" class="term" data-term="expiration">expiration</button> date. Below it, you keep the shares and the premium, and sell another.</p></div>
+      <div><b>2 · Shares <button type="button" class="term" data-term="called away">called away</button>: sell a <button type="button" class="term" data-term="cash-secured put">cash-secured put</button></b>
+        <p>With the cash from the sale, you're paid a premium for agreeing to buy 100 shares back at a strike below today's price. If the stock stays above it, you keep the cash and the premium, and sell another.</p></div>
+      <div><b>3 · Put <button type="button" class="term" data-term="assigned">assigned</button>: you own shares again</b>
+        <p>You bought back at a price you chose, lowered by every premium collected along the way. Back to step 1.</p></div>
+    </div>
+    <div class="cols">
+      <p><strong>The trade-off.</strong> Premiums are steady income, but they cap the upside: if the stock jumps past your call strike you sell too early, and if it keeps falling after a put is assigned you've bought on the way down. The wheel tends to do best on stocks that drift sideways and worst on ones that climb fast. The Backtest tab shows which kind your stock has been.</p>
+      <p><strong>How strikes are picked.</strong> By <button type="button" class="term" data-term="delta">delta</button>, which is close to the market's own odds that the option ends up exercised: about 0.20 for calls (roughly a 1-in-5 chance your shares are called away) and 0.25 for puts. Warnings (earnings in the window, a stock <button type="button" class="term" data-term="running hot">running hot</button>, thin premium) move the strike further out or say to hold off.</p>
+      <p><strong>The tabs.</strong> <em>Covered calls</em> is step 1 and <em>Cash-secured puts</em> is step 2, each with today's pick and your weekly schedule. <em>Paper trades</em> tracks the trades you choose. <em>Backtest</em> replays the whole wheel on 10 years of prices. <em>Research</em> tests whether anything predicts assignment better than delta.</p>
+      <p><strong>Words with a dotted underline</strong> can be tapped for a short definition. Data comes from Yahoo Finance a few times a day, about 15 minutes delayed; confirm prices in your brokerage before trading.</p>
+    </div>
+  </details>
 
   <div id="stale" class="notice" hidden></div>
   <div class="fresh" id="fresh" hidden>
@@ -285,6 +335,7 @@
   <div id="notice" class="notice" hidden></div>
 
   <div id="analyzerView" class="wrap">
+  <p class="tabq" id="callsQ">Step 1 of the wheel: you own the shares. Should you sell a <button type="button" class="term" data-term="covered call">covered call</button> now, and at which strike?</p>
 
   <div id="report" hidden>
     <div class="wrap">
@@ -303,7 +354,7 @@
 
       <div class="picks">
         <div class="pick" id="pickCall"></div>
-        <div class="pick" id="pickPut"></div>
+        <div class="pick wheelsteps" id="wheelSteps"></div>
       </div>
 
       <section class="card tradepanel" id="tradePanel" hidden>
@@ -327,15 +378,6 @@
         <div class="sched" id="schedCards"></div>
       </section>
 
-      <section class="card" id="findings" hidden>
-        <h3 id="findTitle">What moved with the price</h3>
-        <p class="sub" id="findSub"></p>
-        <div id="findList"></div>
-        <details><summary>Every signal tested, plus combinations that showed a pattern</summary><div class="scroll"><table id="findTable"></table></div></details>
-      </section>
-
-      <div id="noResearch" class="notice" hidden></div>
-
       <section class="card">
         <h3>What the verdict is based on</h3>
         <ul class="factors" id="factors"></ul>
@@ -345,7 +387,7 @@
         <div class="chain-head">
           <h3>Option chain</h3>
           <div class="controls">
-            <div class="tabs" role="group" aria-label="Calls or puts">
+            <div class="tabs" role="group" aria-label="Calls or puts" hidden>
               <button type="button" id="tabCalls" aria-pressed="true">Calls to sell</button>
               <button type="button" id="tabPuts" aria-pressed="false">Puts (wheel)</button>
             </div>
@@ -362,6 +404,7 @@
   </div>
 
   <div id="putsView" class="wrap" hidden>
+    <p class="tabq">Step 2 of the wheel: your shares were called away and you hold cash. Should you sell a <button type="button" class="term" data-term="cash-secured put">cash-secured put</button>, and at what price would you be buying back?</p>
     <div id="putsNotice" class="notice" hidden></div>
     <div id="putsReport" class="wrap" hidden>
       <div class="verdict" id="pVerdict">
@@ -416,87 +459,78 @@
   <div id="backtestView" class="wrap" hidden>
     <div id="btNotice" class="notice" hidden></div>
     <div id="btReport" class="wrap" hidden>
-      <section class="card">
+      <section class="card bar">
         <div class="chain-head" style="margin-bottom:6px">
           <h3 id="btTitle">Backtest</h3>
-          <div class="controls">
-            <label for="wSched" hidden>Schedule</label>
+        </div>
+        <p class="sub tabq">What would the wheel have done on this stock, if you'd run it with these settings? Every result uses real closing prices; option premiums are estimated from how much the stock was moving, since old option prices aren't free.</p>
+        <div class="controls btctl">
+          <label><span>Schedule</span>
             <select id="wSched" aria-label="Trading schedule">
               <option value="weekly">Once a week: Mon → Fri</option>
               <option value="twice">Twice a week: Mon → Wed, Thu → Fri</option>
               <option value="tuewed">One-day trades: Tue → Wed, Thu → Fri</option>
-            </select>
-          </div>
-        </div>
-        <p class="sub" id="btBarSub" style="margin:0 0 10px"></p>
-        <div class="jump" id="btJump">
-          <span class="muted">Jump to</span>
-          <button type="button" data-to="btCalls">Calls only</button>
-          <button type="button" data-to="wheelCard">Full wheel</button>
-          <button type="button" data-to="wHorWrap">1–10 years</button>
-          <button type="button" data-to="lkCard">Recommendation test</button>
-          <button type="button" data-to="btWeeksCard">Trade by trade</button>
-          <button type="button" data-to="gkCard">Greeks study</button>
-        </div>
-      </section>
-      <section class="card" id="btCalls">
-        <div class="chain-head">
-          <h3 id="btCallsTitle">Covered calls only</h3>
-          <label for="btScope" hidden>Weeks included</label>
-          <select id="btScope" aria-label="Weeks included">
-            <option value="rules">Following the rules (earnings weeks skipped)</option>
-            <option value="all_weeks">Every week, including earnings</option>
-          </select>
-        </div>
-        <p class="sub" id="btSub"></p>
-        <div class="tiles" id="btTiles"></div>
-        <details class="how"><summary>How the history-based strike is set</summary><div class="sub" id="btHow" style="margin-top:8px"></div></details>
-      </section>
-      <section class="card" id="wheelCard">
-        <div class="chain-head">
-          <h3>The full wheel vs just holding</h3>
-          <div class="controls">
-            <label for="wShort" hidden>When cash falls short</label>
+            </select></label>
+          <label><span>When cash is short</span>
             <select id="wShort" aria-label="When the cash doesn't cover the put">
-              <option value="pause">Pause when cash is short</option>
+              <option value="pause">Pause</option>
               <option value="topup">Add money to keep going</option>
               <option value="cap">Buy back at the call strike or lower</option>
-            </select>
-            <label for="wMethod" hidden>Strike method</label>
+            </select></label>
+          <label><span>Strikes (<button type="button" class="term" data-term="delta">delta</button>)</span>
             <select id="wMethod" aria-label="Strike method">
               <option value="delta">Calls 0.20 delta, puts 0.25 delta</option>
-              <option value="study">History-based strikes</option>
-            </select>
-            <label for="wPolicy" hidden>Which weeks to trade</label>
+              <option value="study">History-based</option>
+            </select></label>
+          <label><span>Start</span>
+            <select id="wStart" aria-label="When the wheel starts">
+              <option value="all">All history</option>
+            </select></label>
+          <label><span>Which weeks</span>
             <select id="wPolicy" aria-label="Which weeks to trade">
               <option value="every">Trade every week</option>
               <option value="site">Follow the site's recommendation</option>
               <option value="favorable">Favorable weeks only</option>
-            </select>
-          </div>
+            </select></label>
         </div>
+        <p class="sub" id="btBarSub" style="margin:10px 0 10px"></p>
+        <div class="jump" id="btJump">
+          <span class="muted">Jump to</span>
+          <button type="button" data-to="wheelCard">Result</button>
+          <button type="button" data-to="wCompareWrap">Cash rules</button>
+          <button type="button" data-to="wPolWrap">Recommendation</button>
+          <button type="button" data-to="wHorWrap">Short vs long runs</button>
+          <button type="button" data-to="wLogWrap">Week by week</button>
+          <button type="button" data-to="btCalls" data-open="btCallsMore">Calls only</button>
+        </div>
+      </section>
+
+      <section class="card" id="wheelCard">
+        <h3>The wheel vs just holding the shares</h3>
+        <p class="sub" style="margin:0 0 8px">The benchmark is simply keeping the 100 shares. The wheel wins when premiums add up to more than the gains it gives away when shares are called away; <button type="button" class="term" data-term="backtest">how the backtest works</button>.</p>
         <p class="sub" id="wSub"></p>
         <div class="today" id="wToday"></div>
-        <h4 class="subhead" style="margin-top:0">Pausing vs adding money</h4>
-        <div class="scroll"><table id="wCompare"></table></div>
-        <p class="sub" id="wCompareNote" style="margin:8px 0 14px"></p>
+        <div class="tiles" id="wTiles"></div>
+        <div class="chart-legend" id="wLegend"></div>
+        <div class="chart-wrap" id="wChart"></div>
+
+        <div id="wCompareWrap">
+          <h4 class="subhead">What to do when the cash doesn't cover the put</h4>
+          <div class="scroll"><table id="wCompare"></table></div>
+          <p class="sub" id="wCompareNote" style="margin:8px 0 14px"></p>
+        </div>
         <div id="wPolWrap">
-          <h4 class="subhead" style="margin-top:0">Every week vs following the recommendation</h4>
+          <h4 class="subhead">Trading every week vs following the site's recommendation</h4>
           <div class="scroll"><table id="wPolCompare" class="pin1"></table></div>
           <p class="sub" id="wPolNote" style="margin:8px 0 14px"></p>
         </div>
         <div id="wHorWrap">
-          <h4 class="subhead" style="margin-top:0">1 year vs 2 years … vs 10 years</h4>
-          <p class="sub" id="wHorSub" style="margin:0 0 8px"></p>
-          <div class="scroll"><table id="wHorNow" class="pin1"></table></div>
-          <h4 class="subhead">Every stretch of that length, not just the latest</h4>
+          <h4 class="subhead">Short runs vs long runs</h4>
           <p class="sub" id="wHorRollSub" style="margin:0 0 8px"></p>
           <div class="scroll"><table id="wHorRoll" class="pin1"></table></div>
           <p class="sub" id="wHorNote" style="margin:8px 0 14px"></p>
         </div>
-        <div class="tiles" id="wTiles"></div>
-        <div class="chart-legend" id="wLegend"></div>
-        <div class="chart-wrap" id="wChart"></div>
+        <div id="wLogWrap">
         <div class="chain-head" style="margin:18px 0 8px">
           <h4 class="subhead" id="wLogTitle" style="margin:0">What the wheel did each week</h4>
           <label for="wRange" hidden>How far back</label>
@@ -510,11 +544,68 @@
           <div class="scroll"><table id="wYears"></table></div>
           <div class="scroll"><table id="wEvents"></table></div>
         </details>
+        </div>
       </section>
+
+      <section class="card" id="btCalls">
+        <h3 id="btCallsTitle">Covered calls only</h3>
+        <p class="sub">The same call every trade day on the same 100 shares, even after an assignment, to show how often each strike method gets assigned, without the put side of the wheel.</p>
+        <details class="more" id="btCallsMore"><summary>Show calls-only results, by year and trade by trade</summary>
+          <div class="controls" style="margin:10px 0">
+            <label>Weeks included
+              <select id="btScope" aria-label="Weeks included">
+                <option value="rules">Following the rules (earnings weeks skipped)</option>
+                <option value="all_weeks">Every week, including earnings</option>
+              </select></label>
+          </div>
+        <p class="sub" id="btSub"></p>
+        <div class="tiles" id="btTiles"></div>
+        <details class="how"><summary>How the history-based strike is set</summary><div class="sub" id="btHow" style="margin-top:8px"></div></details>
+          <h4 class="subhead">Assigned calls by year</h4>
+          <div class="scroll"><table id="btYears"></table></div>
+          <div id="btWeeksCard">
+        <div class="chain-head">
+          <h3 id="btWeeksTitle">Covered calls only, trade by trade</h3>
+          <label for="btFilter" hidden>Show</label>
+          <select id="btFilter" aria-label="Which trades to show">
+            <option value="recent">Last 52 weeks</option>
+            <option value="assigned">Every assigned trade</option>
+            <option value="all">Everything since the start</option>
+          </select>
+        </div>
+        <p class="sub" id="btWeeksSub" style="margin:0 0 10px"></p>
+        <div class="scroll"><table id="btWeeks" class="pin1"></table></div>
+          </div>
+        </details>
+      </section>
+      <p class="sub" id="btCaveat"></p>
+    </div>
+  </div>
+
+  <div id="researchView" class="wrap" hidden>
+    <div id="rsNotice" class="notice" hidden></div>
+    <section class="card bar">
+      <h3 id="rsTitle">Research</h3>
+      <p class="sub tabq">Does anything predict assignment better than the option's own <button type="button" class="term" data-term="delta">delta</button>? Each study tests an idea on this stock's history, and only calls something a pattern if it holds up on later years it wasn't found in. Most ideas don't, and that's a useful answer too.</p>
+      <div class="jump" id="rsJump">
+        <span class="muted">Jump to</span>
+        <button type="button" data-to="findings">What moved the price</button>
+        <button type="button" data-to="lkCard">Before assignments</button>
+        <button type="button" data-to="gkCard">Greeks study</button>
+      </div>
+    </section>
+      <section class="card" id="findings" hidden>
+        <h3 id="findTitle">What moved with the price</h3>
+        <p class="sub" id="findSub"></p>
+        <div id="findList"></div>
+        <details><summary>Every signal tested, plus combinations that showed a pattern</summary><div class="scroll"><table id="findTable"></table></div></details>
+      </section>
+
+      <div id="noResearch" class="notice" hidden></div>
 
       <section class="card" id="lkCard" hidden>
         <div class="chain-head">
-          <h3>Recommendations vs every week, and what came before assignments</h3>
+          <h3>What came before assignments</h3>
           <div class="controls">
             <label for="lkWin" hidden>Window</label>
             <select id="lkWin" aria-label="Trade window" hidden></select>
@@ -526,23 +617,18 @@
           </div>
         </div>
         <p class="sub" id="lkSub"></p>
-        <div id="stWrap">
-          <h4 class="subhead" style="margin-top:4px" id="stTitle">Following the recommendation vs selling every week</h4>
-          <p class="sub" id="stSub" style="margin:0 0 10px"></p>
-          <div class="scroll"><table id="stTable" class="pin1"></table></div>
-          <p class="sub" id="stSkip" style="margin:10px 0 0"></p>
-        </div>
         <h4 class="subhead">When selling worked best</h4>
         <p class="sub" id="fvSub" style="margin:0 0 10px"></p>
         <div class="scroll"><table id="fvTable" class="pin1 fv"></table></div>
         <details id="fvMoreWrap"><summary>The other signals</summary>
           <div class="scroll"><table id="fvMore" class="pin1 fv"></table></div>
         </details>
-        <h4 class="subhead">Typical readings: assigned vs expired worthless</h4>
+        <details class="more"><summary>Typical readings: assigned vs expired worthless</summary>
         <p class="sub" style="margin:0 0 8px">Typical (median) reading in each group. Rank 0–100 is where the reading sat among all trades, averaged for assigned / expired trades; 50 is typical. "Before assignment" marks signals that pass the same false-discovery check the study uses.</p>
         <div class="scroll"><table id="lkSignals"></table></div>
         <details id="lkMoreWrap"><summary>The other signals</summary>
           <div class="scroll"><table id="lkMore"></table></div>
+        </details>
         </details>
         <h4 class="subhead">Lookalike trades</h4>
         <div class="today" id="lkVerdict"></div>
@@ -558,23 +644,6 @@
         </div>
       </section>
 
-      <section class="card" id="btYearsCard">
-        <h3>Assigned calls by year</h3>
-        <div class="scroll"><table id="btYears"></table></div>
-      </section>
-      <section class="card" id="btWeeksCard">
-        <div class="chain-head">
-          <h3 id="btWeeksTitle">Covered calls only, trade by trade</h3>
-          <label for="btFilter" hidden>Show</label>
-          <select id="btFilter" aria-label="Which trades to show">
-            <option value="recent">Last 52 weeks</option>
-            <option value="assigned">Every assigned trade</option>
-            <option value="all">Everything since the start</option>
-          </select>
-        </div>
-        <p class="sub" id="btWeeksSub" style="margin:0 0 10px"></p>
-        <div class="scroll"><table id="btWeeks" class="pin1"></table></div>
-      </section>
       <section class="card" id="gkCard">
         <div class="chain-head">
           <h3>Option Greeks study: market odds vs what happened</h3>
@@ -594,21 +663,15 @@
         <p class="sub" id="gkSub"></p>
         <div id="gkBody"></div>
       </section>
-      <p class="sub" id="btCaveat"></p>
-    </div>
   </div>
 
   <div id="paperView" class="wrap" hidden>
+    <p class="tabq">Practice without money at stake: log the trades you would actually make, and see how they turn out after expiration.</p>
     <div id="paperNotice" class="notice" hidden></div>
     <section class="card">
-      <h3>How the recommendations would have done</h3>
-      <p class="sub">Every Monday and Thursday the update job logs the call your routine would sell: the schedule pick for Monday → Wednesday, and on Thursday whichever of Friday or Monday pays more per day. Weeks where it said to hold off are logged too, as if you'd sold anyway, so you can see whether holding off helped. Results use the closing price on expiration day: premium kept, minus $0.65 per contract, minus the upside you'd have given up if the shares were called away. For puts, the cost is paying more than the market price for the shares.</p>
+      <h3>Your paper trades</h3>
+      <p class="sub">Trades you log with "Paper trade this" on the Covered calls or Cash-secured puts tab. Each is scored after its expiration day's close: the premium you entered, minus the $0.65 fee, minus any upside given up (calls) or loss below the strike (puts). How the site's own picks would have done over the years is in the Backtest tab.</p>
       <div class="tiles" id="paperTiles"></div>
-    </section>
-    <section class="card">
-      <h3>By strategy</h3>
-      <p class="sub">Each way of picking a strike, tracked side by side. The alternatives weren't counted in the totals above, since you can only sell one call on 100 shares. The Tuesday → Wednesday one-day trade is logged every Tuesday for comparison here only, since it would overlap your Monday trade.</p>
-      <div class="scroll"><table id="paperStrat"></table></div>
     </section>
     <section class="card">
       <div class="chain-head">
@@ -617,11 +680,10 @@
           <label for="paperFilter" hidden>Show</label>
           <select id="paperFilter" aria-label="Which trades to show">
             <option value="all">All trades</option>
-            <option value="manual">Yours</option>
-            <option value="auto">Automatic</option>
             <option value="open">Still open</option>
+            <option value="settled">Settled</option>
           </select>
-          <button type="button" id="mineExport" class="ghost">Export yours</button>
+          <button type="button" id="mineExport" class="ghost">Export</button>
           <button type="button" id="mineImportBtn" class="ghost">Import</button>
           <input type="file" id="mineImport" accept=".csv,.json,text/csv,application/json" hidden>
         </div>
@@ -690,7 +752,7 @@ async function load(ticker) {
     const rep = await getJSON(`data/${encodeURIComponent(ticker)}.json`);
     try { state.research = await getJSON(`data/research/${encodeURIComponent(ticker)}.json`); }
     catch (e) { state.research = null; }
-    state.history = null; state.policy = null;
+    state.history = null; state.policy = null; state.starts = null;
     try { state.backtest = await getJSON(`data/backtest/${encodeURIComponent(ticker)}.json`); }
     catch (e) { state.backtest = null; }
     showNotice("");
@@ -743,13 +805,14 @@ function render(r) {
   $("qAsOf").textContent = "Data as of " + upd.toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 
   renderCall(r);
-  renderPut(r);
+  renderWheelSteps("wheelSteps", 1);
   renderResearch(r, state.research);
   renderPuts(r, state.research);
   renderBacktest(r, state.backtest);
+  renderResearchTab();
 
   $("factors").innerHTML = r.factors.map((f) => `
-    <li><span class="fname">${esc(f.name)}</span>
+    <li><span class="fname">${FACTOR_TERM[f.name] ? T(FACTOR_TERM[f.name], esc(f.name)) : esc(f.name)}</span>
         <span class="chip ${esc(f.status)}">${esc(f.value)}</span>
         <span class="fnote">${esc(f.note)}</span></li>`).join("");
 
@@ -783,10 +846,10 @@ function renderCall(r) {
     <div class="label">${r.verdict.level === "wait" ? "If you sell anyway" : "Call to sell"}</div>
     <div class="contract"><span class="num">${money(c.strike)}</span> call · ${fmtDate(c.expiry)}</div>
     <dl>
-      <dt>Premium (per contract)</dt><dd class="num">${money(c.premium)}</dd>
-      <dt>Chance of assignment</dt><dd class="num">${pct(c.prob_assign)}</dd>
-      <dt>Delta</dt><dd class="num">${c.delta.toFixed(2)}</dd>
-      <dt>Return on shares</dt><dd class="num">${c.yield_pct.toFixed(2)}% · ${c.ann_yield_pct.toFixed(0)}%/yr</dd>
+      <dt>${T("premium", "Premium")} (per ${T("contract", "contract")})</dt><dd class="num">${money(c.premium)}</dd>
+      <dt>${T("chance of assignment", "Chance of assignment")}</dt><dd class="num">${pct(c.prob_assign)}</dd>
+      <dt>${T("delta", "Delta")}</dt><dd class="num">${c.delta.toFixed(2)}</dd>
+      <dt>${T("annualized", "Return on shares")}</dt><dd class="num">${c.yield_pct.toFixed(2)}% · ${c.ann_yield_pct.toFixed(0)}%/yr</dd>
     </dl>
     <div class="outcome">Stays under ${money(c.strike, 0)}: keep your 100 shares and the ${money(c.premium, 0)}.
       Closes above: shares sell at ${money(c.strike, 0)} (${(gain * 100).toFixed(1)}% above today), you still keep the premium, and the wheel's put side starts.</div>
@@ -824,7 +887,7 @@ function renderChain() {
   const rows = isCall ? e.calls : e.puts.slice().reverse();
   const rec = isCall ? r.recommended_call : r.recommended_put;
   const band = isCall ? [0.10, 0.30] : [0.15, 0.35];
-  const head = `<thead><tr><th>Strike</th><th>Bid / Ask</th><th>Premium</th><th>Delta</th><th>${isCall ? "Assignment" : "Buy shares"}</th><th>Annualized</th><th>Open int.</th></tr></thead>`;
+  const head = `<thead><tr><th>${T("strike", "Strike")}</th><th>${T("bid/ask", "Bid / Ask")}</th><th>${T("premium", "Premium")}</th><th>${T("delta", "Delta")}</th><th>${T("chance of assignment", isCall ? "Assignment" : "Buy shares")}</th><th>${T("annualized", "Annualized")}</th><th>${T("open interest", "Open int.")}</th></tr></thead>`;
   const body = rows.map((o) => {
     const inBand = Math.abs(o.delta) >= band[0] && Math.abs(o.delta) <= band[1];
     const isRec = rec && rec.expiry === e.date && rec.strike === o.strike;
@@ -869,7 +932,7 @@ function renderResearch(r, R) {
   $("findings").hidden = !has;
   const nr = $("noResearch");
   nr.hidden = has;
-  if (!has) nr.innerHTML = "The correlation study for this ticker hasn't run yet. It runs with the next scheduled update.";
+  if (!has) nr.innerHTML = "The 10-year study for this ticker hasn't run yet. It runs after the close on the next update.";
   if (!has) return;
 
   // ---- schedule cards
@@ -991,6 +1054,83 @@ function renderResearch(r, R) {
 }
 
 
+// ---------------------------------------------------------------- glossary (tap a dotted-underlined word)
+const GLOSSARY = {
+  "option": ["Option", "A contract on 100 shares. The seller is paid a premium now and takes on an obligation: to sell (a call) or buy (a put) 100 shares at the strike if the buyer exercises."],
+  "contract": ["Contract", "One option covers 100 shares, so prices are quoted per share and multiplied by 100: a $1.20 premium pays $120 per contract."],
+  "covered call": ["Covered call", "Selling a call option on 100 shares you already own. You're paid a premium now; in return, if the stock closes above the strike at expiration, your shares are sold at the strike. \"Covered\" because the shares back the promise."],
+  "cash-secured put": ["Cash-secured put", "Selling a put option while holding enough cash to buy the 100 shares (strike × 100). You're paid a premium now; if the stock closes below the strike at expiration, you buy the shares at the strike."],
+  "premium": ["Premium", "What the option buyer pays you when you sell. It's yours to keep whatever happens. Quoted per share; one contract is 100 shares."],
+  "strike": ["Strike", "The price written into the option: the price your shares are sold at (covered call) or bought at (cash-secured put) if the option is exercised."],
+  "expiration": ["Expiration", "The date the option ends. Most stock options settle on the closing price that day: above the strike, a call is exercised; below it, a put is."],
+  "assigned": ["Assigned", "When the option buyer exercises and you must follow through: sell your shares (call) or buy shares (put) at the strike. Almost always happens at expiration when the option finishes in the money."],
+  "called away": ["Called away", "Your shares were sold at the call's strike because the stock closed above it. You keep the premium and the sale money, and the wheel moves to selling puts."],
+  "delta": ["Delta", "How much the option's price moves for a $1 move in the stock, from 0 to 1. It's also a quick estimate of the chance the option finishes in the money: a 0.20-delta call is roughly a 1-in-5 chance of being assigned. Lower delta = strike further away = less premium, less risk."],
+  "chance of assignment": ["Chance of assignment", "The market's own odds that the option finishes in the money, worked out from its price. Close to delta. It's the market's estimate, not a guarantee."],
+  "in the money": ["In / out of the money", "A call is in the money when the stock is above its strike; a put when the stock is below. Options sold on the wheel start out of the money and get assigned if they finish in the money."],
+  "annualized": ["Return / annualized", "The premium as a share of the money tied up (the shares for a call, the cash for a put), and the same rate stretched over a year, so short and long expirations can be compared. Annualized numbers assume you could repeat it all year."],
+  "bid/ask": ["Bid / ask", "The bid is the best price a buyer offers right now; the ask is what a seller wants. When you sell an option, expect to get near the bid. A wide gap means a thinly traded option."],
+  "open interest": ["Open interest", "How many contracts at that strike are open. Higher usually means easier to trade at a fair price."],
+  "implied volatility": ["Implied volatility (IV)", "How much movement option prices are charging for, as a yearly percentage. High IV means richer premiums because the market expects bigger swings."],
+  "recent volatility": ["Recent volatility (HV)", "How much the stock actually moved over the last 20 trading days, as a yearly percentage. Comparing IV with it shows whether premiums are rich or thin."],
+  "ivhv": ["Premium level (IV ÷ HV)", "Implied volatility divided by recent volatility. Above about 1.15, options are paying for more movement than the stock has shown: good for sellers. Below about 0.9, the stock has been moving more than you're being paid for."],
+  "rsi": ["RSI (14-day)", "Relative Strength Index, a standard momentum gauge from 0 to 100 based on the last 14 days' gains and losses. Above 70 is conventionally \"overbought\", below 30 \"oversold\"."],
+  "running hot": ["Running hot", "The site's flag for a stock that's climbed fast: RSI above 70, or the price more than 6% above its 20-day average. Momentum can carry it through a call strike, so the site moves the call further out (0.15 delta)."],
+  "earnings": ["Earnings week", "When the company reports results, the stock can jump far past any strike overnight. The site skips any expiration that includes an earnings date."],
+  "exdiv": ["Ex-dividend", "The date a dividend's ownership is set. A call that's in the money just before it can be exercised early, a day before expiration, so the buyer collects the dividend."],
+  "pcr": ["Put/call open interest", "Open puts divided by open calls. High means traders are hedging against a drop; low means they're leaning bullish. Shown for context only."],
+  "lookalikes": ["Similar past weeks", "Past trades whose signal readings (VIX, recent moves, RSI, volatility...) looked most like today's, and how often those were assigned. Only used where it has predicted assignment better than chance in the backtest."],
+  "backtest": ["Backtest", "Replaying the strategy on past prices, week by week, using only what was known at each point. Here the stock prices are real; the option premiums are estimated from how much the stock was moving (Black-Scholes), because old option prices aren't free. Real premiums have usually been a bit higher."],
+  "wheel": ["The wheel", "Sell covered calls while you own shares; if they're called away, sell cash-secured puts with the cash; if a put is assigned, you own shares again and go back to calls."],
+  "gamma": ["Gamma", "How fast delta changes as the stock moves. High gamma (common in the last day or two before expiration) means a small move can quickly turn a safe option into one likely to be assigned."],
+  "theta": ["Theta", "How much value the option loses each day as expiration approaches, all else equal. That decay is what an option seller earns, and it speeds up near expiration."],
+  "vega": ["Vega", "How much the option's price changes when implied volatility moves 1 point."],
+  "skew": ["Skew", "The difference in implied volatility between out-of-the-money puts and calls. Puts usually cost more, since traders pay up for crash protection."],
+  "held-out": ["Held out / chance findings", "Testing dozens of signals will turn up some patterns by luck. So each study finds patterns on earlier years, then checks them on later years it never saw, with a correction for testing many at once. Only patterns that survive are shown as real."],
+};
+const FACTOR_TERM = { "Earnings": "earnings", "Premium level": "ivhv", "Momentum": "rsi", "Trend": "rsi", "Put/call (open interest)": "pcr",
+                      "Ex-dividend": "exdiv", "Similar past weeks": "lookalikes" };
+const T = (key, text) => GLOSSARY[key] ? `<button type="button" class="term" data-term="${esc(key)}">${text}</button>` : text;
+(function glossaryPopover() {
+  const pop = document.createElement("div");
+  pop.id = "glossPop"; pop.setAttribute("role", "tooltip"); pop.hidden = true;
+  document.body.appendChild(pop);
+  let openFor = null;
+  const close = () => { pop.hidden = true; openFor = null; };
+  document.addEventListener("click", (ev) => {
+    const b = ev.target.closest("button.term");
+    if (!b) { if (!ev.target.closest("#glossPop")) close(); return; }
+    ev.preventDefault(); ev.stopPropagation();
+    if (openFor === b) return close();
+    const g = GLOSSARY[b.dataset.term]; if (!g) return;
+    pop.innerHTML = `<strong>${esc(g[0])}</strong><p>${esc(g[1])}</p>`;
+    pop.hidden = false; openFor = b;
+    const r = b.getBoundingClientRect(), w = pop.offsetWidth, h = pop.offsetHeight;
+    let left = Math.min(Math.max(16, r.left + window.scrollX), window.scrollX + document.documentElement.clientWidth - w - 16);
+    let top = r.bottom + window.scrollY + 8;
+    if (r.bottom + h + 16 > window.innerHeight && r.top > h + 16) top = r.top + window.scrollY - h - 8;
+    pop.style.left = left + "px"; pop.style.top = top + "px";
+  }, true);
+  document.addEventListener("keydown", (ev) => { if (ev.key === "Escape") close(); });
+  window.addEventListener("resize", close);
+})();
+
+// "Where this fits in the wheel": shown next to the call pick
+function renderWheelSteps(id, step) {
+  const el = $(id); if (!el) return;
+  const li = (n, html) => `<li${n === step ? ' class="on"' : ""}>${html}</li>`;
+  el.innerHTML = `<div class="label">Where you are in the ${T("wheel", "wheel")}</div>
+    <ol>${li(1, `Own 100 shares → sell a ${T("covered call", "covered call")} (this tab)`)}${li(2, `Shares ${T("called away", "called away")} → sell a ${T("cash-secured put", "cash-secured put")}`)}${li(3, `Put ${T("assigned", "assigned")} → own shares again, back to step 1`)}</ol>
+    <div class="outcome">If the call above ends with your shares called away, the <button type="button" class="linkish" data-go="puts">Cash-secured puts tab</button> takes over: the put to sell, and whether to wait for your old price. To see how this cycle has played out on ${esc(state.report ? state.report.ticker : "this stock")} over the years, open the <button type="button" class="linkish" data-go="backtest">Backtest</button>.</div>`;
+}
+document.addEventListener("click", (ev) => { const b = ev.target.closest("button[data-go]"); if (b) { setView(b.dataset.go); window.scrollTo({ top: 0, behavior: "smooth" }); } });
+// the explainer starts open until you close it once
+(function () {
+  const d = $("learn");
+  if (recall("cca-learn-closed") !== "1") d.open = true;
+  d.addEventListener("toggle", () => store("cca-learn-closed", d.open ? "0" : "1"));
+})();
+
 // ---------------------------------------------------------------- paper trading
 const PAPER_HEADER = "id,source,logged_at,ticker,type,strategy,expiry,strike,premium,contracts,stock_price,decision,verdict,note";
 const STRAT = { delta: "Call to sell (site's pick)", mon_wed: "Schedule: Monday → Wednesday", thu_fri: "Schedule: Thursday → Friday",
@@ -1040,7 +1180,7 @@ async function logTrade() {
                 stock_price: t.stock_price, decision: "sell", verdict: clean(t.verdict), note: clean($("tpNote").value) };
   const list = myTrades(); list.unshift(row);
   if (!saveMine(list)) { $("tpStatus").textContent = "This browser isn't letting the page save (private browsing?). Nothing was logged."; return; }
-  $("tpStatus").innerHTML = `Saved in this browser. It's in <strong>Paper trades</strong> and gets scored after ${fmtDate(t.expiry)}'s close. Tap <strong>Export yours</strong> there now and then to keep a copy.`;
+  $("tpStatus").innerHTML = `Saved in this browser. It's in <strong>Paper trades</strong> and gets scored after ${fmtDate(t.expiry)}'s close. Tap <strong>Export</strong> there now and then to keep a copy.`;
 }
 
 document.addEventListener("click", (ev) => {
@@ -1058,17 +1198,9 @@ function parseCsv(text) {
 }
 
 async function loadPaper() {
-  try { state.paper = await getJSON("data/paper.json"); } catch (e) { state.paper = null; }
-  try {
-    const r = await fetch("paper_trades.csv?t=" + Date.now(), { cache: "no-store" });
-    const rows = r.ok ? parseCsv(await r.text()) : [];
-    const known = new Set((state.paper?.trades || []).map((t) => t.id));
-    rows.forEach((t) => { if (!known.has(t.id) && !state.previewTrades.some((p) => p.id === t.id)) state.previewTrades.push({ ...t, status: "open" }); });
-  } catch (e) {}
   state.mineScored = await scoreMine(myTrades());
   const n = $("paperNotice");
-  n.hidden = !!state.paper;
-  if (!state.paper) n.textContent = "No paper trading results yet. The first automatic entries are logged on the next Monday or Thursday update.";
+  n.hidden = true;
   renderPaper();
 }
 
@@ -1182,34 +1314,25 @@ function renderMineNote() {
 
 function signed(v) { return v == null ? "–" : `<span style="white-space:nowrap" class="${v >= 0 ? "pos" : "neg"}">${v >= 0 ? "+" : "−"}${money(Math.abs(v))}</span>`; }
 
-function tile(label, s, lead) {
+function tile(label, s, lead, costLabel = "upside given up") {
   if (!s || !s.n) return `<div class="tile"><div class="t-label">${label}</div><div class="t-big">–</div><div class="t-line">${s && s.open ? `${s.open} open, not expired yet.` : "No settled trades yet."}</div></div>`;
   return `<div class="tile"><div class="t-label">${label}</div><div class="t-big">${signed(s.net)}</div>
     <div class="t-line">${lead}</div>
     <div class="t-line">${s.n} settled · ${s.assigned} assigned · ${signed(s.avg_net)} per trade</div>
-    <div class="t-line">Premium ${money(s.income, 0)} · fees ${money(s.fees, 0)} · upside given up ${money(s.given_up, 0)}${s.open ? ` · ${s.open} open` : ""}</div></div>`;
+    <div class="t-line">Premium ${money(s.income, 0)} · fees ${money(s.fees, 0)} · ${costLabel} ${money(s.given_up, 0)}${s.open ? ` · ${s.open} open` : ""}</div></div>`;
 }
 
 function renderPaper() {
-  const P = state.paper || { summary: {}, trades: [] };
-  const S = P.summary || {};
+  const mineAll = state.mineScored || [];
+  const calls = mineAll.filter((t) => t.type !== "put"), puts = mineAll.filter((t) => t.type === "put");
   $("paperTiles").innerHTML =
-    tile("Following the routine", S.followed, "Net result from the calls the page recommended.") +
-    tile("Weeks it said hold off", S.skipped, "What selling anyway would have made. Below zero means holding off was right.") +
-    tile("Selling puts on the routine", S.puts_followed, "Net result from the cash-secured puts the page recommended.") +
-    tile("Put weeks it said hold off", S.puts_skipped, "What selling puts anyway would have made.") +
-    tile("Your paper trades", mineSummary(state.mineScored || []), "Trades you logged from the page, saved in this browser.");
-  const strat = Object.entries(S.by_strategy || {});
-  $("paperStrat").innerHTML = strat.length
-    ? `<thead><tr><th>Strategy</th><th>Settled</th><th>Assigned</th><th>Net</th><th>Per trade</th></tr></thead><tbody>` +
-      strat.map(([k, s]) => `<tr><td>${esc(STRAT[k] || k)}</td><td>${s.n}</td><td>${s.n ? s.assigned : "–"}</td><td>${s.n ? signed(s.net) : "–"}</td><td>${s.n ? signed(s.avg_net) : "–"}</td></tr>`).join("") + `</tbody>`
-    : `<tbody><tr><td>No automatic trades have settled yet.</td></tr></tbody>`;
-
+    tile("All your trades", mineSummary(mineAll), "Net result of everything you've logged.", "given up or lost at the strike") +
+    tile("Covered calls", mineSummary(calls), "Premium kept, minus upside given up when called away.") +
+    tile("Cash-secured puts", mineSummary(puts), "Premium kept, minus the loss below the strike when assigned.", "loss below the strike");
   const f = $("paperFilter").value;
-  const all = [...(state.mineScored || []), ...state.previewTrades, ...(P.trades || [])];
+  const all = [...(state.mineScored || [])];
   renderMineNote();
-  const shown = all.filter((t) => f === "all" || (f === "open" ? t.status === "open" : t.source === f));
-  const decision = { sell: "Sell", wait: "Hold off (hypothetical)", alternative: "Alternative" };
+  const shown = all.filter((t) => f === "all" || (f === "open" ? t.net == null : t.net != null));
   const mine = (t) => t.source === "manual" && myTrades().some((x) => x.id === t.id);
   const status = (t) => (t.status === "assigned" ? `<span class="chip bad">assigned</span>`
     : t.status === "expired" ? `<span class="chip good">${t.type === "put" ? "expired, kept cash" : "expired, kept shares"}</span>`
@@ -1217,29 +1340,31 @@ function renderPaper() {
     : t.today ? `<span class="chip ${t.today.itm ? "bad" : "good"}">expires today · ${money(t.today.price)} at ${localTime(new Date(t.today.updated))}, ${t.today.itm ? "in the money: likely assigned" : "out of the money"}</span>`
     : `<span class="chip info">open</span>`) +
     (mine(t) ? ` <button type="button" class="linkish mine-del" data-id="${esc(t.id)}" title="Delete this trade">delete</button>` : "");
-  $("paperTrades").innerHTML = `<thead><tr><th>Logged</th><th>Contract</th><th>Strategy</th><th>Premium</th><th>Decision</th><th>Status</th><th>Close</th><th>Net</th></tr></thead><tbody>` +
+  $("paperTrades").innerHTML = `<thead><tr><th>Logged</th><th>Contract</th><th>Picked from</th><th>Premium</th><th>Status</th><th>Close</th><th>Net</th></tr></thead><tbody>` +
     (shown.length ? shown.map((t) => `<tr>
       <td>${esc((t.logged_at || "").slice(0, 10))}</td>
       <td>${esc(t.ticker)} ${money(t.strike)} ${esc(t.type)} · ${fmtDate(t.expiry)}${Number(t.contracts) > 1 ? ` ×${t.contracts}` : ""}</td>
-      <td>${esc(STRAT[t.strategy] || t.strategy)}${t.source === "manual" ? " (yours)" : ""}</td>
-      <td>${money(t.premium)}</td><td>${esc(decision[t.decision] || t.decision || "")}</td>
+      <td>${esc(STRAT[t.strategy] || t.strategy)}${t.note ? ` <span class="muted">${esc(t.note)}</span>` : ""}</td>
+      <td>${money(t.premium)}${Number(t.contracts) > 1 ? ` <span class="muted">×${t.contracts}</span>` : ""}</td>
       <td>${status(t)}</td><td>${t.close != null ? money(t.close) : "–"}</td><td>${t.net != null ? signed(t.net) : "–"}</td></tr>`).join("")
-      : `<tr><td colspan="8">Nothing here yet.</td></tr>`) + `</tbody>`;
+      : `<tr><td colspan="7">Nothing here yet. Tap "Paper trade this" on a call or put to log one.</td></tr>`) + `</tbody>`;
 }
 
 function setView(v) {
-  for (const [name, view, nav] of [["analyzer", "analyzerView", "navAnalyzer"], ["puts", "putsView", "navPuts"], ["paper", "paperView", "navPaper"], ["backtest", "backtestView", "navBacktest"]]) {
+  for (const [name, view, nav] of [["analyzer", "analyzerView", "navAnalyzer"], ["puts", "putsView", "navPuts"], ["paper", "paperView", "navPaper"], ["backtest", "backtestView", "navBacktest"], ["research", "researchView", "navResearch"]]) {
     $(view).hidden = v !== name;
     $(nav).setAttribute("aria-pressed", v === name);
   }
   if (v === "paper") loadPaper();
   if (v === "backtest" && state.backtest) renderWheel();
+  if (v === "research") renderResearchTab();
   try { history.replaceState(null, "", v === "analyzer" ? location.pathname + location.search : "#" + v); } catch (e) {}
 }
 $("navAnalyzer").addEventListener("click", () => setView("analyzer"));
 $("navPaper").addEventListener("click", () => setView("paper"));
 $("navPuts").addEventListener("click", () => setView("puts"));
 $("navBacktest").addEventListener("click", () => setView("backtest"));
+$("navResearch").addEventListener("click", () => setView("research"));
 $("paperFilter").addEventListener("change", renderPaper);
 
 document.addEventListener("click", (ev) => {
@@ -1403,11 +1528,11 @@ function renderPuts(r, R) {
       <div class="label">${v.level === "wait" ? "If you sell anyway" : "Put to sell"}</div>
       <div class="contract"><span class="num">${money(p.strike)}</span> put · ${fmtDate(p.expiry)}</div>
       <dl>
-        <dt>Premium (per contract)</dt><dd class="num">${money(p.premium)}</dd>
-        <dt>Cash to set aside</dt><dd class="num">${money(p.cash_needed, 0)}</dd>
-        <dt>Chance you buy shares</dt><dd class="num">${pct(p.prob_assign)}</dd>
-        <dt>Delta</dt><dd class="num">${p.delta.toFixed(2)}</dd>
-        <dt>Return on cash</dt><dd class="num">${p.yield_pct.toFixed(2)}% · ${p.ann_yield_pct.toFixed(0)}%/yr</dd>
+        <dt>${T("premium", "Premium")} (per ${T("contract", "contract")})</dt><dd class="num">${money(p.premium)}</dd>
+        <dt>${T("cash-secured put", "Cash to set aside")}</dt><dd class="num">${money(p.cash_needed, 0)}</dd>
+        <dt>${T("chance of assignment", "Chance you buy shares")}</dt><dd class="num">${pct(p.prob_assign)}</dd>
+        <dt>${T("delta", "Delta")}</dt><dd class="num">${p.delta.toFixed(2)}</dd>
+        <dt>${T("annualized", "Return on cash")}</dt><dd class="num">${p.yield_pct.toFixed(2)}% · ${p.ann_yield_pct.toFixed(0)}%/yr</dd>
       </dl>
       <div class="outcome">Stays above ${money(p.strike, 0)}: keep the ${money(p.premium, 0)} and your cash is freed up.
         Closes below: you buy 100 shares at ${money(p.strike, 0)} and still keep the premium.</div>
@@ -1429,7 +1554,7 @@ function renderPuts(r, R) {
 
   renderBuyBack(r);
   $("pFactors").innerHTML = (r.put_factors || []).map((f) => `
-    <li><span class="fname">${esc(f.name)}</span>
+    <li><span class="fname">${FACTOR_TERM[f.name] ? T(FACTOR_TERM[f.name], esc(f.name)) : esc(f.name)}</span>
         <span class="chip ${esc(f.status)}">${esc(f.value)}</span>
         <span class="fnote">${esc(f.note)}</span></li>`).join("");
 
@@ -1521,7 +1646,7 @@ function renderPutChain() {
       <td>${o.delta.toFixed(2)}</td><td>${pct(o.prob_assign)}</td><td>${o.ann_yield_pct.toFixed(0)}%</td>
       <td>${o.open_interest.toLocaleString("en-US")}</td></tr>`;
   }).join("");
-  $("pChain").innerHTML = `<thead><tr><th>Strike</th><th>Bid / Ask</th><th>Premium</th><th>Cash needed</th><th>Delta</th><th>Buy shares</th><th>Annualized</th><th>Open int.</th></tr></thead><tbody>` +
+  $("pChain").innerHTML = `<thead><tr><th>${T("strike", "Strike")}</th><th>${T("bid/ask", "Bid / Ask")}</th><th>${T("premium", "Premium")}</th><th>Cash needed</th><th>${T("delta", "Delta")}</th><th>${T("chance of assignment", "Buy shares")}</th><th>${T("annualized", "Annualized")}</th><th>${T("open interest", "Open int.")}</th></tr></thead><tbody>` +
     (rows || `<tr><td colspan="8">No strikes in range.</td></tr>`) + "</tbody>";
   $("pLegend").innerHTML = `<span class="sw" style="background:var(--band)"></span>Target range (0.15–0.35 delta)
     &nbsp;&nbsp;<span class="sw" style="background:var(--rec)"></span>Recommended. Premium is per contract (100 shares). "Buy shares" is the market-implied chance the put is assigned. Annualized return is on the cash set aside.`;
@@ -1598,6 +1723,19 @@ function renderBacktest(r, B) {
   const yr = Object.values(years).sort((a, b) => b.year.localeCompare(a.year));
   $("btYears").innerHTML = `<thead><tr><th>Year</th><th>${twice ? "Trades" : "Mondays"}</th><th>Assigned (0.20 delta)</th><th>Assigned (history)</th></tr></thead><tbody>` +
     yr.map((y) => `<tr><td>${y.year}</td><td>${y.dn ?? y.sn ?? "–"}</td><td>${y.da ?? "–"}${y.dn ? ` (${pct(y.da / y.dn)})` : ""}</td><td>${y.sa ?? "–"}${y.sn ? ` (${pct(y.sa / y.sn)})` : ""}</td></tr>`).join("") + `</tbody>`;
+  const ws = $("wStart"), keepStart = ws.value;
+  const firstW = B.wheel && B.wheel.delta && B.wheel.delta.summary;
+  const today0 = new Date();
+  const startDate = (k) => {
+    if (k === "ytd") return `${today0.getFullYear()}-01-01`;
+    const d = new Date(today0), n = Number(k.slice(0, -1)), u = k.slice(-1);
+    if (u === "w") d.setDate(d.getDate() - 7 * n); else if (u === "m") d.setMonth(d.getMonth() - n); else d.setFullYear(d.getFullYear() - n);
+    return d.toISOString().slice(0, 10);
+  };
+  const startLabel = (k) => { const iso0 = startDate(k); return /[wm]$/.test(k) ? `${fmtDate(iso0)}` : fmtYear(iso0); };
+  ws.innerHTML = `<option value="all">Start: ${firstW ? fmtYear(firstW.first) : "all history"} (all history)</option>` +
+    Object.entries(B.start_choices || {}).map(([k, label]) => `<option value="${k}">Start: ${esc(label)} (${startLabel(k)})</option>`).join("");
+  if ([...ws.options].some((o) => o.value === keepStart)) ws.value = keepStart;
   renderBtWeeks();
   renderWheel();
   renderLookalikes(true);
@@ -1634,7 +1772,24 @@ async function renderBtWeeks() {
 }
 $("btScope").addEventListener("change", () => state.report && renderBacktest(state.report, state.backtest));
 $("btFilter").addEventListener("change", renderBtWeeks);
-$("btJump").addEventListener("click", (e) => { const b = e.target.closest("button[data-to]"); if (b && !$(b.dataset.to).hidden) $(b.dataset.to).scrollIntoView({ behavior: "smooth", block: "start" }); });
+for (const id of ["btJump", "rsJump"]) $(id).addEventListener("click", (e) => {
+  const b = e.target.closest("button[data-to]"); if (!b) return;
+  const el = $(b.dataset.to); if (!el || el.hidden) return;
+  const d = el.closest("details"); if (d) d.open = true;
+  if (b.dataset.open && $(b.dataset.open)) $(b.dataset.open).open = true;
+  el.scrollIntoView({ behavior: "smooth", block: "start" });
+});
+
+// ---------------------------------------------------------------- Research tab
+function renderResearchTab() {
+  const r = state.report, B = state.backtest;
+  $("rsTitle").textContent = r ? `Research: ${r.ticker}` : "Research";
+  const n = $("rsNotice");
+  n.hidden = !!(B && B.schedules);
+  if (!n.hidden) n.textContent = r ? `The backtest-based studies for ${r.ticker} run after Friday's close (or when "Update options data" is run from the Actions tab). The 10-year signal study and the Greeks study below don't depend on it.` : "Pick a ticker at the top.";
+  renderLookalikes(true);
+  renderGreeks();
+}
 
 // ---------------------------------------------------------------- Greeks study
 async function renderGreeks() {
@@ -1685,9 +1840,24 @@ $("gkScope").addEventListener("change", renderGreeks);
 
 // ---------------------------------------------------------------- assigned vs expired
 const ordinal = (n) => { const v = n % 100; return n + (["th", "st", "nd", "rd"][(v - 20) % 10] || ["th", "st", "nd", "rd"][v] || "th"); };
-const lkWindow = () => { const SC = btSched(); if (!SC) return null; const w = $("lkWin").value; return SC.lookalikes && (SC.lookalikes[w] ? w : Object.keys(SC.lookalikes).find((k) => SC.lookalikes[k])); };
+// Research looks at every trade window at once (not just the Backtest tab's schedule)
+function lkAll() {
+  const B = state.backtest;
+  if (!B || !B.schedules) return null;
+  const out = { windows: [], lookalikes: {} };
+  for (const sc of Object.values(B.schedules)) {
+    for (const w of sc.windows || []) {
+      const L = (sc.lookalikes || {})[w.key];
+      if (L && !out.lookalikes[w.key]) { out.lookalikes[w.key] = L; out.windows.push(w); }
+    }
+  }
+  const order = ["mon_wed", "mon_fri", "tue_wed", "thu_fri"];
+  out.windows.sort((a, b) => order.indexOf(a.key) - order.indexOf(b.key));
+  return out;
+}
+const lkWindow = () => { const SC = lkAll(); if (!SC || !SC.windows.length) return null; const w = $("lkWin").value; return SC.lookalikes[w] ? w : SC.windows[0].key; };
 function renderLookalikes(reset) {
-  const SC = btSched();
+  const SC = lkAll();
   const sel = $("lkWin");
   if (SC && reset) {
     const keep = sel.value;
@@ -1701,12 +1871,11 @@ function renderLookalikes(reset) {
   const side = $("lkSide").value, X = L[side], T = X.test, calls = side === "calls";
   const what = calls ? "call" : "put";
   const winLabel = (SC.windows.find((w) => w.key === wk) || {}).label || "";
-  const opens = wk.startsWith("thu") ? "Thursday's" : "Monday's";
+  const opens = wk.startsWith("thu") ? "Thursday's" : wk.startsWith("tue") ? "Tuesday's" : "Monday's";
   $("lkSub").innerHTML = (calls
     ? `Every ${esc(winLabel)} trade (earnings weeks left out), with a ${L.call_delta.toFixed(2)}-delta covered call sold at ${opens} open (${L.call_delta_hot.toFixed(2)} when the stock was running hot).`
     : `Every ${esc(winLabel)} trade (earnings weeks left out), with a ${L.put_delta.toFixed(2)}-delta cash-secured put sold at ${opens} open (${L.put_delta_sliding.toFixed(2)} when the stock was sliding), whether or not the wheel would have been in its put phase.`) +
     ` <strong>${X.assigned_weeks} of ${X.weeks}</strong> ended assigned; the rest expired worthless. Readings are what was known at ${opens} open: the previous close for price signals, and page views, analyst changes and headlines up to that morning.`;
-  renderStrategies(X.strategies, calls, winLabel);
   renderFavorable(X.favorable, calls, winLabel);
 
   const row = (x) => {
@@ -1795,7 +1964,7 @@ function renderFavorable(FV, calls, winLabel) {
 }
 
 function renderLookalikeWeek() {
-  const SC = btSched(), wk = lkWindow(), L = wk && SC.lookalikes[wk]; if (!L) return;
+  const SC = lkAll(), wk = lkWindow(), L = wk && SC.lookalikes[wk]; if (!L) return;
   const side = $("lkSide").value, X = L[side], calls = side === "calls", v = $("lkWeek").value;
   const W = v === "now" ? X.now : X.detail[+v];
   if (!W) { $("lkWeekSub").textContent = "No assigned trades with enough earlier history yet."; $("lkReadings").innerHTML = ""; $("lkNear").innerHTML = ""; return; }
@@ -1833,25 +2002,35 @@ function renderWheel() {
   }
   const topup = $("wShort").value === "topup", cap = $("wShort").value === "cap";
   const K = (topupFlag) => schedInfo().base + (topupFlag ? "_topup" : cap ? "_cap" : "");
+  const startSel = $("wStart").value;
   const polAvail = !!(B && B.policy_summary);
-  $("wPolicy").disabled = !polAvail || cap;
-  if (!polAvail || cap) $("wPolicy").value = "every";
+  $("wPolicy").disabled = !polAvail || cap || startSel !== "all";
+  if (!polAvail || cap || startSel !== "all") $("wPolicy").value = "every";
   const pol = $("wPolicy").value;
+  if (startSel !== "all" && !state.starts) {
+    $("wSub").textContent = "Loading the wheel started later…";
+    loadStarts().then(() => { if (!state.starts) $("wStart").value = "all"; renderWheel(); });
+    return;
+  }
   if (pol !== "every" && polAvail && !state.policy) {
     $("wSub").textContent = "Loading the wheel that follows the site's recommendation…";
     loadPolicy().then(() => { if (!state.policy) { $("wPolicy").value = "every"; } renderWheel(); });
     return;
   }
-  const src = pol === "every" ? B : state.policy;
+  const src = startSel !== "all" ? null : pol === "every" ? B : state.policy;
   const key = K(topup) + (pol === "every" ? "" : "_" + pol);
-  const W = src && src[key] && src[key][method];
+  if (startSel !== "all") {
+    const SW = ((state.starts.starts || {})[key] || {})[startSel];
+    if (!SW || !SW[method]) { $("wStart").value = "all"; return renderWheel(); }
+  }
+  const W = startSel !== "all" ? state.starts.starts[key][startSel][method] : src && src[key] && src[key][method];
   $("wheelCard").hidden = !(B && B[K(topup)] && B[K(topup)][method]);
   if (!W) return;
   const s = W.summary;
-  renderWheelCompare(B, method);
+  renderWheelCompare(B, method, startSel);
   renderPolicyCompare(B, method, K(topup), topup, twice);
   renderHorizons(B, method, K(topup), topup, twice);
-  $("wSub").textContent = `Starts ${fmtYear(s.first)} owning 100 ${B.ticker} shares and no cash. ${twice ? `${schedInfo().desc} Each is a covered call while holding shares, or a cash-secured put while holding cash, so a call assigned on Wednesday is followed by a put on Thursday.` : "While holding shares, a covered call is sold each Monday. When the shares are called away, a cash-secured put is sold each Monday instead."} ${topup ? "When the cash doesn't cover the put, just enough money is added to sell it, so the wheel never stops." : cap ? "Puts are only sold at or below the strike the shares were called away at, so you'd buy them back at that price or lower. The sale money always covers that, so nothing is added; when the stock has run far above it and that put pays almost nothing (under $5), the week is spent waiting." : "It's sold only in weeks when the cash covers the strike; otherwise that week is paused."} When a put is assigned, the shares are bought back and calls start again. Earnings weeks are skipped.${B.cash_interest ? " Cash earns the 3-month Treasury bill rate, roughly what a money market fund pays." : " Cash earns nothing here (the Treasury rate wasn't available)."}`;
+  $("wSub").textContent = `Starts ${/[wm]$/.test(startSel) ? `${fmtDate(s.first)} ${s.first.slice(0, 4)}` : fmtYear(s.first)} owning 100 ${B.ticker} shares and no cash. ${twice ? `${schedInfo().desc} Each is a covered call while holding shares, or a cash-secured put while holding cash, so a call assigned on Wednesday is followed by a put on Thursday.` : "While holding shares, a covered call is sold each Monday. When the shares are called away, a cash-secured put is sold each Monday instead."} ${topup ? "When the cash doesn't cover the put, just enough money is added to sell it, so the wheel never stops." : cap ? "Puts are only sold at or below the strike the shares were called away at, so you'd buy them back at that price or lower. The sale money always covers that, so nothing is added; when the stock has run far above it and that put pays almost nothing (under $5), the week is spent waiting." : "It's sold only in weeks when the cash covers the strike; otherwise that week is paused."} When a put is assigned, the shares are bought back and calls start again. Earnings weeks are skipped.${B.cash_interest ? " Cash earns the 3-month Treasury bill rate, roughly what a money market fund pays." : " Cash earns nothing here (the Treasury rate wasn't available)."}`;
   if (pol !== "every") $("wSub").textContent += ` Following the site's recommendation${pol === "favorable" ? " (favorable weeks only)" : ""}: ${s.skipped_calls || 0} call and ${s.skipped_puts || 0} put ${twice ? "trades" : "weeks"} skipped, and strikes adjusted for similar past weeks once there's enough history.`;
   const diffCls = s.difference >= 0 ? "pos" : "neg";
   $("wTiles").innerHTML = `
@@ -1902,15 +2081,7 @@ function renderHorizons(B, method, key, topup, twice) {
   if (!H) return;
   const pctS = (v) => v == null ? "–" : `<span class="${v >= 0 ? "pos" : "neg"}">${v >= 0 ? "+" : ""}${v.toFixed(1)}%</span>`;
   const yrs = (r) => r.years >= 0.95 ? `${Math.round(r.years * 10) / 10} yr` : `${Math.round(r.years * 12)} mo`;
-  const pol = $("wPolicy").value;
-  $("wHorSub").innerHTML = `The same wheel (${schedInfo().short}, ${method === "delta" ? "0.20/0.25-delta strikes" : "history-based strikes"}, ${topup ? "adding money when cash is short" : "pausing when cash is short"}) started 1, 2, … 10 years ago and run to now, each starting with 100 shares, next to simply holding them over the same time.${topup ? " Returns are on everything put in, including money added." : ""}${pol !== "every" ? " These use trading every week; the recommendation menu doesn't change this table." : ""}`;
-  const best = H.ending_now.reduce((a, b) => (b.diff_pct > a.diff_pct ? b : a), H.ending_now[0] || {});
-  $("wHorNow").innerHTML = `<thead><tr><th>Started</th><th>Wheel</th><th>Holding</th><th>Wheel minus holding</th><th>Wheel per year</th><th>Holding per year</th><th>Called away / bought back</th><th>Ends in</th></tr></thead><tbody>` +
-    (H.ending_now.length ? H.ending_now.map((r) => `<tr${r === best ? ' class="bestrow"' : ""}><td>${r.n === H.ending_now.length && r.years < r.n - 0.2 ? `All history (${yrs(r)})` : `${r.n} year${r.n === 1 ? "" : "s"} ago`} <span class="muted">${fmtYear(r.start)}</span></td>
-      <td>${pctS(r.wheel_return_pct)}</td><td>${pctS(r.hold_return_pct)}</td><td><strong>${pctS(r.diff_pct)}</strong></td>
-      <td>${pctS(r.wheel_ann_pct)}</td><td>${pctS(r.hold_ann_pct)}</td><td>${r.calls_assigned} / ${r.puts_assigned}</td><td>${r.ends_holding ? "Shares" : "Cash"}</td></tr>`).join("")
-      : `<tr><td colspan="8">Not enough history.</td></tr>`) + `</tbody>`;
-  $("wHorRollSub").textContent = `The latest stretch depends heavily on where the stock happened to go recently. This runs the wheel over every stretch of each length in the history, starting every 3 months, to show how often it beat holding and by how much.`;
+  $("wHorRollSub").textContent = `Is a short run of the wheel better than a long one? One run can't say, because it depends on what the stock happened to do in those months. So this runs the wheel over every 1-year stretch in the history (starting every 3 months), every 2-year stretch, and so on, each compared with holding the shares over the same stretch. To see one particular start in full, use the Start menu above.`;
   $("wHorRoll").innerHTML = `<thead><tr><th>Length</th><th>Stretches</th><th>Wheel beat holding</th><th>Typical difference</th><th>Typical wheel per year</th><th>Typical holding per year</th><th>Wheel lost money</th><th>Worst stretch</th><th>Best stretch</th></tr></thead><tbody>` +
     (H.rolling.length ? H.rolling.map((r) => `<tr><td>${r.n} year${r.n === 1 ? "" : "s"}</td><td>${r.windows}</td>
       <td><strong>${r.wheel_beat} of ${r.windows}</strong> <span class="muted">${Math.round(r.wheel_beat_pct)}%</span></td>
@@ -1926,7 +2097,8 @@ function renderHorizons(B, method, key, topup, twice) {
 // start is in the history file, fetched the first time you ask for it.
 async function renderWheelLog(W, twice, key, method, act) {
   const all = $("wRange").value === "all";
-  let log = W.log || [];
+  const unpackLog = (packed, fields) => packed.map((a) => unpack(fields, a)).map((e) => ({ ...e, leg: e.window, holding: e.holding ? "shares" : "cash" }));
+  let log = W.log || (W.log_full && state.backtest ? unpackLog(W.log_full.slice(-52 * (twice ? 2 : 1)), state.backtest.log_fields) : []);
   let note = "";
   if (all) {
     let packed = W.log_full, fields = state.backtest && state.backtest.log_fields;   // policy wheels carry their own
@@ -1954,16 +2126,15 @@ async function renderWheelLog(W, twice, key, method, act) {
 
 // "Your wheel today": the backtest's ending position, valued at the latest option-data price,
 // plus the trade the wheel would make this week from the latest option chain.
-function renderWheelCompare(B, method) {
+function renderWheelCompare(B, method, startSel = "all") {
   const px = state.report ? state.report.price : null;
-  const pick = (k) => B[k] && B[k][method];
-  const rows = [["wheel", "Once a week · pause when short", pick("wheel")], ["wheel_topup", "Once a week · add money", pick("wheel_topup")],
-                ["wheel2", "Mon → Wed, Thu → Fri · pause when short", pick("wheel2")], ["wheel2_topup", "Mon → Wed, Thu → Fri · add money", pick("wheel2_topup")],
-                ["wheel3", "Tue → Wed, Thu → Fri · pause when short", pick("wheel3")], ["wheel3_topup", "Tue → Wed, Thu → Fri · add money", pick("wheel3_topup")],
-                ["wheel_cap", "Once a week · buy back at call strike or lower", pick("wheel_cap")],
-                ["wheel2_cap", "Mon → Wed, Thu → Fri · buy back at call strike or lower", pick("wheel2_cap")],
-                ["wheel3_cap", "Tue → Wed, Thu → Fri · buy back at call strike or lower", pick("wheel3_cap")]]
-    .filter((x) => x[2]).map(([key, label, W]) => {
+  const pick = (k) => startSel === "all" ? B[k] && B[k][method]
+    : state.starts && state.starts.starts[k] && state.starts.starts[k][startSel] && state.starts.starts[k][startSel][method];
+  const base = schedInfo().base, cur = $("wShort").value;       // the schedule picked above, all three cash rules
+  const rows = [[base, "Pause until the cash covers the put", pick(base), "pause"], [base + "_topup", "Add money to keep going", pick(base + "_topup"), "topup"],
+                [base + "_cap", "Buy back at the call strike or lower", pick(base + "_cap"), "cap"]]
+    .filter((x) => x[2]).map(([key, label0, W, rule]) => {
+      const label = label0 + (rule === cur ? ` <span class="chip info">shown</span>` : "");
       const s = W.summary;
       const val = px ? s.cash_now + (s.ends_holding ? 100 * px : 0) : s.end_wheel;
       const bench = px ? (s.bench_shares || 100) * px : s.end_hold;
@@ -1971,14 +2142,24 @@ function renderWheelCompare(B, method) {
         <td>${money(s.added || 0, 0)}${s.topups ? ` <span class="muted">(${s.topups})</span>` : ""}</td><td>${signed(val - (s.added || 0) - s.start_value)}</td>
         <td>${money(bench, 0)} <span class="muted">${(s.bench_shares || 100).toFixed(1)} sh</span></td><td>${signed(val - bench)}</td></tr>`;
     });
-  $("wCompare").innerHTML = `<thead><tr><th>Schedule · if cash falls short</th><th>Ends with</th><th>Value now</th><th>Money added</th><th>Gain on money put in</th><th>Holding instead</th><th>Wheel vs holding</th></tr></thead><tbody>${rows.join("")}</tbody>`;
-  $("wCompareNote").textContent = `Both start with 100 shares worth ${money(B.wheel[method].summary.start_value, 0)}. "Gain on money put in" subtracts the starting shares and any money added. "Holding instead" keeps the 100 shares and, in the add-money row, also buys shares with each deposit on the same day, so both sides put in the same money. Money added usually pays to buy the shares back at a higher strike after they were called away, so it doesn't add shares to the wheel. Valued at the latest option-data price.${B.wheel2 ? " Twice-a-week results assume Wednesday expirations existed for the whole period; most single stocks only gained them recently, so earlier years show what the routine would have done rather than trades you could have placed." : ""}`;
+  $("wCompare").innerHTML = `<thead><tr><th>If the cash falls short</th><th>Ends with</th><th>Value now</th><th>Money added</th><th>Gain on money put in</th><th>Holding instead</th><th>Wheel vs holding</th></tr></thead><tbody>${rows.join("")}</tbody>`;
+  $("wCompareNote").textContent = `Both start with 100 shares worth ${money((pick("wheel") || B.wheel[method]).summary.start_value, 0)}${startSel !== "all" ? ` on ${fmtDate((pick("wheel") || B.wheel[method]).summary.first)} ${(pick("wheel") || B.wheel[method]).summary.first.slice(0, 4)}` : ""}. "Gain on money put in" subtracts the starting shares and any money added. "Holding instead" keeps the 100 shares and, in the add-money row, also buys shares with each deposit on the same day, so both sides put in the same money. Money added usually pays to buy the shares back at a higher strike after they were called away, so it doesn't add shares to the wheel. Valued at the latest option-data price.${B.wheel2 ? " Twice-a-week results assume Wednesday expirations existed for the whole period; most single stocks only gained them recently, so earlier years show what the routine would have done rather than trades you could have placed." : ""}`;
 }
 $("wShort").addEventListener("change", renderWheel);
 $("wSched").addEventListener("change", () => state.report && renderBacktest(state.report, state.backtest));
 $("wRange").addEventListener("change", renderWheel);
 
 // Lazily loaded: the wheel following the site's recommendation.
+// Lazily loaded: the wheel started later (this year, 1, 2, 3 or 5 years ago).
+async function loadStarts() {
+  if (state.starts) return state.starts;
+  const B = state.backtest; if (!B) return null;
+  try { state.starts = await getJSON(`data/backtest/${encodeURIComponent(B.ticker)}_starts.json`); }
+  catch (e) { state.starts = null; }
+  return state.starts;
+}
+$("wStart").addEventListener("change", renderWheel);
+
 async function loadPolicy() {
   if (state.policy) return state.policy;
   const B = state.backtest; if (!B) return null;
@@ -2140,7 +2321,7 @@ $("lookup").addEventListener("submit", (ev) => { ev.preventDefault(); load($("ti
 $("expiry").addEventListener("change", (ev) => { state.expiry = ev.target.value; renderChain(); });
 $("tabCalls").addEventListener("click", () => setSide("calls"));
 $("tabPuts").addEventListener("click", () => setSide("puts"));
-init().then(() => { if (location.hash === "#paper") setView("paper"); else if (location.hash === "#puts") setView("puts"); else if (location.hash === "#backtest") setView("backtest"); });
+init().then(() => { if (location.hash === "#paper") setView("paper"); else if (location.hash === "#puts") setView("puts"); else if (location.hash === "#backtest") setView("backtest"); else if (location.hash === "#research") setView("research"); });
 </script>
 </body>
 </html>
