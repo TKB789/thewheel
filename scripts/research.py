@@ -537,9 +537,17 @@ def study_pairs(ev, train, test, ticker, exit_day, single_tests):
     return kept, len(tests), len(usable)
 
 
-def suggest(ev: pd.DataFrame, holding: list, current: dict, sigma_now: float):
+LK_CALL_TARGET_LIMITS = (0.07, 0.25)   # lookalike-adjusted call target stays within these
+LK_PUT_TARGET_LIMITS = (0.12, 0.35)
+
+
+def suggest(ev: pd.DataFrame, holding: list, current: dict, sigma_now: float, lookalike: dict | None = None):
     """Pick the strike distance that historically finished in the money ~15% of the time,
-    using only past weeks that looked like today on the signals that held up."""
+    using only past weeks that looked like today on the signals that held up.
+    lookalike: when similar past trades have predicted assignment better than chance for this
+    window, the target rate is divided by how much likelier assignment looks now (e.g. 1.4x as
+    likely -> aim for ~11% instead of 15%), which moves the strike further out, or closer in
+    when assignment looks less likely."""
     sample = ev
     used = []
     for t in sorted(holding, key=lambda t: -abs(t["r_test"] or 0)):
@@ -587,22 +595,31 @@ def suggest(ev: pd.DataFrame, holding: list, current: dict, sigma_now: float):
         if len(sub) >= MIN_COND and f"{LABELS[f]}" not in " ".join(used):
             sample = sub
             used.append(f"{LABELS[f]} is {name} now")
-    zq = float(sample["z"].quantile(1 - TARGET_ASSIGN))
+    lk_c = (lookalike or {}).get("calls") or {}
+    lk_p = (lookalike or {}).get("puts") or {}
+    call_target = TARGET_ASSIGN / lk_c["ratio"] if lk_c.get("applied") else TARGET_ASSIGN
+    call_target = min(max(call_target, LK_CALL_TARGET_LIMITS[0]), LK_CALL_TARGET_LIMITS[1])
+    put_target = PUT_TARGET_ASSIGN / lk_p["ratio"] if lk_p.get("applied") else PUT_TARGET_ASSIGN
+    put_target = min(max(put_target, LK_PUT_TARGET_LIMITS[0]), LK_PUT_TARGET_LIMITS[1])
+    zq = float(sample["z"].quantile(1 - call_target))
     move = max(zq * sigma_now, 0.0025)
     table = [{"move_pct": k, "rate": float((sample["z"] * sigma_now > k / 100).mean())} for k in STRIKE_STEPS]
     # cash-secured puts: how far below today the stock finished, at the put target rate
-    zp = float(sample["z"].quantile(PUT_TARGET_ASSIGN))
+    zp = float(sample["z"].quantile(put_target))
     put_move = max(-zp * sigma_now, 0.0025)
     put_table = [{"move_pct": k, "rate": float((sample["z"] * sigma_now < -k / 100).mean())} for k in STRIKE_STEPS]
     return {
         "sigma_pct": round(sigma_now * 100, 3),
         "move_pct": round(move * 100, 3),
-        "target_rate": TARGET_ASSIGN,
+        "target_rate": round(call_target, 4),
+        "base_target_rate": TARGET_ASSIGN,
+        "lookalike": lookalike,
         "n_sample": int(len(sample)),
         "conditioned_on": used,
         "exceed_table": table,
         "put_move_pct": round(put_move * 100, 3),
-        "put_target_rate": PUT_TARGET_ASSIGN,
+        "put_target_rate": round(put_target, 4),
+        "put_base_target_rate": PUT_TARGET_ASSIGN,
         "put_exceed_table": put_table,
     }
 
@@ -769,6 +786,12 @@ def analyze(ticker, px, peers, wiki, earn, wiki_article, analyst=None, now_et=No
                                {"news_tone": "Yahoo headline tone, past 3 days"}, NEWS_MIN, NEWS_SPLIT_MIN) \
         if tone is not None else {"n": 0, "status": "collecting", "need": NEWS_MIN}
     news["now"] = tone_now
+    try:                                  # lookalike trades, as of the latest close (see backtest.py)
+        import backtest as bt
+        lk_now = bt.lookalike_now(F, earn, tone, tone_now, now_et)
+    except Exception as exc:
+        print(f"  lookalike check skipped: {exc}", file=sys.stderr)
+        lk_now = {}
 
     windows = []
     for win in WINDOWS:
@@ -788,7 +811,7 @@ def analyze(ticker, px, peers, wiki, earn, wiki_article, analyst=None, now_et=No
             "exit_offset": win["exit_offset"], "baseline": base,
             "tests": tests, "pairs": pairs,
             "holding": [t["feature"] + ":" + t["target"] + (":" + t["corner"] if "corner" in t else "") for t in holding],
-            "suggestion": suggest(ev_clean, holding, current, sigma_now),
+            "suggestion": suggest(ev_clean, holding, current, sigma_now, lk_now.get(win["key"])),
             "earnings_weeks_excluded": int(ev["earnings"].sum()) if len(ev) else 0,
         })
 
@@ -805,6 +828,7 @@ def analyze(ticker, px, peers, wiki, earn, wiki_article, analyst=None, now_et=No
         "current": {k: (None if v is None else round(v, 5)) for k, v in current.items()},
         "windows": windows,
         "news": news,
+        "lookalike_now": lk_now,
         "analyst_history": bool(F[list(ANALYST_FEATURES)].notna().any().any()),
         "method": {"train_frac": TRAIN_FRAC, "fdr_q": FDR_Q, "test_p": TEST_P,
                    "target_assign": TARGET_ASSIGN, "put_target_assign": PUT_TARGET_ASSIGN,

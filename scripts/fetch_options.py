@@ -36,6 +36,15 @@ PUT_TARGET_DELTA = 0.25     # standard for cash-secured puts you'd be glad to ha
 PUT_TARGET_DELTA_FALLING = 0.15  # further out when the stock is sliding
 PUT_DELTA_BAND = (0.15, 0.35)
 SHOW_DELTA_RANGE = (0.03, 0.50)
+# Similar past trades ("lookalikes", from the daily study): when they've predicted assignment
+# better than chance for this ticker, the target delta is divided by how much likelier assignment
+# looks now, and a big difference counts as a flag in the verdict.
+LOOKALIKE_WINDOW = {0: "mon_wed", 3: "thu_fri"}    # your schedule: Monday -> Wednesday, Thursday -> Friday
+WINDOW_NAMES = {"mon_wed": "Monday → Wednesday", "thu_fri": "Thursday → Friday", "mon_fri": "Monday → Friday"}
+LK_CALL_DELTA_LIMITS = (0.10, 0.25)
+LK_PUT_DELTA_LIMITS = (0.15, 0.30)
+LK_FLAG_RATIO = 1.25      # at least this much likelier than usual -> counts as a flag
+LK_GOOD_RATIO = 0.80      # this much less likely -> a point in favor
 
 
 # ---------------------------------------------------------------- option math
@@ -172,6 +181,47 @@ def pick(expiries, side, target, band, before=None):
     return best
 
 
+def lookalike_factor(adj, window, kind):
+    """A verdict factor from the lookalike adjustment, or None when it doesn't apply."""
+    if not adj or not adj.get("beats_chance") or adj.get("rate_now") is None:
+        return None
+    what = "call" if kind == "call" else "put"
+    r, base, ratio = adj["rate_now"], adj["base_rate"], adj["ratio"]
+    group = (f" Past trades in the same spot were actually assigned {adj['group_rate']:.0f}% of the time"
+             f" ({adj['group_trades']} trades).") if adj.get("group_rate") is not None else ""
+    head = (f"{adj['lookalikes_assigned']} of the 10 past {WINDOW_NAMES.get(window, window)} trades most like today ended with the {what} assigned "
+            f"({r:.0f}% of the closest 50, vs {base:.0f}% of all trades).{group}")
+    if not adj.get("applied"):
+        return {"name": "Similar past weeks", "status": "neutral", "value": "About usual",
+                "note": head + " That's close to normal, so the strike isn't changed."}
+    if ratio >= LK_FLAG_RATIO:
+        return {"name": "Similar past weeks", "status": "bad", "value": f"{ratio:.1f}× likelier",
+                "note": head + f" Assignment looks {ratio:.1f}× as likely as usual, so the recommended {what} is moved further out."}
+    if ratio <= LK_GOOD_RATIO:
+        return {"name": "Similar past weeks", "status": "good", "value": f"{ratio:.1f}× as likely",
+                "note": head + f" Assignment looks less likely than usual, so the recommended {what} sits a little closer for more premium."}
+    return {"name": "Similar past weeks", "status": "neutral", "value": f"{ratio:.1f}× as likely",
+            "note": head + " The recommended strike is adjusted slightly."}
+
+
+def load_lookalike(ticker, today):
+    """Today's lookalike adjustment for your schedule window (Mondays and Thursdays only)."""
+    window = LOOKALIKE_WINDOW.get(today.weekday())
+    if not window:
+        return None, None
+    try:
+        R = json.loads((DATA_DIR / "research" / f"{ticker}.json").read_text())
+        return window, (R.get("lookalike_now") or {}).get(window)
+    except Exception:
+        return window, None
+
+
+def adjusted_target(base, adj, limits):
+    if not adj or not adj.get("applied"):
+        return base
+    return round(min(max(base / adj["ratio"], limits[0]), limits[1]), 3)
+
+
 def assess(ctx):
     """Score the setup for someone who wants to keep their shares."""
     f = []
@@ -232,6 +282,9 @@ def assess(ctx):
                 "Call-heavy positioning: traders are leaning bullish." if pc < 0.7 else
                 "Balanced positioning between puts and calls.")
         f.append({"name": "Put/call (open interest)", "status": "info", "value": f"{pc:.2f}", "note": desc})
+    lk = lookalike_factor(ctx.get("lookalike_calls"), ctx.get("lookalike_window"), "call")
+    if lk:
+        f.append(lk)
 
     bads = sum(1 for x in f if x["status"] == "bad" and x["name"] != "Earnings")
     if earnings_blocks:
@@ -301,6 +354,9 @@ def assess_puts(ctx):
                 "Call-heavy positioning: traders are leaning bullish." if pc < 0.7 else
                 "Balanced positioning between puts and calls.")
         f.append({"name": "Put/call (open interest)", "status": "info", "value": f"{pc:.2f}", "note": desc})
+    lk = lookalike_factor(ctx.get("lookalike_puts"), ctx.get("lookalike_window"), "put")
+    if lk:
+        f.append(lk)
 
     bads = sum(1 for x in f if x["status"] == "bad" and x["name"] != "Earnings")
     if earnings_blocks:
@@ -319,7 +375,7 @@ def assess_puts(ctx):
 
 
 def build_report(ticker, closes, price, prev_close, raw_expiries, earnings_date,
-                 ex_div_date, dividend_rate, today, updated):
+                 ex_div_date, dividend_rate, today, updated, lookalike=None, lookalike_window=None):
     hv20 = realized_vol(closes, 20)
     rsi14 = rsi(closes[-120:], 14)
     ma20 = sum(closes[-20:]) / 20
@@ -351,15 +407,20 @@ def build_report(ticker, closes, price, prev_close, raw_expiries, earnings_date,
         "atm_iv": atm_iv, "hv20": hv20, "rsi14": rsi14, "pct_vs_ma20": pct_vs_ma20,
         "ex_div_date": ex_div_date,
         "put_call_oi": (put_oi / call_oi) if call_oi else None,
+        "lookalike_window": lookalike_window,
+        "lookalike_calls": (lookalike or {}).get("calls"),
+        "lookalike_puts": (lookalike or {}).get("puts"),
     }
     factors, verdict, hot = assess(ctx)
     put_factors, put_verdict, falling = assess_puts(ctx)
 
     before = earnings_date if earnings_date and earnings_date >= today else None
-    call_target = CALL_TARGET_DELTA_HOT if hot else CALL_TARGET_DELTA
+    call_target = adjusted_target(CALL_TARGET_DELTA_HOT if hot else CALL_TARGET_DELTA,
+                                  ctx["lookalike_calls"], LK_CALL_DELTA_LIMITS)
     rec_call = None if verdict.get("reason") == "earnings" else \
         pick(expiries, "calls", call_target, CALL_DELTA_BAND, before)
-    put_target = PUT_TARGET_DELTA_FALLING if falling else PUT_TARGET_DELTA
+    put_target = adjusted_target(PUT_TARGET_DELTA_FALLING if falling else PUT_TARGET_DELTA,
+                                 ctx["lookalike_puts"], LK_PUT_DELTA_LIMITS)
     rec_put = None if put_verdict.get("reason") == "earnings" else \
         pick(expiries, "puts", put_target, PUT_DELTA_BAND, before)
 
@@ -381,6 +442,9 @@ def build_report(ticker, closes, price, prev_close, raw_expiries, earnings_date,
         "put_call_volume": round(put_vol / call_vol, 2) if call_vol else None,
         "call_target_delta": call_target,
         "put_target_delta": put_target,
+        "call_base_delta": CALL_TARGET_DELTA_HOT if hot else CALL_TARGET_DELTA,
+        "put_base_delta": PUT_TARGET_DELTA_FALLING if falling else PUT_TARGET_DELTA,
+        "lookalike": {"window": lookalike_window, **(lookalike or {})} if lookalike else None,
         "verdict": verdict,
         "factors": factors,
         "put_verdict": put_verdict,
@@ -470,8 +534,9 @@ def fetch(ticker):
     if ex_div and ex_div < today:
         ex_div = None
 
+    lk_window, lk = load_lookalike(ticker, today)
     report = build_report(ticker, closes, price, prev_close, raw, earnings, ex_div, div_rate,
-                          today, datetime.now(timezone.utc).isoformat(timespec="seconds"))
+                          today, datetime.now(timezone.utc).isoformat(timespec="seconds"), lk, lk_window)
     # the trading day these prices come from (differs from today on weekends and market holidays)
     report["session_date"] = hist.index[-1].date().isoformat()
     return report

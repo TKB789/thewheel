@@ -47,6 +47,7 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import research as rs  # reuses the price download, earnings history and feature code
+import fetch_options as fo  # the live recommendation's limits, so the backtest follows the same rules
 
 OUT_DIR = rs.ROOT / "data" / "backtest"
 RISK_FREE = 0.04
@@ -424,7 +425,8 @@ def week_readings(F: pd.DataFrame, weeks: list, news: pd.Series | None):
         S, close = w["S"], w["close"]
         net_c = (bs_call(S, kc, w["T"], w["vol"]) - max(0.0, close - kc)) * 100 - FEE
         net_p = (bs_put(S, kp, w["T"], w["vol"]) - max(0.0, kp - close)) * 100 - FEE
-        r.update({"entry": w["e"], "expiry": w["x"], "S": S, "close": close,
+        r.update({"entry": w["e"], "expiry": w["x"], "S": S, "close": close, "T": w["T"], "vol": w["vol"],
+                  "step": w["step"], "hot": w["hot"], "sliding": w["sliding"],
                   "ret": close / S - 1, "kc": kc, "kp": kp, "net_call": net_c, "net_put": net_p,
                   "call": close > kc, "put": close < kp})
         rows.append(r)
@@ -528,6 +530,147 @@ def favorable(R: pd.DataFrame, side: str):
             "n": int(len(R)), "recent_frac": RECENT_FRAC}
 
 
+# ------------------------------------------------------------ does following the recommendation help?
+WF_MIN_FIT = 104       # trades with lookalikes needed before the first walk-forward fit (~2 years)
+WF_SHUFFLES = 100
+
+
+def _wf_fit(y, NB, J, rate, known, rng):
+    """Fit the lookalike weighting on the trades in `known` (a boolean mask over J) only:
+    does it beat chance there, and how often were trades in each lookalike-rate third assigned."""
+    sub = np.where(known)[0]
+    if len(sub) < WF_MIN_FIT:
+        return None
+    t = y[J[sub]]
+    if t.sum() < 10 or (~t).sum() < 10:
+        return None
+    def gap(labels):
+        rr = labels[NB[sub]].mean(axis=1)
+        tt = labels[J[sub]]
+        return rr[tt].mean() - rr[~tt].mean()
+    g = gap(y)
+    idx_known = np.unique(np.concatenate([J[sub], NB[sub].ravel()]))
+    sh = []
+    for _ in range(WF_SHUFFLES):
+        perm = y.copy()
+        perm[idx_known] = rng.permutation(y[idx_known])
+        sh.append(gap(perm))
+    p = (np.sum(np.array(sh) >= g) + 1) / (len(sh) + 1)
+    rr = rate[sub]
+    cuts = np.quantile(rr, [1 / 3, 2 / 3])
+    grp = np.searchsorted(cuts, rr, side="right")
+    B = []
+    for k in range(3):
+        m = grp == k
+        if m.sum():
+            B.append({"label": str(k), "weeks": int(m.sum()), "rate": float(t[m].mean()) * 100,
+                      "lo": float(rr[m].min()) * 100, "hi": float(rr[m].max()) * 100})
+    return {"beats": bool(p < 0.05 and g > 0), "base": float(t.mean()) * 100, "B": B}
+
+
+def recommendation_backtest(R: pd.DataFrame, y: np.ndarray, NB, J, rate, side: str, seed=11):
+    """Walk-forward test of the live recommendation on one window and option type.
+    Each January the lookalike weighting is refit using only trades that had already expired,
+    then applied to that year's trades exactly as the live site would:
+      * strike: the standard delta (0.20 / 0.15 when running hot for calls; 0.25 / 0.15 when
+        sliding for puts) divided by how much likelier assignment looks, within the same limits;
+      * flags: running hot (sliding, for puts), and lookalikes at least 1.25x likelier.
+        One flag = sell further out; two = hold off (the site's verdict).
+    The premium-level flag (implied vs recent volatility) can't be rebuilt, since old option prices
+    aren't available, so it isn't part of this test. Earnings weeks are already left out."""
+    if len(J) < WF_MIN_FIT + 52:
+        return None
+    rng = np.random.default_rng(seed)
+    call = side == "call"
+    entries = R["entry"].values
+    exp = R["expiry"].values
+    years = pd.DatetimeIndex(entries[J]).year
+    ratio = np.ones(len(J))
+    fitted = np.zeros(len(J), bool)
+    refits = 0
+    for yr in sorted(set(years)):
+        start = np.datetime64(f"{yr}-01-01")
+        known = exp[J] < start
+        fit = _wf_fit(y, NB, J, rate, known, rng)
+        m = years == yr
+        if fit is None:
+            continue
+        refits += 1
+        fitted[m] = True
+        if fit["beats"]:
+            for k in np.where(m)[0]:
+                ratio[k] = _calibrated_ratio(fit["B"], fit["base"], rate[k] * 100)[0]
+    if fitted.sum() < 52:
+        return None
+    applied = np.abs(ratio - 1) >= 0.1
+    ratio = np.where(applied, ratio, 1.0)
+
+    rows = R.iloc[J]
+    flag_trend = rows["hot" if call else "sliding"].values.astype(bool)
+    flag_lk = ratio >= fo.LK_FLAG_RATIO
+    flags = flag_trend.astype(int) + flag_lk.astype(int)
+    base = np.where(flag_trend, DELTA_HOT if call else PUT_DELTA_SLIDING, DELTA if call else PUT_DELTA)
+    lim = fo.LK_CALL_DELTA_LIMITS if call else fo.LK_PUT_DELTA_LIMITS
+    adj_delta = np.clip(base / ratio, lim[0], lim[1])
+    adj_delta = np.where(applied, adj_delta, base)
+
+    S, close = rows["S"].values, rows["close"].values
+    T, vol, step = rows["T"].values, rows["vol"].values, rows["step"].values
+    k_std = rows["kc" if call else "kp"].values
+    k_adj = np.array([round_up(delta_strike(S[i], T[i], vol[i], adj_delta[i]), step[i]) if call else
+                      round_down(put_delta_strike(S[i], T[i], vol[i], adj_delta[i]), step[i])
+                      for i in range(len(J))])
+
+    def outcome(K):
+        prem = np.array([(bs_call if call else bs_put)(S[i], K[i], T[i], vol[i]) for i in range(len(K))]) * 100
+        give = (np.maximum(0, close - K) if call else np.maximum(0, K - close)) * 100
+        asg = close > K if call else close < K
+        return prem, give, asg
+
+    std, adj = outcome(k_std), outcome(k_adj)
+    use = fitted                                  # compare from the first fit onward
+    n_all = int(use.sum())
+
+    def summary(key, label, sell, res):
+        prem, give, asg = res
+        m = use & sell
+        net = prem[m] - give[m] - FEE
+        return {"key": key, "label": label, "sold": int(m.sum()), "skipped": int((use & ~sell).sum()),
+                "assigned": int(asg[m].sum()), "rate": round(float(asg[m].mean()) * 100, 1) if m.sum() else None,
+                "premium": round(float(prem[m].sum()), 2), "given_up": round(float(give[m].sum()), 2),
+                "fees": round(FEE * int(m.sum()), 2), "net": round(float(net.sum()), 2),
+                "net_per_week": round(float(net.sum()) / n_all, 2),
+                "net_per_sold": round(float(net.mean()), 2) if m.sum() else None,
+                "worst": round(float(net.min()), 2) if m.sum() else None}
+
+    every = np.ones(len(J), bool)
+    site_sell = flags < 2
+    fav_sell = flags == 0
+    out_rows = [
+        summary("every", "Every week (standard strike)", every, std),
+        summary("every_adj", "Every week, strike adjusted", every, adj),
+        summary("site", "Follow the site (skip hold-off weeks, strike adjusted)", site_sell, adj),
+        summary("favorable", "Favorable weeks only, strike adjusted", fav_sell, adj),
+        summary("favorable_std", "Favorable weeks only, standard strike", fav_sell, std),
+    ]
+
+    def skipped(sell):
+        m = use & ~sell
+        prem, give, asg = std
+        net = prem[m] - give[m] - FEE
+        return {"n": int(m.sum()), "assigned_if_sold": int(asg[m].sum()),
+                "rate_if_sold": round(float(asg[m].mean()) * 100, 1) if m.sum() else None,
+                "net_if_sold": round(float(net.sum()), 2), "net_per_if_sold": round(float(net.mean()), 2) if m.sum() else None}
+
+    first = pd.Timestamp(entries[J][use][0]).date().isoformat()
+    return {"since": first, "weeks": n_all, "refits": refits,
+            "weighting_on": int((use & applied).sum()),
+            "flag_trend": int((use & flag_trend).sum()), "flag_lookalike": int((use & flag_lk).sum()),
+            "base_rate": round(float(std[2][use].mean()) * 100, 1),
+            "rows": out_rows,
+            "skipped_site": skipped(site_sell), "skipped_favorable": skipped(fav_sell)}
+
+
 def lookalike_side(R: pd.DataFrame, P: pd.DataFrame, core: list, side: str, current: dict | None, rng):
     y = R[side].astype(bool).values
     n = len(R)
@@ -590,6 +733,8 @@ def lookalike_side(R: pd.DataFrame, P: pd.DataFrame, core: list, side: str, curr
             m = grp == k
             buckets.append({"label": lab, "weeks": int(m.sum()), "assigned": int(t[m].sum()),
                             "lookalike_rate": round(float(rate[m].mean()) * 100, 1) if m.sum() else None,
+                            "lo": round(float(rate[m].min()) * 100, 1) if m.sum() else None,
+                            "hi": round(float(rate[m].max()) * 100, 1) if m.sum() else None,
                             "rate": round(float(t[m].mean()) * 100, 1) if m.sum() else None})
     test = {
         "weeks": int(len(J)), "assigned": int(t.sum()),
@@ -641,7 +786,12 @@ def lookalike_side(R: pd.DataFrame, P: pd.DataFrame, core: list, side: str, curr
                    "lookalikes": neighbor_list(near[:K_NEAR], dq[near[:K_NEAR]]),
                    "lookalikes_assigned": int(y[near[:K_NEAR]].sum()),
                    "rate_wide": round(float(y[near].mean()) * 100, 1)}
-    return {"signals": sig_rows, "test": test, "detail": detail, "now": now,
+    try:
+        strategies = recommendation_backtest(R, y, NB, J, rate, side) if len(J) else None
+    except Exception as exc:
+        print(f"  recommendation backtest skipped: {exc}", file=sys.stderr)
+        strategies = None
+    return {"signals": sig_rows, "test": test, "detail": detail, "now": now, "strategies": strategies,
             "favorable": favorable(R, side), "assigned_weeks": int(y.sum()), "weeks": n}
 
 
@@ -673,6 +823,54 @@ def lookalikes(F: pd.DataFrame, weeks: list, news: pd.Series | None, news_now=No
             "call_delta": DELTA, "call_delta_hot": DELTA_HOT, "put_delta": PUT_DELTA, "put_delta_sliding": PUT_DELTA_SLIDING,
             "calls": lookalike_side(R, P, core, "call", current, rng),
             "puts": lookalike_side(R, P, core, "put", current, rng)}
+
+
+# ------------------------------------------------------------ weighting the live recommendation
+SHRINK_K = 50          # pulls a group's assignment rate toward the overall rate; 50 trades = half weight
+RATIO_LIMITS = (0.5, 2.0)
+
+
+def lookalike_adjustment(X: dict | None):
+    """How much more (or less) likely assignment looks for the next trade, from its lookalikes.
+    Used only when lookalikes have beaten chance for this ticker, window and option type.
+    Calibrated on history rather than taken at face value: find the group of past trades whose
+    lookalikes were assigned about as often as the next trade's are, and use how often THOSE trades
+    actually got assigned, relative to all trades (shrunk toward 'no different' for small groups)."""
+    if not X:
+        return None
+    T, now = X["test"], X.get("now")
+    out = {"beats_chance": bool(T.get("beats_chance")), "p": T.get("p"), "base_rate": T.get("base_rate"),
+           "rate_now": now and now.get("rate_wide"), "lookalikes_assigned": now and now.get("lookalikes_assigned"),
+           "as_of": now and now.get("as_of"), "ratio": 1.0, "applied": False}
+    B = [b for b in T.get("buckets") or [] if b.get("rate") is not None and b.get("lo") is not None]
+    if not (out["beats_chance"] and now and B and T.get("base_rate")):
+        return out
+    ratio, b = _calibrated_ratio(B, T["base_rate"], now["rate_wide"])
+    out.update({"group": b["label"], "group_rate": b["rate"], "group_trades": b["weeks"],
+                "ratio": round(ratio, 2), "applied": abs(ratio - 1) >= 0.1})
+    return out
+
+
+def _calibrated_ratio(B, base_rate, r):
+    """B: groups of past trades (by how often their lookalikes were assigned) with lo/hi/rate/weeks.
+    Returns (ratio, group): the group's actual assignment rate over the base rate, shrunk toward 1."""
+    inside = [b for b in B if b["lo"] <= r <= b["hi"]]
+    b = inside[0] if inside else min(B, key=lambda b: min(abs(r - b["lo"]), abs(r - b["hi"])))
+    raw = b["rate"] / base_rate if base_rate else 1.0
+    w = b["weeks"] / (b["weeks"] + SHRINK_K)
+    return min(max(1 + (raw - 1) * w, RATIO_LIMITS[0]), RATIO_LIMITS[1]), b
+
+
+def lookalike_now(F: pd.DataFrame, earn, news=None, news_now=None, now_et=None):
+    """For the daily study: lookalike adjustments for each window, as of the latest close."""
+    out = {}
+    for sk in ("weekly", "twice"):
+        P = periods(F, earn, now_et, sk)
+        for leg, _, _ in SCHEDULES[sk]:
+            L = lookalikes(F, [w for w in P if w["leg"] == leg], news, news_now)
+            if L:
+                out[leg] = {"calls": lookalike_adjustment(L["calls"]), "puts": lookalike_adjustment(L["puts"])}
+    return out
 
 
 SCHEDULE_LABELS = {"weekly": "Once a week: Monday → Friday", "twice": "Twice a week: Monday → Wednesday, Thursday → Friday"}
