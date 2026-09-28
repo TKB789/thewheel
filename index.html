@@ -244,6 +244,10 @@
   table.fv td.third.worst { background: var(--bad-bg); }
   table.fv td.third.hi { background: var(--info-bg); }
   table.fv td.third.lo { background: var(--caution-bg); }
+  #stTable td:first-child { white-space: normal; min-width: 140px; max-width: 190px; font-size: 13px; }
+  tr.bestrow td { background: var(--good-bg); }
+  .lknote { font-size: 13px; line-height: 1.5; color: var(--muted); margin: 10px 0; }
+  .lknote .chip { margin-right: 4px; }
   .lkgrid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; align-items: start; }
   @media (max-width: 760px) { .lkgrid { grid-template-columns: minmax(0, 1fr); } }
   .today .move { border-top: 1px solid var(--line); padding-top: 12px; font-size: 14px; }
@@ -442,7 +446,7 @@
           <span class="muted">Jump to</span>
           <button type="button" data-to="btCalls">Calls only</button>
           <button type="button" data-to="wheelCard">Full wheel</button>
-          <button type="button" data-to="lkCard">Assigned vs expired</button>
+          <button type="button" data-to="lkCard">Recommendation test</button>
           <button type="button" data-to="btWeeksCard">Trade by trade</button>
         </div>
       </section>
@@ -500,7 +504,7 @@
 
       <section class="card" id="lkCard" hidden>
         <div class="chain-head">
-          <h3>Assigned vs expired: what came before</h3>
+          <h3>Recommendations vs every week, and what came before assignments</h3>
           <div class="controls">
             <label for="lkWin" hidden>Window</label>
             <select id="lkWin" aria-label="Trade window" hidden></select>
@@ -512,7 +516,13 @@
           </div>
         </div>
         <p class="sub" id="lkSub"></p>
-        <h4 class="subhead" style="margin-top:4px">When selling worked best</h4>
+        <div id="stWrap">
+          <h4 class="subhead" style="margin-top:4px" id="stTitle">Following the recommendation vs selling every week</h4>
+          <p class="sub" id="stSub" style="margin:0 0 10px"></p>
+          <div class="scroll"><table id="stTable" class="pin1"></table></div>
+          <p class="sub" id="stSkip" style="margin:10px 0 0"></p>
+        </div>
+        <h4 class="subhead">When selling worked best</h4>
         <p class="sub" id="fvSub" style="margin:0 0 10px"></p>
         <div class="scroll"><table id="fvTable" class="pin1 fv"></table></div>
         <details id="fvMoreWrap"><summary>The other signals</summary>
@@ -716,6 +726,15 @@ function render(r) {
   renderChain();
 }
 
+// A line explaining how similar past trades moved a strike (only when they've beaten chance).
+function lkNote(adj, what, from, to, unit) {
+  if (!adj || !adj.beats_chance || adj.rate_now == null) return "";
+  const fmt = unit === "delta" ? (v) => v.toFixed(2) + " delta" : (v) => Math.round(v * 100) + "%";
+  if (!adj.applied) return `<div class="lknote">Similar past trades: ${adj.lookalikes_assigned} of 10 had the ${what} assigned, about usual, so no change.</div>`;
+  const dir = adj.ratio > 1 ? "likelier" : "less likely";
+  return `<div class="lknote"><span class="chip ${adj.ratio > 1 ? "neutral" : "good"}">Adjusted for similar weeks</span> Assignment looks ${adj.ratio.toFixed(1)}× as likely as usual (${adj.lookalikes_assigned} of the 10 most similar past trades were assigned; ${Math.round(adj.rate_now)}% of the closest 50 vs ${Math.round(adj.base_rate)}% of all). Target moved from ${fmt(from)} to ${fmt(to)}${adj.ratio > 1 ? ", further out" : ", a little closer for more premium"}.</div>`;
+}
+
 function renderCall(r) {
   const c = r.recommended_call, el = $("pickCall");
   el.classList.toggle("empty", !c);
@@ -736,6 +755,7 @@ function renderCall(r) {
     </dl>
     <div class="outcome">Stays under ${money(c.strike, 0)}: keep your 100 shares and the ${money(c.premium, 0)}.
       Closes above: shares sell at ${money(c.strike, 0)} (${(gain * 100).toFixed(1)}% above today), you still keep the premium, and the wheel's put side starts.</div>
+    ${r.lookalike ? lkNote(r.lookalike.calls, "call", r.call_base_delta, r.call_target_delta, "delta") : ""}
     ${paperBtn(c, "call", "delta", c.expiry)}`;
 }
 
@@ -757,6 +777,7 @@ function renderPut(r) {
       <dt>Return on cash</dt><dd class="num">${p.yield_pct.toFixed(2)}% · ${p.ann_yield_pct.toFixed(0)}%/yr</dd>
     </dl>
     <div class="outcome">Today's example strike. If assigned, your cost is ${money(basis)} a share after the premium. After your shares are called away, recheck this, because the price will have moved.</div>
+    ${r.lookalike ? lkNote(r.lookalike.puts, "put", r.put_base_delta, r.put_target_delta, "delta") : ""}
     ${paperBtn(p, "put", "put", p.expiry)}`;
 }
 
@@ -840,7 +861,7 @@ function renderResearch(r, R) {
   const thu = slots.filter((x) => x.w.entry_dow === 3 && x.perDay != null);
   const bestThu = thu.length === 2 ? thu.reduce((a, b) => (b.perDay > a.perDay ? b : a)) : null;
 
-  $("schedSub").textContent = `Strikes are set where ${r.ticker} rose past them by expiry in about ${Math.round(R.method.target_assign * 100)}% of past weeks that looked like this one. That's the historical version of a 0.15-delta call. Premiums are at today's prices.${R.readings_from ? ` Signal readings use ${R.readings_from}.` : ""}`;
+  $("schedSub").textContent = `Strikes are set where ${r.ticker} rose past them by expiry in about ${Math.round(R.method.target_assign * 100)}% of past weeks that looked like this one. That's the historical version of a 0.15-delta call. When similar past weeks have predicted assignment better than chance for a window, its card adjusts that target and says so. Premiums are at today's prices.${R.readings_from ? ` Signal readings use ${R.readings_from}.` : ""}`;
   $("schedCards").innerHTML = slots.map((x) => {
     const w = x.w, c = x.call, s = x.s;
     if (x.noHist) return `<div class="slot"><div class="when"><b>${esc(w.label)}</b><span>${DAY[x.entry.getDay()]} ${fmtDate(iso(x.entry))} → ${DAY[x.expiry.getDay()]} ${fmtDate(iso(x.expiry))}</span></div>
@@ -877,6 +898,7 @@ function renderResearch(r, R) {
         ${chips.length ? `<div class="chips">${chips.join("")}</div>` : ""}
         ${body}
         <div class="why">${cond}</div>
+        ${s.lookalike ? lkNote(s.lookalike.calls, "call", s.base_target_rate, s.target_rate, "rate") : ""}
         <table class="ladder"><thead><tr><th>Strike above today</th><th>Rose past it</th></tr></thead><tbody>${ladder}</tbody></table>
       </div>`;
   }).join("");
@@ -936,9 +958,9 @@ function renderResearch(r, R) {
 
 // ---------------------------------------------------------------- paper trading
 const PAPER_HEADER = "id,source,logged_at,ticker,type,strategy,expiry,strike,premium,contracts,stock_price,decision,verdict,note";
-const STRAT = { delta: "Call to sell (0.20 delta)", mon_wed: "Schedule: Monday → Wednesday", thu_fri: "Schedule: Thursday → Friday",
+const STRAT = { delta: "Call to sell (site's pick)", mon_wed: "Schedule: Monday → Wednesday", thu_fri: "Schedule: Thursday → Friday",
                 thu_mon: "Schedule: Thursday → next Monday", put: "Wheel put", manual: "Your pick",
-                csp: "Cash-secured put (0.25 delta)", csp_mon_wed: "Put schedule: Monday → Wednesday",
+                csp: "Cash-secured put (site's pick)", csp_mon_wed: "Put schedule: Monday → Wednesday",
                 csp_thu_fri: "Put schedule: Thursday → Friday", csp_thu_mon: "Put schedule: Thursday → next Monday",
                 mon_fri: "Schedule: Monday → Friday", csp_mon_fri: "Put schedule: Monday → Friday" };
 state.previewTrades = [];
@@ -1245,6 +1267,7 @@ function renderPuts(r, R) {
       </dl>
       <div class="outcome">Stays above ${money(p.strike, 0)}: keep the ${money(p.premium, 0)} and your cash is freed up.
         Closes below: you buy 100 shares at ${money(p.strike, 0)} and still keep the premium.</div>
+      ${r.lookalike ? lkNote(r.lookalike.puts, "put", r.put_base_delta, r.put_target_delta, "delta") : ""}
       ${paperBtn(p, "put", "csp", p.expiry)}`;
     el2.hidden = false;
     el2.classList.remove("empty");
@@ -1325,6 +1348,7 @@ function renderPuts(r, R) {
           ${chips.length ? `<div class="chips">${chips.join("")}</div>` : ""}
           ${body}
           <div class="why">${cond}</div>
+          ${s.lookalike ? lkNote(s.lookalike.puts, "put", s.put_base_target_rate, s.put_target_rate, "rate") : ""}
           <table class="ladder"><thead><tr><th>Strike below today</th><th>Fell below it</th></tr></thead><tbody>${ladder}</tbody></table>
         </div>`;
     }).join("");
@@ -1480,6 +1504,7 @@ function renderLookalikes(reset) {
     ? `Every ${esc(winLabel)} trade (earnings weeks left out), with a ${L.call_delta.toFixed(2)}-delta covered call sold at ${opens} open (${L.call_delta_hot.toFixed(2)} when the stock was running hot).`
     : `Every ${esc(winLabel)} trade (earnings weeks left out), with a ${L.put_delta.toFixed(2)}-delta cash-secured put sold at ${opens} open (${L.put_delta_sliding.toFixed(2)} when the stock was sliding), whether or not the wheel would have been in its put phase.`) +
     ` <strong>${X.assigned_weeks} of ${X.weeks}</strong> ended assigned; the rest expired worthless. Readings are what was known at ${opens} open: the previous close for price signals, and page views, analyst changes and headlines up to that morning.`;
+  renderStrategies(X.strategies, calls, winLabel);
   renderFavorable(X.favorable, calls, winLabel);
 
   const row = (x) => {
@@ -1512,6 +1537,29 @@ function renderLookalikes(reset) {
   ws.innerHTML = opts.join("");
   if (prev && [...ws.options].some((o) => o.value === prev)) ws.value = prev;
   renderLookalikeWeek();
+}
+
+// Walk-forward test: selling every week vs following the site's recommendation.
+function renderStrategies(ST, calls, winLabel) {
+  $("stWrap").hidden = !ST;
+  if (!ST) return;
+  const what = calls ? "call" : "put";
+  const flag = calls ? "running hot" : "sliding";
+  $("stSub").innerHTML = `${esc(winLabel)} ${what}s since ${fmtYear(ST.since)} (${ST.weeks} weeks, earnings weeks left out). The site's rules are replayed as if live: each January the similar-weeks weighting is refit using only trades that had already expired (${ST.refits} refits), then applied to that year. It moved the strike in ${ST.weighting_on} of ${ST.weeks} weeks. Flags: stock ${flag} (${ST.flag_trend} weeks) and similar weeks at least 1.25× likelier to be assigned (${ST.flag_lookalike} weeks). One flag means sell further out; two means hold off. The premium-level flag can't be rebuilt without old option prices, so it isn't included. Skipped weeks count as $0: you just hold${calls ? " the shares" : " the cash"}.`;
+  const best = ST.rows.reduce((a, b) => (b.net > a.net ? b : a), ST.rows[0]);
+  const base = ST.rows.find((r) => r.key === "every");
+  $("stTable").innerHTML = `<thead><tr><th>Strategy</th><th>Result vs holding</th><th>vs every week</th><th>Per week</th><th>Trades sold</th><th>Assigned</th><th>Est. premium</th><th>Given up</th><th>Worst trade</th></tr></thead><tbody>` +
+    ST.rows.map((r) => `<tr${r === best ? ' class="bestrow"' : ""}><td>${esc(r.label)}${r === best ? ` <span class="chip good">best</span>` : ""}</td>
+      <td><strong class="${r.net >= 0 ? "pos" : "neg"}">${signed(r.net)}</strong></td>
+      <td>${r.key === "every" ? "–" : `<span class="${r.net - base.net >= 0 ? "pos" : "neg"}">${signed(r.net - base.net)}</span>`}</td>
+      <td>${signed(r.net_per_week)}</td>
+      <td>${r.sold}${r.skipped ? ` <span class="muted">(${r.skipped} skipped)</span>` : ""}</td>
+      <td>${r.assigned}${r.rate != null ? ` <span class="muted">${r.rate}%</span>` : ""}</td>
+      <td>${money(r.premium, 0)}</td><td>${money(r.given_up, 0)}</td>
+      <td>${r.worst != null ? signed(r.worst) : "–"}</td></tr>`).join("") + `</tbody>`;
+  const sk = (x, name) => !x || !x.n ? "" : `${name} skipped ${x.n} week${x.n === 1 ? "" : "s"}; with the standard strike, ${x.assigned_if_sold} of them (${x.rate_if_sold}%) would have been assigned, vs ${ST.base_rate}% of all weeks, for ${signed(x.net_if_sold)} in total. ${x.net_if_sold < 0 ? "Skipping them helped." : "Skipping them cost money."}`;
+  const lines = [sk(ST.skipped_site, "Following the site"), sk(ST.skipped_favorable, "Selling only in favorable weeks")].filter(Boolean);
+  $("stSkip").innerHTML = lines.length ? lines.join(" ") : "No weeks had two flags, so following the site never skipped a week here; it only moved strikes.";
 }
 
 // Each signal's readings split into thirds, with how often the option was assigned in each.
