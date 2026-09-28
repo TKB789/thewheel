@@ -244,7 +244,7 @@
   table.fv td.third.worst { background: var(--bad-bg); }
   table.fv td.third.hi { background: var(--info-bg); }
   table.fv td.third.lo { background: var(--caution-bg); }
-  #gkBody table.pin1 td:first-child, #wPolCompare td:first-child, #stTable td:first-child { white-space: normal; min-width: 140px; max-width: 190px; font-size: 13px; }
+  #gkBody table.pin1 td:first-child, #wHorNow td:first-child, #wPolCompare td:first-child, #stTable td:first-child { white-space: normal; min-width: 140px; max-width: 190px; font-size: 13px; }
   tr.bestrow td { background: var(--good-bg); }
   .lknote { font-size: 13px; line-height: 1.5; color: var(--muted); margin: 10px 0; }
   .lknote .chip { margin-right: 4px; }
@@ -423,6 +423,7 @@
           <span class="muted">Jump to</span>
           <button type="button" data-to="btCalls">Calls only</button>
           <button type="button" data-to="wheelCard">Full wheel</button>
+          <button type="button" data-to="wHorWrap">1–10 years</button>
           <button type="button" data-to="lkCard">Recommendation test</button>
           <button type="button" data-to="btWeeksCard">Trade by trade</button>
           <button type="button" data-to="gkCard">Greeks study</button>
@@ -472,6 +473,15 @@
           <h4 class="subhead" style="margin-top:0">Every week vs following the recommendation</h4>
           <div class="scroll"><table id="wPolCompare" class="pin1"></table></div>
           <p class="sub" id="wPolNote" style="margin:8px 0 14px"></p>
+        </div>
+        <div id="wHorWrap">
+          <h4 class="subhead" style="margin-top:0">1 year vs 2 years … vs 10 years</h4>
+          <p class="sub" id="wHorSub" style="margin:0 0 8px"></p>
+          <div class="scroll"><table id="wHorNow" class="pin1"></table></div>
+          <h4 class="subhead">Every stretch of that length, not just the latest</h4>
+          <p class="sub" id="wHorRollSub" style="margin:0 0 8px"></p>
+          <div class="scroll"><table id="wHorRoll" class="pin1"></table></div>
+          <p class="sub" id="wHorNote" style="margin:8px 0 14px"></p>
         </div>
         <div class="tiles" id="wTiles"></div>
         <div class="chart-legend" id="wLegend"></div>
@@ -1055,7 +1065,7 @@ const PAPER_FEE = 0.65;
 const closeCache = {};
 async function closesFor(tk) {
   if (!(tk in closeCache)) {
-    try { const d = await getJSON(`data/${encodeURIComponent(tk)}.json`); closeCache[tk] = { map: Object.fromEntries(d.closes || []), updated: d.updated }; }
+    try { const d = await getJSON(`data/${encodeURIComponent(tk)}.json`); closeCache[tk] = { map: Object.fromEntries(d.closes || []), updated: d.updated, price: d.price }; }
     catch (e) { closeCache[tk] = null; }
   }
   return closeCache[tk];
@@ -1071,6 +1081,13 @@ async function scoreMine(list) {
   for (const t0 of list) {
     const t = { ...t0, source: "manual", status: "open" };
     const settleAt = etInstant(t.expiry, 16, 15);
+    if (Date.now() < settleAt.getTime() && Date.now() >= etInstant(t.expiry, 0, 0).getTime()) {
+      const C = await closesFor(String(t.ticker).toUpperCase());         // expires today: where is the stock now?
+      if (C && C.price != null) {
+        const K = Number(t.strike), put = t.type === "put";
+        t.today = { price: C.price, updated: C.updated, itm: put ? C.price < K : C.price > K };
+      }
+    }
     if (Date.now() >= settleAt.getTime()) {
       const C = await closesFor(String(t.ticker).toUpperCase());
       if (!C) t.nodata = true;
@@ -1185,6 +1202,7 @@ function renderPaper() {
   const status = (t) => (t.status === "assigned" ? `<span class="chip bad">assigned</span>`
     : t.status === "expired" ? `<span class="chip good">${t.type === "put" ? "expired, kept cash" : "expired, kept shares"}</span>`
     : t.nodata ? `<span class="chip neutral">can't score: not on the watchlist</span>`
+    : t.today ? `<span class="chip ${t.today.itm ? "bad" : "good"}">expires today · ${money(t.today.price)} at ${localTime(new Date(t.today.updated))}, ${t.today.itm ? "in the money: likely assigned" : "out of the money"}</span>`
     : `<span class="chip info">open</span>`) +
     (mine(t) ? ` <button type="button" class="linkish mine-del" data-id="${esc(t.id)}" title="Delete this trade">delete</button>` : "");
   $("paperTrades").innerHTML = `<thead><tr><th>Logged</th><th>Contract</th><th>Strategy</th><th>Premium</th><th>Decision</th><th>Status</th><th>Close</th><th>Net</th></tr></thead><tbody>` +
@@ -1218,7 +1236,7 @@ document.addEventListener("click", (ev) => {
 });
 
 // ---------------------------------------------------------------- when data is collected
-const SLOTS_ET = [[10, 15], [13, 15], [16, 20]];   // must match the workflow schedule
+const SLOTS_ET = [[10, 15], [13, 15], [15, 20], [16, 20]];   // must match the workflow schedule
 function etParts(d) {
   return Object.fromEntries(new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit",
     hour: "2-digit", minute: "2-digit", hourCycle: "h23", weekday: "short" }).formatToParts(d).map((x) => [x.type, x.value]));
@@ -1263,7 +1281,7 @@ function renderFreshness(r) {
   const p = etParts(new Date());
   const times = SLOTS_ET.map(([hh, mm]) => localTime(etWallToDate(+p.year, +p.month, +p.day, hh, mm)));
   const wk = localTime(etWallToDate(+p.year, +p.month, +p.day, 12, 5));
-  $("schedLine").innerHTML = `<strong>When data is collected</strong> (your time, ${tzName()}): weekdays at ${times[0]}, ${times[1]} and ${times[2]}. The ${times[0]} run is the sell-time snapshot, and the ${times[2]} run comes after the close with final prices, the 10-year study, and paper-trade results. Weekends at ${wk}, headlines only. Market holidays are skipped, and GitHub sometimes starts a run a few minutes late. Only tickers on the watchlist are collected; the site owner maintains the watchlist.`;
+  $("schedLine").innerHTML = `<strong>When data is collected</strong> (your time, ${tzName()}): weekdays at ${times[0]}, ${times[1]}, ${times[2]} and ${times[3]}. The ${times[0]} run is the sell-time snapshot. The ${times[2]} run is the last look before the close: on an expiration day, check your open trades then, while there's still time to buy back or roll. The ${times[3]} run comes after the close with final prices, the 10-year study, and paper-trade results. Weekends at ${wk}, headlines only. Market holidays are skipped, and GitHub sometimes starts a run a few minutes late. Only tickers on the watchlist are collected; the site owner maintains the watchlist.`;
 })();
 
 // ---------------------------------------------------------------- cash-secured puts
@@ -1539,7 +1557,7 @@ async function renderGreeks() {
   const G = state.greeks, tk = state.backtest && state.backtest.ticker;
   const addDays = (iso, n) => { const d = new Date(iso + "T12:00:00"); let k = 0; while (k < n) { d.setDate(d.getDate() + 1); if (d.getDay() % 6) k++; } return d.toISOString().slice(0, 10); };
   if (!G || !G.snapshot_days) {
-    $("gkSub").innerHTML = `Collecting starts with the next update after 9:45 AM New York time on a trading day. Once a day, the site saves every out-of-the-money call and put expiring in the next 10 days (0.05–0.50 delta) with its implied volatility, delta, gamma, theta and vega. After each expiration it checks whether the contract finished in the money, to see if those readings predicted assignment better than the market's odds. First look after ${60} trading days, full check after ${250}.`;
+    $("gkSub").innerHTML = `Collecting starts with the next update after 9:45 AM New York time on a trading day. Once a day, the site saves every out-of-the-money call and put expiring in the next 10 days (0.05–0.50 delta) with its implied volatility, delta, gamma, theta and vega. After each expiration it checks whether the contract finished in the money, to see if those readings predicted assignment better than the market's odds. A first peek appears after about a week, an early look with real tests after 60 trading days, and the full check after 250.`;
     $("gkBody").innerHTML = ""; return;
   }
   const scope = $("gkScope").value, side = $("gkSide").value;
@@ -1548,11 +1566,12 @@ async function renderGreeks() {
   const when = (n) => fmtDate(addDays(first, n)) + " " + addDays(first, n).slice(0, 4);
   let head = `Saving since ${fmtDate(first)} ${first.slice(0, 4)}: <strong>${G.snapshot_days}</strong> trading day${G.snapshot_days === 1 ? "" : "s"}, ${G.contracts_saved.toLocaleString()} contracts across ${(G.tickers || []).length} tickers. `;
   if (!P) {
-    head += scope === "ticker" ? `${esc(tk)} needs ${60} trading days of its own before it gets a separate look; the pooled view covers every ticker.` : "No expirations have finished yet.";
+    head += scope === "ticker" ? `${esc(tk)} needs about a week of its own before it gets a separate look; the pooled view covers every ticker.` : "No expirations have finished yet.";
     $("gkSub").innerHTML = head; $("gkBody").innerHTML = ""; return;
   }
   const S = P[side] || {};
-  if (P.status === "collecting") head += `First look around <strong>${when(P.need_early)}</strong> (${P.need_early} trading days), full check with held-out testing around <strong>${when(P.need_full)}</strong> (${P.need_full}). So far, contracts the market gave ${S.market ?? "–"}% odds on average finished in the money ${S.actual ?? "–"}% of the time (${S.contracts || 0} contracts, ${S.expirations || 0} expirations), too few to read anything into.`;
+  if (P.status === "preview") head += `<span class="warn">First peek, not a result.</span> Only a few expirations have finished, and in any one week most contracts move together with the market, so these numbers mostly show what that week did. They'll swing a lot as data comes in. Nothing is tested until the early look around <strong>${when(P.need_early)}</strong> (${P.need_early} trading days), and the full check around ${when(P.need_full)}.`;
+  else if (P.status === "collecting") head += `First look around <strong>${when(P.need_early)}</strong> (${P.need_early} trading days), full check with held-out testing around <strong>${when(P.need_full)}</strong> (${P.need_full}). So far, contracts the market gave ${S.market ?? "–"}% odds on average finished in the money ${S.actual ?? "–"}% of the time (${S.contracts || 0} contracts, ${S.expirations || 0} expirations), too few to read anything into.`;
   else head += P.status === "early" ? `Early look: patterns here can still be chance, and nothing feeds the recommendation until the full check around ${when(P.need_full)}.` : "Full check, including testing on the most recent days the patterns weren't found on.";
   $("gkSub").innerHTML = head;
   if (P.status === "collecting" || !S.calibration) { $("gkBody").innerHTML = ""; return; }
@@ -1561,11 +1580,11 @@ async function renderGreeks() {
     <p class="sub" style="margin:0 0 8px">Contracts grouped by the market's chance of finishing in the money (from each option's own price, at the ~10 AM snapshot), and how often the ${what}. The range resamples whole expirations, since contracts expiring together share one outcome.</p>
     <div class="scroll"><table><thead><tr><th>Market's odds</th><th>Contracts</th><th>Market said</th><th>Actually happened</th><th>Likely range</th><th>Reading</th></tr></thead><tbody>` +
     S.calibration.map((b) => b.actual == null ? `<tr><td>${Math.round(b.lo * 100)}–${Math.round(b.hi * 100)}%</td><td>${b.n}</td><td colspan="4" class="muted">Too few contracts</td></tr>` : `<tr><td>${Math.round(b.lo * 100)}–${Math.round(b.hi * 100)}%</td><td>${b.n} <span class="muted">(${b.expirations} exp.)</span></td><td>${b.market}%</td><td><strong>${b.actual}%</strong></td><td>${b.ci[0]}–${b.ci[1]}%</td>
-      <td>${b.market < b.ci[0] ? `<span class="chip bad">riskier than priced</span>` : b.market > b.ci[1] ? `<span class="chip good">safer than priced</span>` : `<span class="muted">about as priced</span>`}</td></tr>`).join("") + `</tbody></table></div>`;
+      <td>${P.status === "preview" ? `<span class="muted">too early</span>` : b.market < b.ci[0] ? `<span class="chip bad">riskier than priced</span>` : b.market > b.ci[1] ? `<span class="chip good">safer than priced</span>` : `<span class="muted">about as priced</span>`}</td></tr>`).join("") + `</tbody></table></div>`;
   const rd = (S.readings || []).map((r) => `<tr><td>${esc(r.label)}</td>
       <td>${r.low.actual}% <span class="muted">vs ${r.low.market}%</span></td><td>${r.high.actual}% <span class="muted">vs ${r.high.market}%</span></td>
       <td>${r.gap_pts > 0 ? "+" : ""}${r.gap_pts} pts</td>
-      <td>${r.found ? `<span class="chip ${r.gap_pts > 0 ? "bad" : "good"}">${r.gap_pts > 0 ? "high = riskier than priced" : "high = safer than priced"}</span>` : r.passed && r.recent_same === false ? `<span class="chip neutral">Faded recently</span>` : `<span class="muted">Could be chance</span>`}</td></tr>`).join("");
+      <td>${P.status === "preview" ? `<span class="muted">too early to test</span>` : r.found ? `<span class="chip ${r.gap_pts > 0 ? "bad" : "good"}">${r.gap_pts > 0 ? "high = riskier than priced" : "high = safer than priced"}</span>` : r.passed && r.recent_same === false ? `<span class="chip neutral">Faded recently</span>` : `<span class="muted">Could be chance</span>`}</td></tr>`).join("");
   const readings = `<h4 class="subhead">Which readings add to the market's odds</h4>
     <p class="sub" style="margin:0 0 8px">For each reading, the bottom and top third of contracts: how often they actually finished in the money, vs what the market said (smaller number). The gap is how much more (or less) often assignment happened than priced in the top third, compared with the bottom third.</p>
     <div class="scroll"><table class="pin1"><thead><tr><th>Reading</th><th>Low third</th><th>High third</th><th>Gap</th><th>Result</th></tr></thead><tbody>${rd || `<tr><td colspan="5">Not enough contracts yet.</td></tr>`}</tbody></table></div>`;
@@ -1738,6 +1757,7 @@ function renderWheel() {
   const s = W.summary;
   renderWheelCompare(B, method);
   renderPolicyCompare(B, method, K(topup), topup, twice);
+  renderHorizons(B, method, K(topup), topup, twice);
   $("wSub").textContent = `Starts ${fmtYear(s.first)} owning 100 ${B.ticker} shares and no cash. ${twice ? "Two trades a week: one opened Monday that expires Wednesday, then one opened Thursday that expires Friday. Each is a covered call while holding shares, or a cash-secured put while holding cash, so a call assigned on Wednesday is followed by a put on Thursday." : "While holding shares, a covered call is sold each Monday. When the shares are called away, a cash-secured put is sold each Monday instead."} ${topup ? "When the cash doesn't cover the put, just enough money is added to sell it, so the wheel never stops." : "It's sold only in weeks when the cash covers the strike; otherwise that week is paused."} When a put is assigned, the shares are bought back and calls start again. Earnings weeks are skipped.${B.cash_interest ? " Cash earns the 3-month Treasury bill rate, roughly what a money market fund pays." : " Cash earns nothing here (the Treasury rate wasn't available)."}`;
   if (pol !== "every") $("wSub").textContent += ` Following the site's recommendation${pol === "favorable" ? " (favorable weeks only)" : ""}: ${s.skipped_calls || 0} call and ${s.skipped_puts || 0} put ${twice ? "trades" : "weeks"} skipped, and strikes adjusted for similar past weeks once there's enough history.`;
   const diffCls = s.difference >= 0 ? "pos" : "neg";
@@ -1779,6 +1799,33 @@ function renderWheel() {
     (W.events.length ? W.events.slice().reverse().map((e) => `<tr><td>${fmtDate(e.date)} ${e.date.slice(0, 4)}</td><td>${e.type === "added money" ? `Added ${money(e.amount, 0)} to cover the put` : e.type === "called away" ? "Shares called away (call assigned)" : "Shares bought back (put assigned)"}</td><td>${money(e.strike)}</td><td>${money(e.close)}</td></tr>`).join("")
       : `<tr><td colspan="4">The shares were never called away.</td></tr>`) + `</tbody>` +
     (W.events_total > W.events.length ? `<tfoot><tr><td colspan="4" class="muted">Showing the latest ${W.events.length} of ${W.events_total}.</td></tr></tfoot>` : "");
+}
+
+// The wheel over the last 1, 2 ... 10 years, and over every stretch of each length.
+function renderHorizons(B, method, key, topup, twice) {
+  const H = B.horizons && B.horizons[key] && B.horizons[key][method];
+  $("wHorWrap").hidden = !H;
+  if (!H) return;
+  const pctS = (v) => v == null ? "–" : `<span class="${v >= 0 ? "pos" : "neg"}">${v >= 0 ? "+" : ""}${v.toFixed(1)}%</span>`;
+  const yrs = (r) => r.years >= 0.95 ? `${Math.round(r.years * 10) / 10} yr` : `${Math.round(r.years * 12)} mo`;
+  const pol = $("wPolicy").value;
+  $("wHorSub").innerHTML = `The same wheel (${twice ? "twice a week" : "once a week"}, ${method === "delta" ? "0.20/0.25-delta strikes" : "history-based strikes"}, ${topup ? "adding money when cash is short" : "pausing when cash is short"}) started 1, 2, … 10 years ago and run to now, each starting with 100 shares, next to simply holding them over the same time.${topup ? " Returns are on everything put in, including money added." : ""}${pol !== "every" ? " These use trading every week; the recommendation menu doesn't change this table." : ""}`;
+  const best = H.ending_now.reduce((a, b) => (b.diff_pct > a.diff_pct ? b : a), H.ending_now[0] || {});
+  $("wHorNow").innerHTML = `<thead><tr><th>Started</th><th>Wheel</th><th>Holding</th><th>Wheel minus holding</th><th>Wheel per year</th><th>Holding per year</th><th>Called away / bought back</th><th>Ends in</th></tr></thead><tbody>` +
+    (H.ending_now.length ? H.ending_now.map((r) => `<tr${r === best ? ' class="bestrow"' : ""}><td>${r.n === H.ending_now.length && r.years < r.n - 0.2 ? `All history (${yrs(r)})` : `${r.n} year${r.n === 1 ? "" : "s"} ago`} <span class="muted">${fmtYear(r.start)}</span></td>
+      <td>${pctS(r.wheel_return_pct)}</td><td>${pctS(r.hold_return_pct)}</td><td><strong>${pctS(r.diff_pct)}</strong></td>
+      <td>${pctS(r.wheel_ann_pct)}</td><td>${pctS(r.hold_ann_pct)}</td><td>${r.calls_assigned} / ${r.puts_assigned}</td><td>${r.ends_holding ? "Shares" : "Cash"}</td></tr>`).join("")
+      : `<tr><td colspan="8">Not enough history.</td></tr>`) + `</tbody>`;
+  $("wHorRollSub").textContent = `The latest stretch depends heavily on where the stock happened to go recently. This runs the wheel over every stretch of each length in the history, starting every 3 months, to show how often it beat holding and by how much.`;
+  $("wHorRoll").innerHTML = `<thead><tr><th>Length</th><th>Stretches</th><th>Wheel beat holding</th><th>Typical difference</th><th>Typical wheel per year</th><th>Typical holding per year</th><th>Wheel lost money</th><th>Worst stretch</th><th>Best stretch</th></tr></thead><tbody>` +
+    (H.rolling.length ? H.rolling.map((r) => `<tr><td>${r.n} year${r.n === 1 ? "" : "s"}</td><td>${r.windows}</td>
+      <td><strong>${r.wheel_beat} of ${r.windows}</strong> <span class="muted">${Math.round(r.wheel_beat_pct)}%</span></td>
+      <td>${pctS(r.median_diff_pct)}</td><td>${pctS(r.median_wheel_ann_pct)}</td><td>${pctS(r.median_hold_ann_pct)}</td>
+      <td>${Math.round(r.wheel_lost_money_pct)}%</td>
+      <td>${pctS(r.worst.diff_pct)} <span class="muted">from ${fmtYear(r.worst.start)}</span></td>
+      <td>${pctS(r.best.diff_pct)} <span class="muted">from ${fmtYear(r.best.start)}</span></td></tr>`).join("")
+      : `<tr><td colspan="9">Not enough history.</td></tr>`) + `</tbody>`;
+  $("wHorNote").textContent = `"Typical" is the median. Stretches overlap (a 5-year stretch starting every 3 months shares most of its weeks with the next), so longer lengths have fewer truly separate results and lean on the same few years. A higher "wheel beat holding" share at one length than another says more about which market years that length happened to cover than about a best length to run the wheel.`;
 }
 
 // The wheel's step-by-step log: the last 52 weeks come with the backtest; everything since the
