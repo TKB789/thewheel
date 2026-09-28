@@ -1,0 +1,2 @@
+date,time_et,ticker,spot,prev_close,hv20,atm_iv,iv_hv,skew_25d,rsi14,pct_ma20,put_call_oi,contracts
+2026-09-28,11:00,CRM,229.53,234.02,0.3351,0.5036,1.503,-0.0184,46.8,-6.99,1.15,17

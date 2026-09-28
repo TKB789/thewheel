@@ -1,0 +1,2 @@
+date,time_et,ticker,spot,prev_close,hv20,atm_iv,iv_hv,skew_25d,rsi14,pct_ma20,put_call_oi,contracts
+2026-09-28,11:00,PFE,28.52,28.67,0.1529,0.2544,1.664,0.0093,62.9,1.56,0.37,6

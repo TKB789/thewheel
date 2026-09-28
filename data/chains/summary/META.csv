@@ -1,0 +1,2 @@
+date,time_et,ticker,spot,prev_close,hv20,atm_iv,iv_hv,skew_25d,rsi14,pct_ma20,put_call_oi,contracts
+2026-09-28,11:00,META,720.59,751.66,0.5372,0.4516,0.841,0.0174,62.2,7.87,0.55,164

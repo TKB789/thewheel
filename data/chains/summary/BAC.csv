@@ -1,0 +1,2 @@
+date,time_et,ticker,spot,prev_close,hv20,atm_iv,iv_hv,skew_25d,rsi14,pct_ma20,put_call_oi,contracts
+2026-09-28,11:00,BAC,55.97,56.7,0.247,0.2835,1.148,-0.0311,28.4,-6.26,0.82,4

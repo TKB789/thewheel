@@ -1,0 +1,2 @@
+date,time_et,ticker,spot,prev_close,hv20,atm_iv,iv_hv,skew_25d,rsi14,pct_ma20,put_call_oi,contracts
+2026-09-28,11:00,ORCL,132.45,137.1,0.5223,0.5498,1.053,-0.0378,37.2,-10.33,0.7,30

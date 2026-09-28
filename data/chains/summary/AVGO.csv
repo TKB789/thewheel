@@ -1,0 +1,2 @@
+date,time_et,ticker,spot,prev_close,hv20,atm_iv,iv_hv,skew_25d,rsi14,pct_ma20,put_call_oi,contracts
+2026-09-28,11:00,AVGO,348.95,352.81,0.3063,0.3399,1.11,0.0399,41.6,-2.26,0.61,79

@@ -146,6 +146,7 @@ eb81137f-3241-37a4-8774-cecdb345f9fe,2026-09-28T12:46+00:00,MT Newswires,Update:
 419a48d3-7835-300b-97a4-dbb2cf56f13d,2026-09-28T13:00+00:00,24/7 Wall St.,My Tesla Stock Price Prediction Hinges on One Massive Opportunity,0.5719
 ba97269c-c17b-3431-8c63-dea920eefd66,2026-09-28T13:00+00:00,Barrons.com,"Nvidia, Meta, SpaceX, Kodiak Sciences, MongoDB, Boeing, and More Stocks That Explain Today’s Market",0.0772
 240b4d4a-87a2-3dff-a271-279cab4b8ed2,2026-09-28T13:04+00:00,24/7 Wall St.,NVIDIA Rises 2% as Board Authorizes Record $150B Buyback Increase; AMD and Broadcom Slip,0.5859
+cb82acb9-4334-35bd-acba-c41931a380df,2026-09-28T13:05+00:00,Proactive,Nvidia launches Open Agent Safety Platform after containment failures,0.4767
 b78a08b0-7fee-397b-90ff-d2abab49ecce,2026-09-28T13:08+00:00,Insider Monkey,Retail Investors Think These 2 Stocks Could Be The Next NVIDIA And Sandisk,0.7351
 11019cb4-d7c9-362c-b291-eaff2d565070,2026-09-28T13:09+00:00,Insider Monkey,Marvell vs. Broadcom: Which Custom AI Chip Stock Has More Room to Run?,0.9052
 d9e61579-89e7-344e-9919-d2ec5d9ddeba,2026-09-28T13:11+00:00,Simply Wall St.,ServiceNow Stock And 2 AI Security Plays Worth Watching Now,0.9274
@@ -155,7 +156,27 @@ af9bdfa9-d106-34c6-a13a-d0bd1fc001cc,2026-09-28T13:20+00:00,Motley Fool,Predicti
 0df3f80a-028f-3fab-9307-4c377a48b287,2026-09-28T13:33+00:00,TIKR,CEO Predicts: “Demand Will Continue to Rise” as AMD and Intel Soar up to 17% Thanks to Muse,0.34
 2fb2349c-3d80-353c-b81e-441e63bcf1d3,2026-09-28T13:38+00:00,Motley Fool,3 Key IRA Moves to Make a Year Before You Retire,0.0
 54097b82-8800-3367-9392-6f4df6a2ad1e,2026-09-28T13:40+00:00,The Telegraph,Nvidia to hand investors record $150bn after AI profit boom,0.8885
+f82192e9-9d97-41df-b8e6-890ad0acc8c9,2026-09-28T13:45+00:00,Yahoo Finance,"Stocks slip as bond yields rise, but Nvidia stock is rising: AlphaCheck",0.0
 fbda712b-3ff9-3818-b4c8-f85b2b7c56ad,2026-09-28T13:48+00:00,Motley Fool,Is Costco's Stock Overdue for a Big Rally?,0.3384
 6219d09e-7289-45db-a889-3f642bcbfbc8,2026-09-28T13:50+00:00,Yahoo Finance Video,Trump hosted Anthropic's CEO for dinner at the White House. Here's why that matters.,0.0258
 6501e704-9f09-316f-9162-a1d481b7e070,2026-09-28T13:50+00:00,Motley Fool,Is QuantumScape a Lost Cause?,-0.0258
 f96d8e26-32a0-36d6-8023-11550e22968b,2026-09-28T13:52+00:00,Motley Fool,Prediction: This Will Be Micron Technology’s Stock Price by the End of 2026,0.0
+bd5614d8-15f9-33d3-9b55-fbb0296556d9,2026-09-28T13:53+00:00,Stocktwits,Jensen Huang Calls OpenAI ‘One Of The Most Consequential Companies In History’ – Says It Can 'Use Whatever Part' Of OpenShell It Wants,0.4767
+ca09f3ea-1d93-3db5-95aa-9e30b8aaf054,2026-09-28T13:55+00:00,Benzinga Private Markets,Anthropic Claude’s Claimed Breakthrough in Biology Faces a Major Question — Scientist Says He Had Already Studied the Enzymes for 4 Years,0.2263
+94184308-0bd1-3946-8c78-fca927133f44,2026-09-28T13:59+00:00,Motley Fool,Nvidia Just Announced the Largest Stock Buyback Authorization Increase in History. Should You Buy the Stock?,0.6808
+e8de75f4-5b18-32f4-a432-7fd379eddcf9,2026-09-28T14:07+00:00,Motley Fool,Meet the 1 Stock I'd Buy With $500 and Never Look at Again,-0.1027
+8d3648c5-8b96-3a27-a528-bf66603f8b6e,2026-09-28T14:11+00:00,Simply Wall St.,3 AI Stocks With Revenue Growth Up To 41%,0.9313
+db80d604-e263-3d5e-bae1-fe5998ce5be5,2026-09-28T14:20+00:00,Motley Fool,"Warren Buffett Has Stepped Down as Chairman of Berkshire Hathaway, but This May Be a Much Bigger Concern for Shareholders",-0.4194
+6b852d36-7ff1-36fa-a911-97d8572432c0,2026-09-28T14:20+00:00,Motley Fool,You Think VUG Owns the Fastest-Growing Companies. That's Not Quite How It Works.,0.0
+e2a7301f-6c75-323a-905e-1f2360851597,2026-09-28T14:26+00:00,Moby,SpaceX’s Starship Reaches Orbit for the First Time,-0.2732
+eecfedae-76ba-3ae2-857d-cf005c6220bc,2026-09-28T14:26+00:00,Barrons.com,"IonQ Is Building a Quantum Empire, BofA Says. Why the Stock Is a Buy.",0.5574
+814f4f86-fffe-314f-b263-a1c1db26210c,2026-09-28T14:33+00:00,24/7 Wall St.,"Intel Drops 4% on Oil-Driven Rate Fears, NVIDIA Rises 3% on Record $150B Buyback; Taiwan Semiconductor Slips",-0.6124
+939ab4d3-6f8c-3a2e-bcbd-fadca91efb41,2026-09-28T14:34+00:00,24/7 Wall St.,AI Debt To Top Germany’s GDP,0.3197
+932d7078-0570-4d2b-9394-aae7cebbb5df,2026-09-28T14:40+00:00,Yahoo Finance Video,"The impact that AI will have on advertising, according to Sir Martin Sorrell",0.0
+be36203a-b287-3ce2-82b3-61603e448e11,2026-09-28T14:43+00:00,GuruFocus.com,Nvidia Just Put Another $150 Billion Behind Its Own Stock,0.34
+9265a2a8-5a1f-3960-880b-9dc15f32084a,2026-09-28T14:45+00:00,24/7 Wall St.,Nokia Is The Networking Juggernaut AI Investors Should Watch Right Now,0.0
+d0603ea8-55b5-3baa-ba30-a5b38764bca5,2026-09-28T14:47+00:00,Motley Fool,2 of the Best ETFs to Buy When Inflation Is Running Hot,0.6369
+affb2c3c-d938-3637-a900-897319c35449,2026-09-28T14:48+00:00,GuruFocus.com,Nvidia Stock Rises After $150 Billion Buyback Boost,0.7351
+efa01ac0-8fd7-320d-9f9d-9e273458c642,2026-09-28T14:48+00:00,Motley Fool,"Up Over 550% in 2026, Is It Too Late to Buy Moderna Stock?",-0.4939
+827d637d-24e4-3f81-9431-452717e6ebff,2026-09-28T14:52+00:00,GuruFocus.com,IREN Just Got a Reality Check From Wall Street,0.1655
+c1b5a881-4e8e-3b96-bfa7-ea9f75b756ad,2026-09-28T14:58+00:00,GuruFocus.com,Nvidia and AMD Just Got a New AI Demand Risk to Watch,-0.1531

@@ -1,0 +1,2 @@
+date,time_et,ticker,spot,prev_close,hv20,atm_iv,iv_hv,skew_25d,rsi14,pct_ma20,put_call_oi,contracts
+2026-09-28,11:00,NFLX,69.57,71.15,0.3601,0.3817,1.06,-0.0747,34.0,-8.62,0.56,10

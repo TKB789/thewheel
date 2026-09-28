@@ -1,0 +1,2 @@
+date,time_et,ticker,spot,prev_close,hv20,atm_iv,iv_hv,skew_25d,rsi14,pct_ma20,put_call_oi,contracts
+2026-09-28,11:00,TSLA,359.92,372.11,0.4518,0.4181,0.925,0.0159,48.3,-1.72,0.99,110
