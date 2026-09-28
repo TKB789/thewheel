@@ -91,6 +91,7 @@ ba97269c-c17b-3431-8c63-dea920eefd66,2026-09-28T13:00+00:00,Barrons.com,"Nvidia,
 0a1670ff-bc7d-3b5b-a2cb-1312ad1cbf32,2026-09-28T13:14+00:00,TIKR,Meta Poaches MongoDB CEO “Effective Immediately” – Stock Sinks 24%,0.577
 7148e50a-45f0-32d6-8c77-8412ab042713,2026-09-28T13:24+00:00,Quartz,"Senate Democrats question Big Tech on AI tax breaks in ""one big beautiful bill""",0.4588
 0df3f80a-028f-3fab-9307-4c377a48b287,2026-09-28T13:33+00:00,TIKR,CEO Predicts: “Demand Will Continue to Rise” as AMD and Intel Soar up to 17% Thanks to Muse,0.34
+e37a9960-f3e4-41e8-89d4-1a2454c5513c,2026-09-28T13:33+00:00,Yahoo Finance,3 tech stock charts you probably won't believe,0.0
 f82192e9-9d97-41df-b8e6-890ad0acc8c9,2026-09-28T13:45+00:00,Yahoo Finance,"Stocks slip as bond yields rise, but Nvidia stock is rising: AlphaCheck",0.0
 4bc381f0-31f2-369e-9082-8458436be6c3,2026-09-28T13:45+00:00,Moneywise,"Man says Meta's AI agent Muse shared his address, took a lowball offer and told a buyer he was home — nobody came down",0.1531
 7d3db2d3-e674-389c-b5cd-d3f0a5b2f5ea,2026-09-28T13:55+00:00,InvestorsHub,MongoDB Shares Fall 15% as CEO Chirantan Desai Resigns to Join Meta,0.5106
@@ -124,8 +125,25 @@ fe995f0f-7e21-3112-886a-5d7e2da60bce,2026-09-28T15:50+00:00,Proactive,MongoDB sh
 3d0c5c15-b8c7-3fa2-a50a-459e4e15379b,2026-09-28T16:43+00:00,Forkast News,OpenAI’s Training Halt Stalls the Persistent Assistant Pivot Ahead of DevDay,0.0516
 e1c746c4-6e65-390d-91d7-c5c6289c6481,2026-09-28T16:45+00:00,Zacks,5 Reasons to Buy Stocks Now,0.6597
 0f32bdce-ac6e-36af-83d3-d7bc6bed140d,2026-09-28T16:52+00:00,TechCrunch,"Meta launches enterprise AI platform, hires MongoDB CEO to lead new initiative",0.0
+2b55600f-58ca-40fe-a58e-0b9e252b18ea,2026-09-28T16:56+00:00,Yahoo Finance Video,AI safety: Is there too much industry self-interest for regulation now?,0.8796
 04b7f5f7-17a5-34e0-9b7a-03a46e606d33,2026-09-28T17:30+00:00,Benzinga,Coinbase CEO Says AI Agents Could Break Corporate Software Monopolies From Within: 'Most Companies Would Move Faster',0.0
 5902522d-60c5-4342-98f9-07b178b45ecb,2026-09-28T17:32+00:00,Yahoo Finance Video,Meta enters the enterprise AI battle,-0.3818
 dd4a56c3-6bd0-3eee-b1b0-7fac0b3ff9ca,2026-09-28T17:35+00:00,MT Newswires,Nvidia Launches Open Software Platform to Help Strengthen Governance of AI Agents,0.8834
 769994ac-bf91-3f76-85c1-02203b338cf5,2026-09-28T17:38+00:00,MT Newswires,Update: US Equity Indexes Fall in Midday Trading as Treasury Yields Rise Amid US-Iran Deadlock,-0.1531
+ec529fd5-5b94-3b14-b260-862414cf24a5,2026-09-28T18:05+00:00,CNN Business,Nvidia launches new tool to keep AI agents from going rogue,0.4767
 46230623-bb6b-3799-a7ca-e0e45d77f33c,2026-09-28T18:23+00:00,MT Newswires,Top Midday Decliners,0.2023
+91c84e00-b2c6-36d8-85ce-567d1d97ec29,2026-09-28T18:38+00:00,Insider Monkey,Can Meta’s C$13 Billion Alberta Bet Strengthen its AI Infrastructure Advantage?,0.7717
+4339a24b-1b57-3f7d-a02f-9859e6653efa,2026-09-28T18:49+00:00,GuruFocus.com,Meta Stocks Slides 3.6% as Muse Moves Into Glasses,0.0387
+844895e4-8518-3298-bb3d-c80e5f376680,2026-09-28T18:51+00:00,GuruFocus.com,"Microsoft, Oracle Stocks Tumble After Meta Unveils New AI Enterprise Push",0.0
+c8b900cd-9441-3222-a02a-a1e3ef069e6b,2026-09-28T18:55+00:00,Trefis,Meta Up 37%: Was It The Muse App Or The Ad Machine?,0.7096
+0645b429-1623-35c5-86ea-9c0f742878e7,2026-09-28T18:57+00:00,Benzinga Prediction Markets,Meta's Muse Is a Smash Hit. But Is It Hoovering Up Your Personal Data?,0.6486
+80dcc561-6b5f-3912-b049-f83e4970d9e3,2026-09-28T19:08+00:00,Simply Wall St.,Does Wells Fargo’s New Digital Tools and AI-Era Deposit Mobility Strategy Reshape The Bull Case For WFC?,0.8885
+a5f51704-d14c-3c6c-b86b-f8c7e5a97661,2026-09-28T19:11+00:00,GuruFocus.com,Cathie Wood Makes $64 Million Bet on Two Stocks,0.4215
+84f34ace-a9a8-34e9-8808-d2418bf17d62,2026-09-28T19:31+00:00,Trefis,How Has Alphabet Stock's Story Changed?,0.0
+7bd9fa56-3b11-360d-801e-a1e8595d3f6b,2026-09-28T19:39+00:00,GuruFocus.com,"Meta Just Put Microsoft, Salesforce and ServiceNow on Notice",0.296
+e35440db-7321-39cf-ba6f-dd0d57524fef,2026-09-28T19:41+00:00,GuruFocus.com,"Meta Platform Takes Aim at Salesforce, ServiceNow With AI Push",0.0
+3899b42f-a32d-3758-a4c1-5800b9062d58,2026-09-28T19:57+00:00,MT Newswires,Sector Update: Tech Stocks Fall Late Afternoon,-0.296
+67d27dfd-5a8c-391c-94f3-46ffb8b152b3,2026-09-28T19:57+00:00,Barrons.com,Nvidia’s $235 Billion Buyback Shows Who Is Really Winning the AI Boom,0.8173
+3dfeb585-6619-4443-96e8-d40879d50c9e,2026-09-28T20:10+00:00,Yahoo Finance Video,What Meta 'really' has to do to succeed at the enterprise this time around,0.4588
+b98b6905-ff10-31ab-a2e2-c39a394f5ff2,2026-09-28T20:14+00:00,Barrons.com,OpenAI DevDay: Can ‘O’ Take the Spotlight From Meta?,0.0
+dde463a4-702e-3adb-b655-2fe18c32c718,2026-09-28T20:20+00:00,Motley Fool,Why MongoDB Sank Today,-0.4019

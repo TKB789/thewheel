@@ -79,10 +79,12 @@ c2381d64-bc96-315d-885f-d93c5b68abd9,2026-09-28T12:28+00:00,24/7 Wall St.,Amazon
 534f33a9-2c84-3b55-9c7a-ddf3edcde0fa,2026-09-28T12:36+00:00,The Telegraph,AI’s hidden $3tn bill could wreck the world economy,-0.4404
 856e6e9a-13cf-3ec0-b540-301e8de796f2,2026-09-28T12:37+00:00,TIKR,Microsoft Rolls Out Refreshed Copilot App as Stock Lags Megacap Peers,-0.25
 2a6c2df9-2b70-3b44-81d2-6f90154287d8,2026-09-28T12:54+00:00,MT Newswires,"OpenAI, Anthropic CEOs Asked to Appear at Australian AI Inquiry",0.0
+9677119e-4e17-3f2e-9a3a-8baff3f430cf,2026-09-28T13:05+00:00,Barchart,"Apple vs. Microsoft: Only One Mag 7 Giant Wins on Valuation, Dividends, and AI",0.836
 7148e50a-45f0-32d6-8c77-8412ab042713,2026-09-28T13:24+00:00,Quartz,"Senate Democrats question Big Tech on AI tax breaks in ""one big beautiful bill""",0.4588
 523f89f6-2d22-37aa-9739-e0a7616557b2,2026-09-28T13:29+00:00,24/7 Wall St.,I’m Buying Microsoft Exec’s Tactical Assertion That He Supports an AI Killswitch,0.7845
 42a2cbed-2fa4-3186-a753-33d5034102aa,2026-09-28T14:00+00:00,The Wall Street Journal,Top AI Researchers Call for Urgent Oversight of Self-Improving Systems,0.3818
 680314a5-9d40-3ff9-80be-752b65da5a47,2026-09-28T14:03+00:00,The Wall Street Journal,Software Stocks Slip as Meta Becomes Competition,0.3818
+81ba43e7-3937-4805-8ab4-d82623556f68,2026-09-28T14:04+00:00,Yahoo Finance Video,Meta hires MongoDB CEO to run new 'Meta Enterprise' platform,0.0
 c3c0fa81-9da9-3fdb-a675-eeb0ed1c95ef,2026-09-28T14:18+00:00,Zacks,AI Investment Accelerates: Top Stocks to Buy Right Now,0.7096
 f4cd2250-c4cb-3265-89b2-904dc16c1930,2026-09-28T14:30+00:00,24/7 Wall St.,Prediction: Google’s Next Chapter Could Be Worth Trillions More,0.2732
 3ea3f139-4ebf-35c2-b678-2e8f748322cd,2026-09-28T14:31+00:00,24/7 Wall St.,The Market Is Souring On Alphabet: I’m Buying What They’re Missing,-0.3919
@@ -107,4 +109,19 @@ f442226c-b5b0-31bf-8455-e40490a396b7,2026-09-28T17:09+00:00,TheStreet,Microsoft 
 dd4a56c3-6bd0-3eee-b1b0-7fac0b3ff9ca,2026-09-28T17:35+00:00,MT Newswires,Nvidia Launches Open Software Platform to Help Strengthen Governance of AI Agents,0.8834
 773df546-31ba-3aed-8dc3-0f95a16e42c3,2026-09-28T17:42+00:00,Trefis,What You Actually Pay To Join The AAPL Run,0.0516
 61a1255c-4d4f-36b0-8873-881a18b64b03,2026-09-28T18:03+00:00,Barrons.com,"Behind the AI Mask, There’s a Stealth Bear Market Lurking Under Those Record Highs",-0.5095
+ec529fd5-5b94-3b14-b260-862414cf24a5,2026-09-28T18:05+00:00,CNN Business,Nvidia launches new tool to keep AI agents from going rogue,0.4767
 b6d41546-cafe-301e-8581-3a5f272e85c8,2026-09-28T18:16+00:00,Barrons.com,Microsoft’s AI Gains Can Push the Stock Higher. That’s Good News for Software Peers.,0.6908
+764c78ff-5f9c-3401-9457-1d7d532d2ad7,2026-09-28T18:30+00:00,Benzinga,"Bill Gates Tells Trump Not to Slow AI Innovation, Slams ‘Kill Switch’ Debate — Warns ‘A Billion Deaths’ Could Be Possible Without Safeguards",0.3322
+d121b356-f9d1-30d7-b120-dbe0f720fa6d,2026-09-28T18:33+00:00,Investopedia,These Experts Say These 3 Software Stocks Are ‘AI Winners’,0.7506
+5a034e39-5b9d-3148-aad7-a5284a7e36ac,2026-09-28T18:44+00:00,GuruFocus.com,Arm Stock Sinks 7.6% as Agent Security Expands Its Compute Role,0.5423
+4d1ccc5a-9377-339c-a079-c205fbb3787a,2026-09-28T18:46+00:00,Investing.com,"Top software application stocks to watch, according to Oppenheimer",0.4854
+844895e4-8518-3298-bb3d-c80e5f376680,2026-09-28T18:51+00:00,GuruFocus.com,"Microsoft, Oracle Stocks Tumble After Meta Unveils New AI Enterprise Push",0.0
+c8b900cd-9441-3222-a02a-a1e3ef069e6b,2026-09-28T18:55+00:00,Trefis,Meta Up 37%: Was It The Muse App Or The Ad Machine?,0.7096
+18aece81-eb6e-35b8-b4ac-769044e6a60d,2026-09-28T19:12+00:00,Proactive,"Microsoft's Autopilot opens new AI revenue path, Jefferies writes",0.3818
+be119da3-2e08-37e9-a07a-4f00be8fb7ed,2026-09-28T19:23+00:00,GuruFocus.com,Microsoft Stock Drops 2.2% as AI Adoption Gap Reaches 12.6 Points,0.1531
+84f34ace-a9a8-34e9-8808-d2418bf17d62,2026-09-28T19:31+00:00,Trefis,How Has Alphabet Stock's Story Changed?,0.0
+7bd9fa56-3b11-360d-801e-a1e8595d3f6b,2026-09-28T19:39+00:00,GuruFocus.com,"Meta Just Put Microsoft, Salesforce and ServiceNow on Notice",0.296
+e35440db-7321-39cf-ba6f-dd0d57524fef,2026-09-28T19:41+00:00,GuruFocus.com,"Meta Platform Takes Aim at Salesforce, ServiceNow With AI Push",0.0
+07fea77d-110d-3a8e-aada-ac7b164c90f5,2026-09-28T19:52+00:00,Insider Monkey,Can CoreWeave’s (CRWV) Computing Advantage Become a Lasting Moat?,0.3182
+de4adcfe-9dba-4192-a21a-33baa61e5da4,2026-09-28T19:56+00:00,Yahoo Finance,Veteran marketer defends controversial Sydney Sweeney jeans ad campaign: The publicity was 'worth billions',0.2982
+67d27dfd-5a8c-391c-94f3-46ffb8b152b3,2026-09-28T19:57+00:00,Barrons.com,Nvidia’s $235 Billion Buyback Shows Who Is Really Winning the AI Boom,0.8173
