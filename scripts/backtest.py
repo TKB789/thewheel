@@ -33,6 +33,7 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from statistics import NormalDist
+from zoneinfo import ZoneInfo
 
 import numpy as np
 import pandas as pd
@@ -87,7 +88,7 @@ def round_down(k, step):
     return math.floor(k / step + 1e-9) * step
 
 
-def week_info(F: pd.DataFrame, earn_dates: list):
+def week_info(F: pd.DataFrame, earn_dates: list, now_et=None):
     """One entry per week that starts on a Monday trading day. Expiry is the last trading day
     of that week (Friday, or Thursday when Friday is a market holiday). Every value is known
     at Monday's open except `close`, which is only used to settle the week."""
@@ -95,6 +96,8 @@ def week_info(F: pd.DataFrame, earn_dates: list):
     earn = [pd.Timestamp(x) for x in earn_dates]
     iso = idx.isocalendar()
     groups = pd.Series(range(len(idx)), index=idx).groupby([iso.year.values, iso.week.values])
+    now_et = now_et or datetime.now(ZoneInfo("America/New_York"))
+    today = pd.Timestamp(now_et.date())
     out = []
     for _, pos in groups:
         pos = list(pos)
@@ -102,6 +105,9 @@ def week_info(F: pd.DataFrame, earn_dates: list):
         e, x = idx[i], idx[j]
         if e.weekday() != 0 or x.weekday() < 3 or i == 0:
             continue
+        friday = e + pd.Timedelta(days=4)
+        if j == len(idx) - 1 and (today < friday or (today == friday and now_et.time() < rs.CLOSE_SETTLED)):
+            continue                  # this week hasn't finished yet; it settles after Friday's close
         prev = F.iloc[i - 1]
         S, close = float(F["open"].iloc[i]), float(F["close"].iloc[j])
         vol = float(prev["hv20"])
@@ -140,10 +146,10 @@ def put_strike(w, method, history):
     return k if k < w["S"] else round_down(w["S"] - w["step"] / 2, w["step"])
 
 
-def run_weeks(F: pd.DataFrame, earn_dates: list):
+def run_weeks(F: pd.DataFrame, earn_dates: list, now_et=None):
     """Covered calls only: a call every Monday, assigned or not, on the same 100 shares."""
     rows, history = [], []          # history: z-scores of earlier non-earnings weeks
-    for w in week_info(F, earn_dates):
+    for w in week_info(F, earn_dates, now_et):
         S, close = w["S"], w["close"]
         row = {"monday": w["e"].date().isoformat(), "expiry": w["x"].date().isoformat(), "open": round(S, 2),
                "close": round(close, 2), "earnings": w["earnings"], "hot": w["hot"]}
@@ -170,7 +176,7 @@ def wheel_sim(weeks, method, tbill=None):
     Cash earns the 3-month Treasury bill rate each week, roughly what a money market fund
     (like Fidelity's core position) pays, when that rate series is available."""
     shares, cash = 100, 0.0
-    history, timeline, events = [], [], []
+    history, timeline, events, log = [], [], [], []
     c = {"call_weeks": 0, "put_weeks": 0, "paused": 0, "earnings_skipped": 0, "no_history": 0,
          "calls_assigned": 0, "puts_assigned": 0, "call_premium": 0.0, "put_premium": 0.0, "fees": 0.0,
          "longest_pause": 0, "interest": 0.0}
@@ -185,27 +191,34 @@ def wheel_sim(weeks, method, tbill=None):
                 earned = cash * (float(rate) / 100) * days / 365
                 cash += earned
                 c["interest"] += earned
+        entry = {"date": day, "holding": "shares" if shares else "cash", "open": round(S, 2), "close": round(close, 2)}
         if w["earnings"]:
             c["earnings_skipped"] += 1
+            entry["action"] = "skip_earnings"
         elif shares:
             K = call_strike(w, method, history)
             if K is None:
                 c["no_history"] += 1
+                entry["action"] = "no_history"
             else:
                 prem = bs_call(S, K, T, vol) * 100
                 cash += prem - FEE
                 c["call_weeks"] += 1; c["call_premium"] += prem; c["fees"] += FEE
+                entry.update({"action": "call", "strike": round(K, 2), "premium": round(prem, 2), "outcome": "kept"})
                 if close > K:
                     shares, cash = 0, cash + K * 100
                     c["calls_assigned"] += 1
+                    entry["outcome"] = "called_away"
                     events.append({"date": day, "type": "called away", "strike": round(K, 2), "close": round(close, 2)})
             run = 0
         else:
             K = put_strike(w, method, history)
             if K is None:
                 c["no_history"] += 1
+                entry["action"] = "no_history"
             elif cash < K * 100:
                 c["paused"] += 1
+                entry.update({"action": "paused", "strike": round(K, 2), "cash": round(cash, 2)})
                 run += 1
                 c["longest_pause"] = max(c["longest_pause"], run)
             else:
@@ -213,13 +226,16 @@ def wheel_sim(weeks, method, tbill=None):
                 prem = bs_put(S, K, T, vol) * 100
                 cash += prem - FEE
                 c["put_weeks"] += 1; c["put_premium"] += prem; c["fees"] += FEE
+                entry.update({"action": "put", "strike": round(K, 2), "premium": round(prem, 2), "outcome": "expired"})
                 if close < K:
                     shares, cash = 100, cash - K * 100
                     c["puts_assigned"] += 1
+                    entry["outcome"] = "bought"
                     events.append({"date": day, "type": "bought back", "strike": round(K, 2), "close": round(close, 2)})
         if not w["earnings"]:
             history.append((close / S - 1) / w["sig_w"])
         timeline.append([day, round(cash + shares * close, 2), round(100 * close, 2), 1 if shares else 0])
+        log.append(entry)
     if not weeks:
         return None
     start = 100 * weeks[0]["S"]
@@ -232,7 +248,7 @@ def wheel_sim(weeks, method, tbill=None):
               "premium_total": round(c["call_premium"] + c["put_premium"], 2),
               "ends_holding": bool(shares), "cash_now": round(cash, 2),
               "first": timeline[0][0], "last": timeline[-1][0]})
-    return {"summary": c, "timeline": timeline, "events": events}
+    return {"summary": c, "timeline": timeline, "events": events, "log": log[-52:]}
 
 
 def summarize(rows, method, rules=True):
@@ -258,10 +274,10 @@ def summarize(rows, method, rules=True):
     }
 
 
-def backtest(ticker, px, earn):
+def backtest(ticker, px, earn, now_et=None):
     F = rs.build_features(px, ticker, [], None, earn)
-    rows = run_weeks(F, earn)
-    weeks = week_info(F, earn)
+    rows = run_weeks(F, earn, now_et)
+    weeks = week_info(F, earn, now_et)
     tbill = None
     try:
         t = rs.load_prices(["^IRX"]).get("^IRX")
