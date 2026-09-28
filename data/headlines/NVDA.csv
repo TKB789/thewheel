@@ -94,6 +94,7 @@ b390ce37-f0b6-3c3b-8951-92eed1c4ce61,2026-09-28T03:13+00:00,Stocktwits,"NVDA Sto
 b3a896ee-34ee-330d-b204-50e359386744,2026-09-28T03:59+00:00,Stocktwits,‘Big Short’ Fame Michael Burry Says Trump ‘Cannot Afford’ To Let AI Boom Fall,0.1531
 b923b2a5-df9e-3c5b-8c21-01d80f7c6ea7,2026-09-28T04:22+00:00,Bloomberg,"Chinese Stocks Hit One-Year Low as Chip, Optical Firms Slide",-0.0258
 91489554-69bd-428c-8eab-ecd2cd8347d3,2026-09-28T08:04+00:00,Yahoo Finance,"Stock market today: Dow, S&P 500 and Nasdaq slip as AI safety concerns and US-Iran tensions resurface",0.0516
+13686535-d357-4fdc-83cd-21dfef2626b7,2026-09-28T10:31+00:00,Yahoo Finance,"Nvidia launches AI safety platform after Jensen Huang calls Anthropic, OpenAI warnings 'odd'",0.6908
 5e2906e4-cc3a-36bb-ad39-6d5c47fcf2c4,2026-09-28T10:50+00:00,Motley Fool,Is PayPal a Deep Value Play Right Now?,0.7814
 c66b1b24-0e69-3977-a50a-813c3c7fa651,2026-09-28T11:01+00:00,Motley Fool,Palantir's Stock Is Up Over 50% Since Reporting Earnings. Is It Heading for a New All-Time High?,0.8402
 8dc08be1-8364-3bda-8835-88f1e52c7509,2026-09-28T11:08+00:00,Motley Fool,Home Depot (HD) Is 32% Below Its All-Time High: Here's 1 Reason to Avoid the Stock Right Now,-0.0289
@@ -130,11 +131,14 @@ c8f28d4e-9525-3201-99c1-97ea4ee5a366,2026-09-28T12:23+00:00,GuruFocus.com,Nvidia
 9f630677-8840-319d-b6ea-ea20484dfc16,2026-09-28T12:26+00:00,Quartz,Nvidia announces record $150 billion share buyback increase,0.5423
 594e3a49-2a39-3df5-ad4a-1e2d93c6e25b,2026-09-28T12:27+00:00,Motley Fool,"Apple Is the Best-Performing ""Magnificent Seven"" Stock This Year. But It Has Still Lagged This Unassuming Dividend Stock (That Remains a Top Buy Now).",-0.2023
 476a523f-95f0-36da-969b-c0ac8d0e0995,2026-09-28T12:28+00:00,Stocktwits,NVDA Stock Climbs After Nvidia Approves ‘Largest Buyback Increase’ In Company History,0.6124
+613bdd3e-8e0c-3e72-8efd-237636d1bf38,2026-09-28T12:29+00:00,Zacks,Palantir and Tyson Foods have been highlighted as Zacks Bull and Bear of the Day,0.4767
 1f901b42-0eac-3753-929b-958d7231a011,2026-09-28T12:32+00:00,TIKR,Super Micro Burned $6.8 Billion Last Year. Here’s What Changed in June,0.5994
 1a81b7c8-7ebf-3a38-8644-cd4988b84447,2026-09-28T12:36+00:00,CNN Business,Nvidia launches new tool to keep AI agents from going rogue,0.4767
 6bb7aa15-3ecc-33be-94c4-a4fd968a8033,2026-09-28T12:39+00:00,Barrons.com,Nvidia Stock Rises on $150 Billion Buyback Plan. It’ll Soothe Fears Over Its AI Investments.,0.5859
+0d41dc62-e2e0-3e72-9194-cc373f79a306,2026-09-28T12:44+00:00,CoinGape,NVIDIA Upsizes Share Buyback Program to $235B amid AI Safety Tool Release,0.9524
 6db4b739-a03d-3276-a99a-b0da787a6741,2026-09-28T12:46+00:00,Motley Fool,"Bitcoin Is Soaring Again. Will It Hit $100,000 by the End of 2026?",0.1027
 eb81137f-3241-37a4-8774-cecdb345f9fe,2026-09-28T12:46+00:00,MT Newswires,Update: US Equity Futures Drop Pre-Bell as Oil Prices Rise Amid US Rejection of Iran's Proposal to Reopen Strait of Hormuz,-0.6808
+8fd4d8c1-deca-383c-a820-722bcdfbae3b,2026-09-28T12:46+00:00,The Wall Street Journal,AI Usage Now at 18.8% Among Working-Age People,0.296
 9c4d70e9-5a14-3493-acfb-2f6580bd4002,2026-09-28T12:51+00:00,Reuters,Wall St to open lower as oil spikes after Trump rejects Iran peace proposal,-0.8271
 6a0d5bec-6282-34da-9a32-b1201eb11ccc,2026-09-28T12:57+00:00,Investor's Business Daily,Nvidia Stock Rises As AI Chipmaker Plans Huge Share Buyback,0.8519
 35c24f5f-2d54-34cb-9f35-39f5f5ecfa65,2026-09-28T12:58+00:00,MT Newswires,"Micron Likely to Report Upbeat Quarterly Earnings Amid Favorable Memory Pricing Trends, Wedbush Says",0.8591
@@ -143,3 +147,15 @@ eb81137f-3241-37a4-8774-cecdb345f9fe,2026-09-28T12:46+00:00,MT Newswires,Update:
 ba97269c-c17b-3431-8c63-dea920eefd66,2026-09-28T13:00+00:00,Barrons.com,"Nvidia, Meta, SpaceX, Kodiak Sciences, MongoDB, Boeing, and More Stocks That Explain Today’s Market",0.0772
 240b4d4a-87a2-3dff-a271-279cab4b8ed2,2026-09-28T13:04+00:00,24/7 Wall St.,NVIDIA Rises 2% as Board Authorizes Record $150B Buyback Increase; AMD and Broadcom Slip,0.5859
 b78a08b0-7fee-397b-90ff-d2abab49ecce,2026-09-28T13:08+00:00,Insider Monkey,Retail Investors Think These 2 Stocks Could Be The Next NVIDIA And Sandisk,0.7351
+11019cb4-d7c9-362c-b291-eaff2d565070,2026-09-28T13:09+00:00,Insider Monkey,Marvell vs. Broadcom: Which Custom AI Chip Stock Has More Room to Run?,0.9052
+d9e61579-89e7-344e-9919-d2ec5d9ddeba,2026-09-28T13:11+00:00,Simply Wall St.,ServiceNow Stock And 2 AI Security Plays Worth Watching Now,0.9274
+283826b8-abfa-3e86-8e9b-bbec1983a149,2026-09-28T13:17+00:00,MT Newswires,"Exchange-Traded Funds, Equity Futures Lower Pre-Bell Monday as Oil Prices Rise",0.5267
+af9bdfa9-d106-34c6-a13a-d0bd1fc001cc,2026-09-28T13:20+00:00,Motley Fool,Prediction: This Lesser-Known ETF Will Be the Best Bear Market Buy,0.6369
+34e918d0-4bdf-3ebf-98cb-d3d0bd3b7922,2026-09-28T13:21+00:00,Motley Fool,Could This Mid-Cap GLP-1 Stock Be a Better Buy Than Eli Lilly?,0.7783
+0df3f80a-028f-3fab-9307-4c377a48b287,2026-09-28T13:33+00:00,TIKR,CEO Predicts: “Demand Will Continue to Rise” as AMD and Intel Soar up to 17% Thanks to Muse,0.34
+2fb2349c-3d80-353c-b81e-441e63bcf1d3,2026-09-28T13:38+00:00,Motley Fool,3 Key IRA Moves to Make a Year Before You Retire,0.0
+54097b82-8800-3367-9392-6f4df6a2ad1e,2026-09-28T13:40+00:00,The Telegraph,Nvidia to hand investors record $150bn after AI profit boom,0.8885
+fbda712b-3ff9-3818-b4c8-f85b2b7c56ad,2026-09-28T13:48+00:00,Motley Fool,Is Costco's Stock Overdue for a Big Rally?,0.3384
+6219d09e-7289-45db-a889-3f642bcbfbc8,2026-09-28T13:50+00:00,Yahoo Finance Video,Trump hosted Anthropic's CEO for dinner at the White House. Here's why that matters.,0.0258
+6501e704-9f09-316f-9162-a1d481b7e070,2026-09-28T13:50+00:00,Motley Fool,Is QuantumScape a Lost Cause?,-0.0258
+f96d8e26-32a0-36d6-8023-11550e22968b,2026-09-28T13:52+00:00,Motley Fool,Prediction: This Will Be Micron Technology’s Stock Price by the End of 2026,0.0
