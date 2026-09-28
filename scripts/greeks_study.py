@@ -18,7 +18,8 @@ strike, a put if it was below. Then, separately for calls and puts:
   3. Model check (with a year of data): does adding the readings to the market's odds predict
      assignment better on later days it wasn't fit on?
 
-Early look after 60 trading days with finished expirations; the held-out checks after 250.
+A first peek after 5 trading days (shown, nothing tested), an early look with tests after 60,
+and the held-out checks after 250.
 Output: data/greeks_study.json, read by index.html. Run from research.py after the close.
 """
 from __future__ import annotations
@@ -38,6 +39,7 @@ CHAINS_DIR = ROOT / "data" / "chains"
 OUT = ROOT / "data" / "greeks_study.json"
 NY = ZoneInfo("America/New_York")
 
+PREVIEW_DAYS = 5          # a first peek after a week: shown, but nothing is tested yet
 EARLY_DAYS = 60
 FULL_DAYS = 250
 RECENT_FRAC = 0.30
@@ -278,17 +280,21 @@ def model_check(D: pd.DataFrame, found: list):
 
 def study(R: pd.DataFrame, rng):
     days = int(R["date"].nunique())
-    status = "collecting" if days < EARLY_DAYS else ("early" if days < FULL_DAYS else "full")
-    out = {"days": days, "status": status, "need_early": EARLY_DAYS, "need_full": FULL_DAYS}
+    status = ("collecting" if days < PREVIEW_DAYS else "preview" if days < EARLY_DAYS
+              else "early" if days < FULL_DAYS else "full")
+    out = {"days": days, "status": status, "need_preview": PREVIEW_DAYS, "need_early": EARLY_DAYS, "need_full": FULL_DAYS}
     D = R[(R["prob_itm"] >= ODDS_RANGE[0]) & (R["prob_itm"] <= ODDS_RANGE[1])]
     for kind, name in (("C", "calls"), ("P", "puts")):
         g = D[D["type"] == kind]
         side = {"contracts": int(len(g)), "expirations": int(g["cluster"].nunique()) if len(g) else 0,
                 "market": round(float(g["prob_itm"].mean()) * 100, 1) if len(g) else None,
                 "actual": round(float(g["assigned"].mean()) * 100, 1) if len(g) else None}
-        if status != "collecting" and len(g) >= 200:
+        if status != "collecting" and len(g) >= 100:
             side["calibration"] = calibration(g, rng)
             side["readings"] = reading_tests(g, status == "full", rng)
+            if status == "preview":            # shown as a peek only: too few independent outcomes to test
+                for r in side["readings"]:
+                    r["found"] = r["passed"] = False
             if status == "full":
                 side["model"] = model_check(g, [r for r in side["readings"] if r["found"]])
         out[name] = side
@@ -309,6 +315,6 @@ def run(closes: dict, now_et: datetime | None = None, seed=5):
             R = add_readings(R, summary)
             rng = np.random.default_rng(seed)
             rep["pooled"] = study(R, rng)
-            rep["by_ticker"] = {tk: study(g, rng) for tk, g in R.groupby("ticker") if g["date"].nunique() >= EARLY_DAYS}
+            rep["by_ticker"] = {tk: study(g, rng) for tk, g in R.groupby("ticker") if g["date"].nunique() >= PREVIEW_DAYS}
     OUT.write_text(json.dumps(rep, separators=(",", ":"), default=str))
     return rep

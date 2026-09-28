@@ -259,7 +259,7 @@ def _decision(policy, w, kind):
     return d
 
 
-def wheel_sim(weeks, method, tbill=None, topup=False, legs_per_week=1, policy=None, mode=None):
+def wheel_sim(weeks, method, tbill=None, topup=False, legs_per_week=1, policy=None, mode=None, prior=None):
     """The wheel: start owning 100 shares with no cash. Holding shares -> sell a covered call each
     Monday. Called away -> hold the cash and sell a cash-secured put each Monday, but only if the
     cash covers strike x 100; otherwise that week is paused. Put assigned -> buy 100 shares at the
@@ -277,6 +277,9 @@ def wheel_sim(weeks, method, tbill=None, topup=False, legs_per_week=1, policy=No
     flag. A skipped call week keeps the shares; a skipped put week keeps the cash earning interest."""
     shares, cash = 100, 0.0
     histories, timeline, events, log = {}, [], [], []
+    for w in prior or []:            # periods before this start: they seed the history-based strike
+        if not w["earnings"]:
+            histories.setdefault(w["leg"], []).append((w["close"] / w["S"] - 1) / w["sig_w"])
     c = {"call_weeks": 0, "put_weeks": 0, "paused": 0, "earnings_skipped": 0, "no_history": 0,
          "calls_assigned": 0, "puts_assigned": 0, "call_premium": 0.0, "put_premium": 0.0, "fees": 0.0,
          "longest_pause": 0, "interest": 0.0, "added": 0.0, "topups": 0, "largest_topup": 0.0,
@@ -915,6 +918,74 @@ def lookalike_now(F: pd.DataFrame, earn, news=None, news_now=None, now_et=None):
     return out
 
 
+# ------------------------------------------------------------ 1 year vs 2 years ... vs 10 years
+ROLL_STEP_DAYS = 91      # rolling windows start every ~3 months
+
+
+def _window_result(P, start, end, method, tbill, topup, legs):
+    inside = [w for w in P if start <= w["e"] < end]
+    if len(inside) < 20 * legs:
+        return None
+    prior = [w for w in P if w["x"] < start]
+    W = wheel_sim(inside, method, tbill, topup=topup, legs_per_week=legs, prior=prior)
+    if not W:
+        return None
+    s = W["summary"]
+    days = (inside[-1]["x"] - inside[0]["e"]).days
+    yrs = max(days / 365.25, 0.25)
+    ann = lambda pct: round(((1 + pct / 100) ** (1 / yrs) - 1) * 100, 1) if pct > -100 else -100.0
+    return {"start": s["first"], "end": inside[-1]["x"].date().isoformat(), "years": round(yrs, 2),
+            "wheel_return_pct": s["wheel_return_pct"], "hold_return_pct": s["hold_return_pct"],
+            "wheel_ann_pct": ann(s["wheel_return_pct"]), "hold_ann_pct": ann(s["hold_return_pct"]),
+            "diff_pct": round(s["wheel_return_pct"] - s["hold_return_pct"], 1),
+            "end_wheel": s["end_wheel"], "end_hold": s["end_hold"], "added": s["added"],
+            "calls_assigned": s["calls_assigned"], "puts_assigned": s["puts_assigned"], "paused": s["paused"],
+            "premium": s["premium_total"], "interest": s["interest"], "ends_holding": s["ends_holding"]}
+
+
+def horizons(P, method, tbill=None, topup=False, legs=1, max_years=10):
+    """The wheel run for the last 1, 2, ... 10 years (ending now), and over every rolling 1-, 2-, ...
+    year stretch in the history (starting every ~3 months), each compared with holding the shares
+    over the same stretch. Each run starts owning 100 shares; the history-based strike still uses
+    everything before its start, so a short run isn't handicapped."""
+    if not P:
+        return None
+    first, last = P[0]["e"], P[-1]["x"] + pd.Timedelta(days=1)
+    span = (last - first).days / 365.25
+    ending = []
+    for n in range(1, max_years + 1):
+        if n > span + 0.5:           # the last row can be a bit short of n years: it's the whole history
+            break
+        r = _window_result(P, max(last - pd.DateOffset(years=n), first), last, method, tbill, topup, legs)
+        if r:
+            ending.append({"n": n, **r})
+    rolling = []
+    for n in range(1, max_years + 1):
+        if n > span - 0.1:
+            break
+        res = []
+        start = first
+        while start + pd.DateOffset(years=n) <= last:
+            r = _window_result(P, start, start + pd.DateOffset(years=n), method, tbill, topup, legs)
+            if r:
+                res.append(r)
+            start += pd.Timedelta(days=ROLL_STEP_DAYS)
+        if len(res) < 2:
+            continue
+        d = np.array([r["diff_pct"] for r in res])
+        wa = np.array([r["wheel_ann_pct"] for r in res]); ha = np.array([r["hold_ann_pct"] for r in res])
+        worst, best = res[int(d.argmin())], res[int(d.argmax())]
+        rolling.append({"n": n, "windows": len(res), "wheel_beat": int((d > 0).sum()),
+                        "wheel_beat_pct": round(float((d > 0).mean()) * 100, 1),
+                        "median_diff_pct": round(float(np.median(d)), 1),
+                        "median_wheel_ann_pct": round(float(np.median(wa)), 1),
+                        "median_hold_ann_pct": round(float(np.median(ha)), 1),
+                        "wheel_lost_money_pct": round(float((np.array([r["wheel_return_pct"] for r in res]) < 0).mean()) * 100, 1),
+                        "worst": {k: worst[k] for k in ("start", "end", "diff_pct", "wheel_return_pct", "hold_return_pct")},
+                        "best": {k: best[k] for k in ("start", "end", "diff_pct", "wheel_return_pct", "hold_return_pct")}})
+    return {"ending_now": ending, "rolling": rolling, "step_days": ROLL_STEP_DAYS}
+
+
 SCHEDULE_LABELS = {"weekly": "Once a week: Monday → Friday", "twice": "Twice a week: Monday → Wednesday, Thursday → Friday"}
 WINDOW_LABELS = {"mon_fri": "Monday → Friday", "mon_wed": "Monday → Wednesday", "thu_fri": "Thursday → Friday"}
 
@@ -994,6 +1065,9 @@ def backtest(ticker, px, earn, now_et=None, peers=(), wiki=None, analyst=None, n
         "summary": weekly.get("calls_only"),
         "cash_interest": tbill is not None,
         **wheels,
+        "horizons": {base + ("_topup" if topup else ""): {m: horizons(per[sk], m, tbill, topup=topup, legs=legs)
+                                                         for m in ("delta", "study")}
+                     for base, sk, legs in (("wheel", "weekly", 1), ("wheel2", "twice", 2)) for topup in (False, True)},
         "policies": POLICIES,
         "policy_summary": {k: {m: (W or {}).get("summary") for m, W in v.items()} for k, v in policy_wheels.items()},
     }
