@@ -29,7 +29,8 @@ at Monday's open, compares assigned weeks with weeks that expired worthless, and
 assigned week's 10 most similar earlier weeks ("lookalikes") with how those turned out. A
 shuffle test shows whether lookalikes predict assignment better than chance.
 
-Output: data/backtest/<TICKER>.json, read by index.html.
+Output: data/backtest/<TICKER>.json (read by index.html when a ticker loads) and
+data/backtest/<TICKER>_history.json (every trade since the start, loaded when you ask for it).
 """
 from __future__ import annotations
 
@@ -178,13 +179,16 @@ def put_strike(w, method, history):
     return k if k < w["S"] else round_down(w["S"] - w["step"] / 2, w["step"])
 
 
-def run_weeks(F: pd.DataFrame, earn_dates: list, now_et=None):
-    """Covered calls only: a call every Monday, assigned or not, on the same 100 shares."""
-    rows, history = [], []          # history: z-scores of earlier non-earnings weeks
-    for w in week_info(F, earn_dates, now_et):
+def run_trades(P: list):
+    """Covered calls only: a call every period of the schedule, assigned or not, on the same
+    100 shares. Each window (e.g. Mon -> Wed, Thu -> Fri) keeps its own history for the
+    history-based strike, since a 2-day and a 5-day trade move by different amounts."""
+    rows, histories = [], {}        # history: z-scores of earlier non-earnings periods, per window
+    for w in P:
+        history = histories.setdefault(w["leg"], [])
         S, close = w["S"], w["close"]
-        row = {"monday": w["e"].date().isoformat(), "expiry": w["x"].date().isoformat(), "open": round(S, 2),
-               "close": round(close, 2), "earnings": w["earnings"], "hot": w["hot"]}
+        row = {"monday": w["e"].date().isoformat(), "expiry": w["x"].date().isoformat(), "leg": w["leg"],
+               "open": round(S, 2), "close": round(close, 2), "earnings": w["earnings"], "hot": w["hot"]}
         for name in ("delta", "study"):
             K = call_strike(w, name, history)
             if K is None:
@@ -195,9 +199,36 @@ def run_weeks(F: pd.DataFrame, earn_dates: list, now_et=None):
                          "assigned": close > K, "est_premium": round(prem, 2),
                          "given_up": round(given, 2), "est_net": round((prem - given) * 100 - FEE, 2)}
         rows.append(row)
-        if not w["earnings"]:           # only after the week is over does it join the history
+        if not w["earnings"]:           # only after the period is over does it join the history
             history.append((close / S - 1) / w["sig_w"])
     return rows
+
+
+def run_weeks(F: pd.DataFrame, earn_dates: list, now_et=None):
+    return run_trades(week_info(F, earn_dates, now_et))
+
+
+ROW_FIELDS = ["date", "expiry", "window", "open", "close", "earnings", "hot",
+              "delta_strike", "delta_assigned", "delta_premium", "delta_net",
+              "study_strike", "study_assigned", "study_premium", "study_net"]
+
+
+def pack_row(r):
+    """Calls-only rows as short arrays (see ROW_FIELDS) so ten years fit in a small file."""
+    out = [r["monday"], r["expiry"], r["leg"], r["open"], r["close"], int(r["earnings"]), int(r["hot"])]
+    for m in ("delta", "study"):
+        x = r.get(m)
+        out += [x["strike"], int(x["assigned"]), x["est_premium"], x["est_net"]] if x else [None, None, None, None]
+    return out
+
+
+LOG_FIELDS = ["date", "expiry", "window", "holding", "open", "close", "action", "strike", "premium",
+              "outcome", "added", "cash"]
+
+
+def pack_log(e):
+    return [e["date"], e["expiry"], e["leg"], 1 if e["holding"] == "shares" else 0, e["open"], e["close"],
+            e["action"], e.get("strike"), e.get("premium"), e.get("outcome"), e.get("added"), e.get("cash")]
 
 
 def wheel_sim(weeks, method, tbill=None, topup=False, legs_per_week=1):
@@ -307,7 +338,7 @@ def wheel_sim(weeks, method, tbill=None, topup=False, legs_per_week=1):
               "trades_per_week": legs_per_week})
     timeline = [[t[0], round(t[1]), round(t[2]), t[3]] for t in timeline]     # whole dollars for the chart
     return {"summary": c, "timeline": timeline, "events": events[-200:], "events_total": len(events),
-            "log": log[-52 * legs_per_week:]}
+            "log": log[-52 * legs_per_week:], "log_all": log}
 
 
 def summarize(rows, method, rules=True):
@@ -330,6 +361,12 @@ def summarize(rows, method, rules=True):
         "worst_week": min((r[method]["est_net"] for r in use), default=None),
         "first": use[0]["monday"], "last": use[-1]["monday"],
         "by_year": sorted(years.values(), key=lambda y: y["year"]),
+        "by_window": [{"window": leg, "n": len(g), "assigned": sum(1 for r in g if r[method]["assigned"]),
+                       "rate": round(sum(1 for r in g if r[method]["assigned"]) / len(g), 4),
+                       "est_premium": round(sum(r[method]["est_premium"] for r in g) * 100, 2),
+                       "est_net": round(sum(r[method]["est_net"] for r in g), 2)}
+                      for leg in dict.fromkeys(r.get("leg", "mon_fri") for r in use)
+                      for g in [[r for r in use if r.get("leg", "mon_fri") == leg]]],
     }
 
 
@@ -344,7 +381,7 @@ K_TEST = 50            # lookalikes used for the steadier rate and the chance te
 MIN_POOL = 52          # a week needs a year of earlier weeks before it gets lookalikes
 MIN_SHARED = 4         # signals two weeks must both have to be compared
 SHUFFLES = 200
-DETAIL_WEEKS = 30      # assigned weeks listed in full, per side
+DETAIL_WEEKS = 20      # assigned trades listed in full, per side
 PCT_SIGNALS = {"ret_1d", "ret_5d", "ret_20d", "pct_ma20", "pct_ma50", "hv20", "rel_qqq_5d", "qqq_5d", "smh_5d",
                "peers_1d", "peers_5d", "dxy_5d", "oil_5d", "gap_open", "pt_gap"}
 
@@ -367,9 +404,10 @@ def shown(f, v):
 
 
 def week_readings(F: pd.DataFrame, weeks: list, news: pd.Series | None):
-    """One row per non-earnings Monday -> Friday week: the readings known at Monday's open
-    (previous close for price-based signals; the entry day for page views, analysts, headlines)
-    and whether the site's standard call / put would have been assigned."""
+    """One row per non-earnings trade in one window: the readings known at the entry day's open
+    (previous close for price-based signals; the entry day for page views, analysts, headlines),
+    whether the site's standard call / put would have been assigned, and the estimated result
+    per contract (premium, minus anything given up past the strike, minus the fee)."""
     pos = {d: i for i, d in enumerate(F.index)}
     rows = []
     for w in weeks:
@@ -383,9 +421,12 @@ def week_readings(F: pd.DataFrame, weeks: list, news: pd.Series | None):
         r["gap_open"] = w["S"] / prev["close"] - 1 if prev["close"] > 0 else np.nan
         r["news_tone"] = float(news.get(w["e"], np.nan)) if news is not None else np.nan
         kc, kp = call_strike(w, "delta", []), put_strike(w, "delta", [])
-        r.update({"entry": w["e"], "expiry": w["x"], "S": w["S"], "close": w["close"],
-                  "ret": w["close"] / w["S"] - 1, "kc": kc, "kp": kp,
-                  "call": w["close"] > kc, "put": w["close"] < kp})
+        S, close = w["S"], w["close"]
+        net_c = (bs_call(S, kc, w["T"], w["vol"]) - max(0.0, close - kc)) * 100 - FEE
+        net_p = (bs_put(S, kp, w["T"], w["vol"]) - max(0.0, kp - close)) * 100 - FEE
+        r.update({"entry": w["e"], "expiry": w["x"], "S": S, "close": close,
+                  "ret": close / S - 1, "kc": kc, "kp": kp, "net_call": net_c, "net_put": net_p,
+                  "call": close > kc, "put": close < kp})
         rows.append(r)
     return pd.DataFrame(rows)
 
@@ -406,6 +447,85 @@ def _distances(P: np.ndarray, q: np.ndarray):
         dist = np.nanmean(np.where(np.isnan(d), np.nan, d), axis=1) if d.size else d
     dist = np.where(shared >= MIN_SHARED, dist, np.nan)
     return dist
+
+
+RECENT_FRAC = 0.30     # "held up recently": same direction in the most recent 30% of trades
+
+
+def two_prop_p(a: pd.Series, b: pd.Series):
+    """Two-sided test that two assignment rates differ (pooled two-proportion z-test)."""
+    n1, n2 = len(a), len(b)
+    p1, p2 = float(a.mean()), float(b.mean())
+    pool = (a.sum() + b.sum()) / (n1 + n2)
+    se = math.sqrt(pool * (1 - pool) * (1 / n1 + 1 / n2))
+    if se == 0:
+        return 1.0
+    return float(2 * (1 - rs.norm_cdf(abs(p1 - p2) / se)))
+
+
+def _range_text(f, lo, hi, first, last):
+    if first:
+        return f"below {shown(f, hi)}"
+    if last:
+        return f"above {shown(f, lo)}"
+    return f"{shown(f, lo)} to {shown(f, hi)}"
+
+
+def favorable(R: pd.DataFrame, side: str):
+    """When selling worked best: each signal's readings split into thirds (low / middle / high),
+    with the assignment rate and average estimated result per contract in each third.
+    Tested on the assignment rate (real closing prices), top third vs bottom third, with
+    false-discovery control across signals, plus a check that the difference points the same
+    way in the most recent 30% of trades. The estimated result is shown but not tested, since
+    the premium estimate itself comes from the volatility reading."""
+    net = R["net_call" if side == "call" else "net_put"].astype(float)
+    y = R[side].astype(bool)
+    cut_recent = int(len(R) * (1 - RECENT_FRAC))
+    rows = []
+    for f in SIGNAL_LABELS:
+        if f not in R:
+            continue
+        x = R[f].astype(float)
+        ok = x.notna()
+        if ok.sum() < 90 or x[ok].nunique() < 3:
+            continue
+        try:
+            codes, edges = pd.qcut(x[ok], 3, labels=False, retbins=True, duplicates="drop")
+        except ValueError:
+            continue
+        nb = int(codes.max()) + 1 if len(codes) else 0
+        if nb < 2:
+            continue
+        bins = []
+        for b in range(nb):
+            m = codes == b
+            idx = codes.index[m]
+            bins.append({"range": _range_text(f, edges[b], edges[b + 1], b == 0, b == nb - 1),
+                         "n": int(m.sum()), "assigned": int(y[idx].sum()),
+                         "rate": round(float(y[idx].mean()) * 100, 1),
+                         "avg_net": round(float(net[idx].mean()), 2)})
+        lo_i, hi_i = codes.index[codes == 0], codes.index[codes == nb - 1]
+        if len(lo_i) < 20 or len(hi_i) < 20:
+            continue
+        p = two_prop_p(y[hi_i], y[lo_i])
+        diff = float(y[hi_i].mean() - y[lo_i].mean())
+        pos = pd.Series(range(len(R)), index=R.index)
+        rh, rl = hi_i[pos[hi_i] >= cut_recent], lo_i[pos[lo_i] >= cut_recent]
+        recent = float(y[rh].mean() - y[rl].mean()) if len(rh) >= 10 and len(rl) >= 10 else None
+        # favorable = least often assigned; ties go to the better estimated result
+        best = min(range(nb), key=lambda b: (bins[b]["rate"], -bins[b]["avg_net"]))
+        worst = max(range(nb), key=lambda b: (bins[b]["rate"], -bins[b]["avg_net"]))
+        rows.append({"key": f, "label": SIGNAL_LABELS[f], "bins": bins, "p": round(p, 4),
+                     "high_minus_low": round(diff * 100, 1),
+                     "recent_high_minus_low": None if recent is None else round(recent * 100, 1),
+                     "recent_same": None if recent is None or diff == 0 else bool(np.sign(recent) == np.sign(diff)),
+                     "best": best, "worst": worst})
+    passed = rs.bh_pass([r["p"] for r in rows])
+    for r, ok in zip(rows, passed):
+        r["found"] = bool(ok)
+    rows.sort(key=lambda r: (not r["found"], r["p"]))
+    return {"signals": rows, "avg_net": round(float(net.mean()), 2), "rate": round(float(y.mean()) * 100, 1),
+            "n": int(len(R)), "recent_frac": RECENT_FRAC}
 
 
 def lookalike_side(R: pd.DataFrame, P: pd.DataFrame, core: list, side: str, current: dict | None, rng):
@@ -486,15 +606,16 @@ def lookalike_side(R: pd.DataFrame, P: pd.DataFrame, core: list, side: str, curr
     test["beats_chance"] = bool(test["p"] is not None and test["p"] < 0.05 and (test["gap"] or 0) > 0)
 
     def reading_list(get_raw, get_pct):
-        return [{"key": f, "value": shown(f, get_raw(f)),       # labels are in "core"
-                 "pct": None if get_pct(f) != get_pct(f) else round(float(get_pct(f)))} for f in core]
+        # [shown value, rank 0-100] in the order of "core" (labels live there)
+        return [[shown(f, get_raw(f)), None if get_pct(f) != get_pct(f) else round(float(get_pct(f)))] for f in core]
 
     def neighbor_list(idx, dd):
         out = []
         for i, d in zip(idx, dd):
             row = R.iloc[int(i)]
-            out.append({"monday": row["entry"].date().isoformat(), "assigned": bool(row[side]),
-                        "ret_pct": round(float(row["ret"]) * 100, 2), "similarity": round(100 - float(d), 1)})
+            # [entry date, assigned 1/0, move open -> expiry close %, similarity %]
+            out.append([row["entry"].date().isoformat(), int(bool(row[side])),
+                        round(float(row["ret"]) * 100, 1), round(100 - float(d))])
         return out
 
     detail = []
@@ -521,10 +642,11 @@ def lookalike_side(R: pd.DataFrame, P: pd.DataFrame, core: list, side: str, curr
                    "lookalikes_assigned": int(y[near[:K_NEAR]].sum()),
                    "rate_wide": round(float(y[near].mean()) * 100, 1)}
     return {"signals": sig_rows, "test": test, "detail": detail, "now": now,
-            "assigned_weeks": int(y.sum()), "weeks": n}
+            "favorable": favorable(R, side), "assigned_weeks": int(y.sum()), "weeks": n}
 
 
 def lookalikes(F: pd.DataFrame, weeks: list, news: pd.Series | None, news_now=None, seed=7):
+    """weeks: the periods of ONE window (e.g. every Monday -> Friday)."""
     R = week_readings(F, weeks, news)
     if len(R) < MIN_POOL + 20:
         return None
@@ -553,11 +675,15 @@ def lookalikes(F: pd.DataFrame, weeks: list, news: pd.Series | None, news_now=No
             "puts": lookalike_side(R, P, core, "put", current, rng)}
 
 
+SCHEDULE_LABELS = {"weekly": "Once a week: Monday → Friday", "twice": "Twice a week: Monday → Wednesday, Thursday → Friday"}
+WINDOW_LABELS = {"mon_fri": "Monday → Friday", "mon_wed": "Monday → Wednesday", "thu_fri": "Thursday → Friday"}
+
+
 def backtest(ticker, px, earn, now_et=None, peers=(), wiki=None, analyst=None, news=None, news_now=None):
+    """Returns (report, history). The report is what the page loads first; the history file holds
+    every trade and every wheel step since the start, loaded only when you ask to see it all."""
     F = rs.build_features(px, ticker, list(peers), wiki, earn, analyst)
-    rows = run_weeks(F, earn, now_et)
-    weeks = week_info(F, earn, now_et)
-    twice = periods(F, earn, now_et, "twice")
+    per = {"weekly": week_info(F, earn, now_et), "twice": periods(F, earn, now_et, "twice")}
     tbill = None
     try:
         t = rs.load_prices(["^IRX"]).get("^IRX")
@@ -565,25 +691,56 @@ def backtest(ticker, px, earn, now_et=None, peers=(), wiki=None, analyst=None, n
             tbill = rs._clean(t)["Close"].dropna()
     except Exception as exc:
         print(f"  T-bill rate unavailable, cash earns nothing: {exc}", file=sys.stderr)
-    return {
-        "ticker": ticker,
-        "updated": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-        "window": "Monday open → Friday close",
-        "settings": {"delta": DELTA, "delta_hot": DELTA_HOT, "study_rate": HIST_RATE,
-                     "study_min_weeks": MIN_HISTORY_WEEKS, "fee": FEE},
-        "summary": {m: {"rules": summarize(rows, m, True), "all_weeks": summarize(rows, m, False)}
-                    for m in ("delta", "study")},
-        "earnings_weeks": sum(1 for r in rows if r["earnings"]),
-        "wheel": {m: wheel_sim(weeks, m, tbill) for m in ("delta", "study")},
-        "wheel_topup": {m: wheel_sim(weeks, m, tbill, topup=True) for m in ("delta", "study")},
-        "wheel2": {m: wheel_sim(twice, m, tbill, legs_per_week=2) for m in ("delta", "study")},
-        "wheel2_topup": {m: wheel_sim(twice, m, tbill, topup=True, legs_per_week=2) for m in ("delta", "study")},
-        "cash_interest": tbill is not None,
-        "lookalikes": _safe_lookalikes(F, weeks, news, news_now),
-        # keeps the file small: the last year of weeks, plus every week that got assigned
-        "weeks": [r for i, r in enumerate(rows)
-                  if i >= len(rows) - 52 or any(r.get(m, {}).get("assigned") for m in ("delta", "study"))],
+
+    schedules, hist_rows = {}, {}
+    for sk, P in per.items():
+        rows = run_trades(P)
+        if not rows:
+            continue
+        legs = [leg for leg, _, _ in SCHEDULES[sk] if any(w["leg"] == leg for w in P)]
+        last_day = pd.Timestamp(rows[-1]["monday"]) - pd.Timedelta(days=364)
+        recent = [pack_row(r) for r in rows
+                  if pd.Timestamp(r["monday"]) >= last_day or any(r.get(m, {}).get("assigned") for m in ("delta", "study"))]
+        schedules[sk] = {
+            "label": SCHEDULE_LABELS[sk],
+            "windows": [{"key": k, "label": WINDOW_LABELS[k]} for k in legs],
+            "calls_only": {m: {"rules": summarize(rows, m, True), "all_weeks": summarize(rows, m, False)}
+                           for m in ("delta", "study")},
+            "earnings_trades": sum(1 for r in rows if r["earnings"]),
+            # the last year of trades, plus every assigned one; the rest is in the history file
+            "rows": recent, "rows_total": len(rows),
+            "lookalikes": {k: _safe_lookalikes(F, [w for w in P if w["leg"] == k], news, news_now) for k in legs},
+        }
+        hist_rows[sk] = [pack_row(r) for r in rows]
+
+    wheels = {
+        "wheel": {m: wheel_sim(per["weekly"], m, tbill) for m in ("delta", "study")},
+        "wheel_topup": {m: wheel_sim(per["weekly"], m, tbill, topup=True) for m in ("delta", "study")},
+        "wheel2": {m: wheel_sim(per["twice"], m, tbill, legs_per_week=2) for m in ("delta", "study")},
+        "wheel2_topup": {m: wheel_sim(per["twice"], m, tbill, topup=True, legs_per_week=2) for m in ("delta", "study")},
     }
+    hist_logs = {}
+    for k, bym in wheels.items():
+        for m, W in bym.items():
+            if W:
+                hist_logs.setdefault(k, {})[m] = [pack_log(e) for e in W.pop("log_all")]
+    updated = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    weekly = schedules.get("weekly", {})
+    report = {
+        "ticker": ticker, "updated": updated, "version": 2,
+        "settings": {"delta": DELTA, "delta_hot": DELTA_HOT, "put_delta": PUT_DELTA, "put_delta_sliding": PUT_DELTA_SLIDING,
+                     "study_rate": HIST_RATE, "put_study_rate": PUT_HIST_RATE,
+                     "study_min_weeks": MIN_HISTORY_WEEKS, "fee": FEE},
+        "row_fields": ROW_FIELDS, "log_fields": LOG_FIELDS,
+        "schedules": schedules,
+        # kept for pages from before the schedule switch (Monday -> Friday only)
+        "summary": weekly.get("calls_only"),
+        "cash_interest": tbill is not None,
+        **wheels,
+    }
+    history = {"ticker": ticker, "updated": updated, "row_fields": ROW_FIELDS, "log_fields": LOG_FIELDS,
+               "calls_only": hist_rows, "wheel_logs": hist_logs}
+    return report, history
 
 
 def _safe_lookalikes(F, weeks, news, news_now):
@@ -608,10 +765,11 @@ def main():
         try:
             d = rs.load_inputs(tk, cfg, px_market)
             news, news_now = rs.headline_tone(tk)
-            rep = backtest(tk, d["px"], d["earn"], peers=d["peers"], wiki=d["wiki"], analyst=d["analyst"],
-                           news=news, news_now=news_now)
+            rep, hist = backtest(tk, d["px"], d["earn"], peers=d["peers"], wiki=d["wiki"], analyst=d["analyst"],
+                                 news=news, news_now=news_now)
             (OUT_DIR / f"{tk}.json").write_text(json.dumps(rep, separators=(",", ":")))
-            s = rep["summary"]["delta"]["rules"]
+            (OUT_DIR / f"{tk}_history.json").write_text(json.dumps(hist, separators=(",", ":")))
+            s = rep["schedules"]["weekly"]["calls_only"]["delta"]["rules"]
             wh = (rep["wheel"]["delta"] or {}).get("summary", {})
             print(f"{tk}: {s.get('assigned', 0)} of {s.get('n', 0)} Monday calls assigned (0.20-delta estimate); "
                   f"wheel {wh.get('wheel_return_pct')}% vs holding {wh.get('hold_return_pct')}%")
