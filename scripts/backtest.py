@@ -168,18 +168,23 @@ def run_weeks(F: pd.DataFrame, earn_dates: list, now_et=None):
     return rows
 
 
-def wheel_sim(weeks, method, tbill=None):
+def wheel_sim(weeks, method, tbill=None, topup=False):
     """The wheel: start owning 100 shares with no cash. Holding shares -> sell a covered call each
     Monday. Called away -> hold the cash and sell a cash-secured put each Monday, but only if the
     cash covers strike x 100; otherwise that week is paused. Put assigned -> buy 100 shares at the
     strike and go back to selling calls. Earnings weeks are skipped in both phases.
     Cash earns the 3-month Treasury bill rate each week, roughly what a money market fund
-    (like Fidelity's core position) pays, when that rate series is available."""
+    (like Fidelity's core position) pays, when that rate series is available.
+
+    topup=True: instead of pausing, add just enough money to cover the put and keep going.
+    The benchmark then also buys the stock with each deposit on the same day, so the
+    comparison isn't flattered by the extra money."""
     shares, cash = 100, 0.0
     history, timeline, events, log = [], [], [], []
     c = {"call_weeks": 0, "put_weeks": 0, "paused": 0, "earnings_skipped": 0, "no_history": 0,
          "calls_assigned": 0, "puts_assigned": 0, "call_premium": 0.0, "put_premium": 0.0, "fees": 0.0,
-         "longest_pause": 0, "interest": 0.0}
+         "longest_pause": 0, "interest": 0.0, "added": 0.0, "topups": 0, "largest_topup": 0.0}
+    bench_extra_shares = 0.0          # shares the benchmark buys with the same deposits
     run = 0
     for n_w, w in enumerate(weeks):
         S, close, T, vol = w["S"], w["close"], w["T"], w["vol"]
@@ -216,13 +221,20 @@ def wheel_sim(weeks, method, tbill=None):
             if K is None:
                 c["no_history"] += 1
                 entry["action"] = "no_history"
-            elif cash < K * 100:
+            elif cash < K * 100 and not topup:
                 c["paused"] += 1
                 entry.update({"action": "paused", "strike": round(K, 2), "cash": round(cash, 2)})
                 run += 1
                 c["longest_pause"] = max(c["longest_pause"], run)
             else:
                 run = 0
+                if cash < K * 100:        # add money to cover the put
+                    add = K * 100 - cash
+                    cash += add
+                    c["added"] += add; c["topups"] += 1; c["largest_topup"] = max(c["largest_topup"], add)
+                    bench_extra_shares += add / S
+                    entry["added"] = round(add, 2)
+                    events.append({"date": day, "type": "added money", "amount": round(add, 2), "strike": round(K, 2), "close": round(close, 2)})
                 prem = bs_put(S, K, T, vol) * 100
                 cash += prem - FEE
                 c["put_weeks"] += 1; c["put_premium"] += prem; c["fees"] += FEE
@@ -234,16 +246,18 @@ def wheel_sim(weeks, method, tbill=None):
                     events.append({"date": day, "type": "bought back", "strike": round(K, 2), "close": round(close, 2)})
         if not w["earnings"]:
             history.append((close / S - 1) / w["sig_w"])
-        timeline.append([day, round(cash + shares * close, 2), round(100 * close, 2), 1 if shares else 0])
+        timeline.append([day, round(cash + shares * close, 2), round((100 + bench_extra_shares) * close, 2), 1 if shares else 0])
         log.append(entry)
     if not weeks:
         return None
     start = 100 * weeks[0]["S"]
     end_wheel, end_hold = timeline[-1][1], timeline[-1][2]
     c = {k: (round(v, 2) if isinstance(v, float) else v) for k, v in c.items()}
-    c.update({"start_value": round(start, 2), "end_wheel": end_wheel, "end_hold": end_hold,
-              "wheel_return_pct": round((end_wheel / start - 1) * 100, 1),
-              "hold_return_pct": round((end_hold / start - 1) * 100, 1),
+    c.update({"topup_mode": topup, "bench_shares": round(100 + bench_extra_shares, 4),
+              "net_of_added": round(end_wheel - c["added"], 2),
+              "start_value": round(start, 2), "end_wheel": end_wheel, "end_hold": end_hold,
+              "wheel_return_pct": round((end_wheel / (start + c["added"]) - 1) * 100, 1),
+              "hold_return_pct": round((end_hold / (start + c["added"]) - 1) * 100, 1),
               "difference": round(end_wheel - end_hold, 2),
               "premium_total": round(c["call_premium"] + c["put_premium"], 2),
               "ends_holding": bool(shares), "cash_now": round(cash, 2),
@@ -295,6 +309,7 @@ def backtest(ticker, px, earn, now_et=None):
                     for m in ("delta", "study")},
         "earnings_weeks": sum(1 for r in rows if r["earnings"]),
         "wheel": {m: wheel_sim(weeks, m, tbill) for m in ("delta", "study")},
+        "wheel_topup": {m: wheel_sim(weeks, m, tbill, topup=True) for m in ("delta", "study")},
         "cash_interest": tbill is not None,
         # keeps the file small: the last year of weeks, plus every week that got assigned
         "weeks": [r for i, r in enumerate(rows)
