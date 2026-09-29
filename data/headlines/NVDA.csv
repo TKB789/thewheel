@@ -151,6 +151,7 @@ cb82acb9-4334-35bd-acba-c41931a380df,2026-09-28T13:05+00:00,Proactive,Nvidia lau
 b78a08b0-7fee-397b-90ff-d2abab49ecce,2026-09-28T13:08+00:00,Insider Monkey,Retail Investors Think These 2 Stocks Could Be The Next NVIDIA And Sandisk,0.7351
 11019cb4-d7c9-362c-b291-eaff2d565070,2026-09-28T13:09+00:00,Insider Monkey,Marvell vs. Broadcom: Which Custom AI Chip Stock Has More Room to Run?,0.9052
 d9e61579-89e7-344e-9919-d2ec5d9ddeba,2026-09-28T13:11+00:00,Simply Wall St.,ServiceNow Stock And 2 AI Security Plays Worth Watching Now,0.9274
+aab40f2c-a553-44d2-9e41-bbd0f6e3087a,2026-09-28T13:14+00:00,Yahoo Finance Video,Nvidia latest: What to know about its new AI security system & stock buyback increase,0.5719
 283826b8-abfa-3e86-8e9b-bbec1983a149,2026-09-28T13:17+00:00,MT Newswires,"Exchange-Traded Funds, Equity Futures Lower Pre-Bell Monday as Oil Prices Rise",0.5267
 af9bdfa9-d106-34c6-a13a-d0bd1fc001cc,2026-09-28T13:20+00:00,Motley Fool,Prediction: This Lesser-Known ETF Will Be the Best Bear Market Buy,0.6369
 34e918d0-4bdf-3ebf-98cb-d3d0bd3b7922,2026-09-28T13:21+00:00,Motley Fool,Could This Mid-Cap GLP-1 Stock Be a Better Buy Than Eli Lilly?,0.7783
@@ -279,5 +280,46 @@ c97226b7-3634-3157-b923-ef68d084b93a,2026-09-28T20:31+00:00,Motley Fool,"Not Nvi
 3bf53f24-5f76-364d-9cab-3b432beefca8,2026-09-28T20:41+00:00,GuruFocus.com,Nvidia Just Put a Record $150 Billion Behind Its Own Stock,-0.1027
 862e4de3-f93b-370c-a4c4-e76ba0ff21ae,2026-09-28T20:42+00:00,Stocktwits,"Michael Burry Swaps MU, NBIS, NVDA, PLTR Shorts For Puts — Says AI Bubble May Burst ‘Sooner Than Later’",0.4019
 f73f9cb5-75ae-3bef-8981-723dc5f7fb14,2026-09-28T20:42+00:00,GuruFocus.com,SK Hynix Stock Falls 5.1% as Rubin Memory Moves Into View,0.0
+eb177e98-996e-3347-8e9e-5a0f8ef1b091,2026-09-28T20:44+00:00,Trefis,Did The Market Read Marvell Stock Right?,-0.128
+ed590524-21db-3350-9dee-d584b2cc5fa8,2026-09-28T20:45+00:00,Zacks,Why the Market Dipped But Nvidia (NVDA) Gained Today,0.5267
 cdcb92d0-bfa6-3a42-be38-87e6654244ec,2026-09-28T20:47+00:00,Investing.com,AMD’s $8.2B bet on World Labs is a direct shot at Nvidia’s AI dominance,0.6808
 35969249-b51b-3ba3-8c6c-a06251d1d0ec,2026-09-28T20:48+00:00,Investor's Business Daily,"Dow Jones Futures: Trump Sparks Stock Market Losses; Elon Musk-Led SpaceX, Tesla In Focus",-0.802
+b65e737a-53fa-352f-8501-b24e821db22b,2026-09-28T20:52+00:00,Motley Fool,Why BlackLine Stock Was Sliding Today,0.0
+1a67b712-7545-3ee0-944f-ef4aafe558fe,2026-09-28T21:00+00:00,Motley Fool,"ChatGPT Asks & David Answers, Vol. 4",-0.3818
+21db0579-8b1b-33ce-994c-8b1e0ee1dc7b,2026-09-28T21:05+00:00,MT Newswires,"Rapid AI Deployment Could Pose Systemic Risks, IMF Says",-0.7003
+1567cba2-21e2-3929-bb39-ef22af46ed1a,2026-09-28T21:05+00:00,Motley Fool,The S&P 500 Has Only Grown Earnings This Fast Twice Before. History Says This Is What Happens Next,0.0
+d1d4e3a9-651b-380b-8ac5-8be42d2b7fee,2026-09-28T21:06+00:00,Motley Fool,Intel vs. Nvidia: Which Semiconductor Stock Is a Better Buy in 2026?,0.7178
+e59aa7f6-8f92-3e6f-b9c1-be69d6bd8531,2026-09-28T21:15+00:00,MT Newswires,Update: Wall Street Dips as US-Iran Standoff Keeps Traders Anxious,-0.25
+0c6c6b7e-ca93-4f21-85c3-99d565f5a283,2026-09-28T21:18+00:00,Yahoo Personal Finance,What Nvidia's $150 billion stock buyback means for shareholders and potential investors,0.0
+5affa78d-278a-3475-af98-157c9375095e,2026-09-28T21:20+00:00,Motley Fool,Is Oracle Stock a Buy Now?,-0.5267
+40a15e6d-5456-3b3d-a134-f13fd37f23db,2026-09-28T21:25+00:00,Motley Fool,Why Lexicon Pharmaceuticals Stock Popped by Almost 6% Today,0.3182
+81416aad-19aa-30c9-bba8-d7ed159ee43c,2026-09-28T21:32+00:00,TheStreet,Nvidia stock sends investors a $150 billion signal,0.0
+5ac969ac-e572-3e98-86ae-f66ca6f970d1,2026-09-28T21:37+00:00,Stocktwits,"AMD Bolsters AI Vision With $8.2B Acquisition Of Fei-Fei Li’s World Labs, Stock Drops 4%",0.4588
+bcd29732-2013-3097-94e6-65d1e105c8f5,2026-09-28T21:37+00:00,CNN Business,Gecko Robotics & Nvidia team up to put guardrails on AI,0.0
+1c2a18e8-3266-3c2b-8c09-71c71f5003a4,2026-09-28T21:45+00:00,CNN Business,Nvidia launches tool to keep AI from going rogue,0.4215
+7a961ef2-dd89-334b-b42e-483de75d5c7a,2026-09-28T21:56+00:00,Fortune,AMD acquires startup cofounded by ‘godmother of AI’ Fei-Fei Li for $8.2 billion,0.0
+d5578600-764f-3931-8a13-9cb72bb0e6de,2026-09-28T22:02+00:00,Motley Fool,SpaceX's Starship Just Reached Orbit For The First Time. Is it Lift-Off Time For The Stock?,0.1027
+565a94d9-afb9-360e-9dbd-3bb31a82b1a4,2026-09-28T22:05+00:00,Motley Fool,What's Wrong With Netflix Stock?,-0.7707
+0b7a2c6a-c201-39e5-990b-708cf5eac4e8,2026-09-28T22:11+00:00,24/7 Wall St.,Forget SPY: Invesco’s Fund Gives the Smallest S&P 500 Company the Same Say as the Largest,-0.5267
+b3fa37b5-0d66-36e2-87c0-64e825575d3a,2026-09-28T22:18+00:00,Motley Fool,Is Micron Stock a Sell After This Weekend's Negative AI News?,-0.3612
+e4a66e48-ee79-3579-ba82-9cd368bf3ca1,2026-09-28T22:30+00:00,Motley Fool,Nvidia’s Latest $150 Billion Move Delivers a Clear Message to Investors About What’s Next for the Stock.,0.3818
+83082543-de3d-3a4c-86c3-8890eae86fae,2026-09-28T22:38+00:00,StockStory,Why Nvidia (NVDA) Stock Is Trading Up Today,0.5267
+98005959-5a39-388f-b645-520323538a7a,2026-09-28T22:46+00:00,24/7 Wall St.,Nvidia’s Glass Packaging Push Could Reshape AI Chips,0.0
+6bae6237-02c2-3c91-a30d-9f4d3b75b477,2026-09-28T22:50+00:00,Motley Fool,1 Monster AI Stock Greg Abel and Warren Buffett Are Extremely Bullish On,0.4588
+4ad8ffd0-2ce5-3507-98af-ed8c8d724c7f,2026-09-28T23:07+00:00,Stocktwits,"S&P 500, Dow, Nasdaq Drop Under Pressure From Elevated Yields As Investors Shrug Off Trump’s Iran Sanction Relief — NVDA, BA, AMD, NVTS, CBRS In Focus",0.4588
+21d6a8e8-a518-3432-a82c-000daf7f0e0c,2026-09-28T23:16+00:00,Simply Wall St.,3 Australian AI Stocks For September 2026,0.836
+bdaa321a-0705-3a5f-bb17-05d9128c6182,2026-09-28T23:17+00:00,Zacks,Use This Zacks Tool to Find Strong AI Stocks,0.8481
+c907793b-c39d-3591-acde-52cbb64bf7b2,2026-09-28T23:21+00:00,Bloomberg,Samsung to Invest $1 Billion in KKR’s AI Infrastructure Company,0.2732
+7beaee79-e313-3c0c-bfe2-af48791f25ab,2026-09-28T23:34+00:00,Motley Fool,Sandisk Jumped 22% the Day After Micron's Last Report. Micron Reports Again Wednesday.,0.0
+50baa67b-93a6-396f-82ee-218fab2de56a,2026-09-28T23:37+00:00,The Wall Street Journal,"Samsung Commits $1.0 Billion to AI Infrastructure Firm Backed by KKR, Nvidia",0.4927
+14bd3558-a065-3a68-a276-016dc032dcba,2026-09-29T00:20+00:00,Motley Fool,Nike Faces 2 Major Tests This Week. Earnings Isn't the One To Watch,0.2023
+9d9a3043-2a7e-30c0-8caf-dba135f703db,2026-09-29T00:33+00:00,Motley Fool,Conagra Brands's Next Earnings Report on Sep. 30 2026 Could Send the Stock Soaring. Here's Why.,0.0
+740f4ac4-9179-3fce-9382-8cc2b1863832,2026-09-29T00:46+00:00,StockStory,"Palo Alto Networks (PANW) Stock Trades Up, Here Is Why",0.296
+0854498a-2607-3ab1-85cd-86bfff40982a,2026-09-29T00:46+00:00,Motley Fool,Prediction: Rocket Lab Stock Trades Above $100 Again Before 2029,0.5267
+b3aa1dc8-128d-3963-ae59-940afa040cc2,2026-09-29T00:51+00:00,Investing.com,"Samsung, affiliates to invest $1 billion in AI infrastructure firm Helix",0.1027
+84de562b-9661-3f58-a863-067409d5919e,2026-09-29T01:11+00:00,Simply Wall St.,Top 3 Canadian AI Stocks With P S Under 17,0.8481
+7a42a4b0-7dd3-3a2d-852c-4c8a8f6d5300,2026-09-29T01:30+00:00,Insider Monkey,Is CEO Jensen Huang Becoming Nvidia (NVDA)’s Most Valuable Political Asset?,0.872
+e6eb1c69-c15c-3a4e-be23-223ba82179c7,2026-09-29T02:01+00:00,Insider Monkey,Jim Cramer Got His Wish With This Mega AI Stock’s Latest Announcement,0.9262
+275e8328-6551-3f1b-af7b-e2c47e86da9c,2026-09-29T02:01+00:00,Motley Fool,Meta Hasn't Split Its Stock Since Its IPO. Would a Stock Split Get It Into the Dow?,0.3094
+cff00955-b463-3b82-bb53-7bca09fd4474,2026-09-29T02:03+00:00,TheStreet,Baird's strong agentic AI call on Micron is spot on,0.1779
+858fa6e1-bcee-3497-95f7-0a5336c30964,2026-09-29T02:09+00:00,Simply Wall St.,Alibaba (NYSE:BABA) Nears Approval For RTX PRO 5500 Chip Purchases In China,0.9186
