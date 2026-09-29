@@ -252,6 +252,22 @@
   .jump { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; font-size: 13px; }
   .jump button { font: inherit; font-size: 13px; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--accent); cursor: pointer; }
   .jump button:hover { border-color: var(--accent); }
+  .fvgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 460px), 1fr)); gap: 10px; }
+  .fvc { border: 1px solid var(--line); border-radius: 8px; padding: 12px; background: var(--surface); }
+  .fvh { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 10px; }
+  .fvn { font-weight: 600; font-size: 14px; }
+  .fvh .muted, .fvh .chip { font-size: 12px; white-space: nowrap; }
+  .fvbars { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .fvbars.n2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .fvb { background: var(--surface-2); border-radius: 6px; padding: 8px; display: grid; gap: 3px; align-content: start; min-width: 0; }
+  .fvb.best { background: var(--good-bg); } .fvb.worst { background: var(--bad-bg); }
+  .fvb.hi { background: var(--info-bg); } .fvb.lo { background: var(--caution-bg); }
+  .fvl { font-size: 11px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+  .fvr { font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
+  .fvp { font-size: 13px; } .fvp b { font: 600 16px var(--mono); }
+  .fvb .bar { height: 5px; border-radius: 3px; background: var(--line); overflow: hidden; }
+  .fvb .bar i { display: block; height: 100%; background: var(--accent); }
+  .fvtag { font-size: 12px; font-weight: 600; }
   table.fv td { vertical-align: top; }
   table.fv td.third { min-width: 118px; white-space: normal; }
   table.fv td:last-child { white-space: nowrap; }
@@ -261,6 +277,10 @@
   table.fv td.third.worst { background: var(--bad-bg); }
   table.fv td.third.hi { background: var(--info-bg); }
   table.fv td.third.lo { background: var(--caution-bg); }
+  @media (max-width: 700px) {
+    .scroll table td:first-child, .scroll table th:first-child { white-space: normal; min-width: 110px; max-width: 42vw; }
+    .scroll table td, .scroll table th { padding-left: 8px; padding-right: 8px; }
+  }
   #gkBody table.pin1 td:first-child, #wPolCompare td:first-child, #stTable td:first-child { white-space: normal; min-width: 140px; max-width: 190px; font-size: 13px; }
   tr.bestrow td { background: var(--good-bg); }
   button.term { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: help;
@@ -478,11 +498,13 @@
               <option value="twice">Twice a week: Mon → Wed, Thu → Fri</option>
               <option value="tuewed">One-day trades: Tue → Wed, Thu → Fri</option>
             </select></label>
-          <label><span>When cash is short</span>
-            <select id="wShort" aria-label="When the cash doesn't cover the put">
-              <option value="pause">Pause</option>
+          <label><span>Rule</span>
+            <select id="wShort" aria-label="Wheel rule">
+              <option value="pause">Pause when cash is short</option>
               <option value="topup">Add money to keep going</option>
               <option value="cap">Buy back at the call strike or lower</option>
+              <option value="floor">Calls at or above the last put strike</option>
+              <option value="capfloor">Both price rules</option>
             </select></label>
           <label><span>Strikes (<button type="button" class="term" data-term="delta">delta</button>)</span>
             <select id="wMethod" aria-label="Strike method">
@@ -522,7 +544,7 @@
         <div class="chart-wrap" id="wChart"></div>
 
         <div id="wCompareWrap">
-          <h4 class="subhead">What to do when the cash doesn't cover the put</h4>
+          <h4 class="subhead">Every rule on this schedule</h4>
           <div class="scroll"><table id="wCompare"></table></div>
           <p class="sub" id="wCompareNote" style="margin:8px 0 14px"></p>
         </div>
@@ -626,9 +648,9 @@
         <p class="sub" id="lkSub"></p>
         <h4 class="subhead">When selling worked best</h4>
         <p class="sub" id="fvSub" style="margin:0 0 10px"></p>
-        <div class="scroll"><table id="fvTable" class="pin1 fv"></table></div>
+        <div class="fvgrid" id="fvTable"></div>
         <details id="fvMoreWrap"><summary>The other signals</summary>
-          <div class="scroll"><table id="fvMore" class="pin1 fv"></table></div>
+          <div class="fvgrid" id="fvMore" style="margin-top:10px"></div>
         </details>
         <details class="more"><summary>Typical readings: assigned vs expired worthless</summary>
         <p class="sub" style="margin:0 0 8px">Typical (median) reading in each group. Rank 0–100 is where the reading sat among all trades, averaged for assigned / expired trades; 50 is typical. "Before assignment" marks signals that pass the same false-discovery check the study uses.</p>
@@ -2072,25 +2094,27 @@ function renderFavorable(FV, calls, winLabel) {
     `Across all ${FV.n} trades: <strong>${FV.rate}%</strong> assigned, average estimated result ${signed(FV.avg_net)} per contract. Colors appear only on signals that pass the check: top third vs bottom third, controlled for testing many signals, and pointing the same way in the most recent ${Math.round(FV.recent_frac * 100)}% of trades.`;
   const verdict = (r) => !r.found ? `<span class="muted">Could be chance</span>`
     : r.passed && r.recent_same === false ? `<span class="chip neutral">Faded recently</span>` : `<span class="chip good">Holds up</span>`;
-  const row = (r) => {
+  // one card per signal: its three thirds side by side, with a bar for how often each was assigned
+  const top = Math.max(10, ...FV.signals.flatMap((r) => r.bins.map((b) => b.rate)));
+  const names = { 3: ["Low third", "Middle third", "High third"], 2: ["Low half", "High half"] };
+  const card = (r) => {
     const mark = r.found && r.recent_same !== false;
-    const nb = r.bins.length;
+    const nm = names[r.bins.length] || names[3];
     const cells = r.bins.map((b, i) => {
       const cls = !mark ? "" : i === r.best ? (calls ? "best" : "hi") : i === r.worst ? (calls ? "worst" : "lo") : "";
-      const tag = !mark ? "" : i === r.best ? " · least assigned" : i === r.worst ? " · most assigned" : "";
-      return `<td class="third ${cls}"><b>${b.rate}%</b> assigned<span class="r">${esc(b.range)}</span><span class="r">${b.n} trades · avg ${signed(b.avg_net)}</span>${tag ? `<span class="r"><strong>${tag.slice(3)}</strong></span>` : ""}</td>`;
-    });
-    while (cells.length < 3) cells.splice(1, 0, `<td class="third"><span class="muted">–</span></td>`);
-    return `<tr><td>${esc(r.label)}</td>${cells.join("")}<td>${verdict(r)}</td></tr>`;
+      const tag = !mark ? "" : i === r.best ? "least assigned" : i === r.worst ? "most assigned" : "";
+      return `<div class="fvb ${cls}"><div class="fvl">${nm[i]}</div><div class="fvr">${esc(b.range)}</div>
+        <div class="fvp"><b>${b.rate}%</b> assigned</div><div class="bar"><i style="width:${Math.min(100, b.rate / top * 100).toFixed(0)}%"></i></div>
+        <div class="fvr">${b.n} trades · avg ${signed(b.avg_net)}</div>${tag ? `<div class="fvtag">${tag}</div>` : ""}</div>`;
+    }).join("");
+    return `<div class="fvc"><div class="fvh"><span class="fvn">${esc(r.label)}</span>${verdict(r)}</div><div class="fvbars n${r.bins.length}">${cells}</div></div>`;
   };
-  const head = `<thead><tr><th>Signal</th><th>Low third</th><th>Middle third</th><th>High third</th><th>Result</th></tr></thead>`;
   const show = FV.signals.filter((r) => r.found);
   const first = show.length ? show : FV.signals.slice(0, 5);
   const rest = FV.signals.filter((r) => !first.includes(r));
-  $("fvTable").innerHTML = head + `<tbody>${first.map(row).join("")}</tbody>` +
-    (show.length ? "" : `<tfoot><tr><td colspan="5" class="muted">No signal passed the check for ${esc(winLabel)} ${what}s. These are the five closest.</td></tr></tfoot>`);
+  $("fvTable").innerHTML = (show.length ? "" : `<p class="sub" style="margin:0">No signal passed the check for ${esc(winLabel)} ${what}s. These are the five closest.</p>`) + first.map(card).join("");
   $("fvMoreWrap").hidden = !rest.length;
-  $("fvMore").innerHTML = head + `<tbody>${rest.map(row).join("")}</tbody>`;
+  $("fvMore").innerHTML = rest.map(card).join("");
 }
 
 function renderLookalikeWeek() {
@@ -2124,18 +2148,20 @@ function renderWheel() {
     if (!ok && $("wSched").value === k) $("wSched").value = "weekly";
   }
   const twice = $("wSched").value !== "weekly";
-  const SUFFIX = { pause: "", topup: "_topup", cap: "_cap" };
-  for (const m of ["topup", "cap"]) {                    // a rule the data file doesn't have yet can't be picked
+  const SUFFIX = { pause: "", topup: "_topup", cap: "_cap", floor: "_floor", capfloor: "_capfloor" };
+  for (const m of ["topup", "cap", "floor", "capfloor"]) {                    // a rule the data file doesn't have yet can't be picked
     const ok = !!(B && B[schedInfo().base + SUFFIX[m]] && B[schedInfo().base + SUFFIX[m]][method]);
     $("wShort").querySelector(`option[value="${m}"]`).disabled = !ok;
     if (!ok && $("wShort").value === m) $("wShort").value = "pause";
   }
-  const topup = $("wShort").value === "topup", cap = $("wShort").value === "cap";
-  const K = (topupFlag) => schedInfo().base + (topupFlag ? "_topup" : cap ? "_cap" : "");
+  const rule = $("wShort").value, topup = rule === "topup";
+  const cap = rule === "cap" || rule === "capfloor", floor = rule === "floor" || rule === "capfloor";
+  const priced = cap || floor;                          // a price rule: no site-recommendation version of these
+  const K = (topupFlag) => schedInfo().base + (topupFlag ? "_topup" : SUFFIX[rule] || "");
   const startSel = $("wStart").value;
   const polAvail = !!(B && B.policy_summary);
-  $("wPolicy").disabled = !polAvail || cap || startSel !== "all";
-  if (!polAvail || cap || startSel !== "all") $("wPolicy").value = "every";
+  $("wPolicy").disabled = !polAvail || priced || startSel !== "all";
+  if (!polAvail || priced || startSel !== "all") $("wPolicy").value = "every";
   const pol = $("wPolicy").value;
   if (startSel !== "all" && !state.starts) {
     $("wSub").textContent = "Loading the wheel started later…";
@@ -2160,7 +2186,7 @@ function renderWheel() {
   renderWheelCompare(B, method, startSel);
   renderPolicyCompare(B, method, K(topup), topup, twice);
   renderHorizons(B, method, K(topup), topup, twice);
-  $("wSub").textContent = `Starts ${/[wm]$/.test(startSel) ? `${fmtDate(s.first)} ${s.first.slice(0, 4)}` : fmtYear(s.first)} owning 100 ${B.ticker} shares and no cash. ${twice ? `${schedInfo().desc} Each is a covered call while holding shares, or a cash-secured put while holding cash, so a call assigned on Wednesday is followed by a put on Thursday.` : "While holding shares, a covered call is sold each Monday. When the shares are called away, a cash-secured put is sold each Monday instead."} ${topup ? "When the cash doesn't cover the put, just enough money is added to sell it, so the wheel never stops." : cap ? "Puts are only sold at or below the strike the shares were called away at, so you'd buy them back at that price or lower. The sale money always covers that, so nothing is added; when the stock has run far above it and that put pays almost nothing (under $5), the week is spent waiting." : "It's sold only in weeks when the cash covers the strike; otherwise that week is paused."} When a put is assigned, the shares are bought back and calls start again. Earnings weeks are skipped.${B.cash_interest ? " Cash earns the 3-month Treasury bill rate, roughly what a money market fund pays." : " Cash earns nothing here (the Treasury rate wasn't available)."}`;
+  $("wSub").textContent = `Starts ${/[wm]$/.test(startSel) ? `${fmtDate(s.first)} ${s.first.slice(0, 4)}` : fmtYear(s.first)} owning 100 ${B.ticker} shares and no cash. ${twice ? `${schedInfo().desc} Each is a covered call while holding shares, or a cash-secured put while holding cash, so a call assigned on Wednesday is followed by a put on Thursday.` : "While holding shares, a covered call is sold each Monday. When the shares are called away, a cash-secured put is sold each Monday instead."} ${topup ? "When the cash doesn't cover the put, just enough money is added to sell it, so the wheel never stops." : rule === "cap" ? "Puts are only sold at or below the strike the shares were called away at, so you'd buy them back at that price or lower. The sale money always covers that, so nothing is added; when the stock has run far above it and that put pays almost nothing (under $5), the week is spent waiting." : rule === "floor" ? "After a put is assigned, calls are only sold at or above that put's strike, so the shares are never called away for less than you paid for them (the usual rule of not selling calls below your cost). When the stock has fallen far below it and that call pays almost nothing (under $5), the week is spent holding the shares. Before the first put is assigned, calls use the usual strike. Puts are sold only when the cash covers them; otherwise that week is paused." : rule === "capfloor" ? "Both price rules: puts only at or below the strike the shares were called away at, and calls only at or above the strike the last put bought them at. So every round trip sells higher than it buys, plus premiums. When either side pays almost nothing (under $5), the week is spent waiting." : "It's sold only in weeks when the cash covers the strike; otherwise that week is paused."} When a put is assigned, the shares are bought back and calls start again. Earnings weeks are skipped.${B.cash_interest ? " Cash earns the 3-month Treasury bill rate, roughly what a money market fund pays." : " Cash earns nothing here (the Treasury rate wasn't available)."}`;
   if (pol !== "every") $("wSub").textContent += ` Following the site's recommendation${pol === "favorable" ? " (favorable weeks only)" : ""}: ${s.skipped_calls || 0} call and ${s.skipped_puts || 0} put ${twice ? "trades" : "weeks"} skipped, and strikes adjusted for similar past weeks once there's enough history.`;
   const diffCls = s.difference >= 0 ? "pos" : "neg";
   $("wTiles").innerHTML = `
@@ -2176,7 +2202,7 @@ function renderWheel() {
     <div class="tile"><div class="t-label">${topup ? "Money added" : "Switches and pauses"}</div><div class="t-big">${topup ? money(s.added, 0) : `${s.calls_assigned} / ${s.puts_assigned}`}</div>
       ${topup ? `<div class="t-line">${s.topups} deposit${s.topups === 1 ? "" : "s"}, largest ${money(s.largest_topup, 0)}</div>` : ""}
       <div class="t-line">Called away ${s.calls_assigned} time${s.calls_assigned === 1 ? "" : "s"} · bought back ${s.puts_assigned} time${s.puts_assigned === 1 ? "" : "s"}</div>
-      <div class="t-line">${topup ? `Value minus money added: ${signed(s.net_of_added)}` : cap ? `${s.cap_waits || 0} ${twice ? "trade" : "week"}${s.cap_waits === 1 ? "" : "s"} waiting for the price to come back toward the call strike` : `${s.paused} ${twice ? "trade" : "week"}${s.paused === 1 ? "" : "s"} paused, cash short of the put${s.longest_pause ? ` (longest stretch ${twice ? Math.round(s.longest_pause / 2) : s.longest_pause} weeks)` : ""}`}</div></div>`;
+      <div class="t-line">${topup ? `Value minus money added: ${signed(s.net_of_added)}` : floor ? `${s.floor_waits || 0} ${twice ? "trade" : "week"}${s.floor_waits === 1 ? "" : "s"} holding shares, waiting for the price to come back toward the put strike${cap ? ` · ${s.cap_waits || 0} waiting in cash for the call strike` : ""}` : cap ? `${s.cap_waits || 0} ${twice ? "trade" : "week"}${s.cap_waits === 1 ? "" : "s"} waiting for the price to come back toward the call strike` : `${s.paused} ${twice ? "trade" : "week"}${s.paused === 1 ? "" : "s"} paused, cash short of the put${s.longest_pause ? ` (longest stretch ${twice ? Math.round(s.longest_pause / 2) : s.longest_pause} weeks)` : ""}`}</div></div>`;
   $("wLegend").innerHTML = `<span><span class="key" style="background:var(--series-1)"></span>Wheel account (cash + shares)</span>
     <span><span class="key" style="background:var(--series-2)"></span>${topup ? "Holding 100 shares, plus buying shares with each deposit" : "Just holding 100 shares"}</span>
     <span><span class="keybox"></span>Weeks in cash (selling puts or paused)</span>`;
@@ -2188,6 +2214,7 @@ function renderWheel() {
     put: (e) => [e.added ? `Added ${money(e.added, 0)}, sold cash-secured put` : "Sold cash-secured put", e.outcome === "bought" ? `<span class="chip info">assigned, bought shares</span>` : `<span class="chip good">expired, kept cash</span>`],
     paused: (e) => ["Paused", `<span class="chip neutral">cash ${money(e.cash, 0)} short of ${money(e.strike * 100, 0)}</span>`],
     skip_earnings: () => ["Skipped", `<span class="chip neutral">earnings week</span>`],
+    floor_wait: (e) => ["Held shares", `<span class="chip neutral">call at ${money(e.strike)} or higher pays almost nothing</span>`],
     cap_wait: (e) => ["Waited", `<span class="chip neutral">put at ${money(e.strike)} or lower pays almost nothing</span>`],
     skip_flag: (e) => ["Skipped", `<span class="chip neutral">${e.outcome === "hold_off" ? "site said hold off" : "not a favorable week"}</span>`],
     no_history: () => ["Skipped", `<span class="chip neutral">not enough history yet</span>`],
@@ -2260,9 +2287,11 @@ function renderWheelCompare(B, method, startSel = "all") {
   const px = state.report ? state.report.price : null;
   const pick = (k) => startSel === "all" ? B[k] && B[k][method]
     : state.starts && state.starts.starts[k] && state.starts.starts[k][startSel] && state.starts.starts[k][startSel][method];
-  const base = schedInfo().base, cur = $("wShort").value;       // the schedule picked above, all three cash rules
+  const base = schedInfo().base, cur = $("wShort").value;       // the schedule picked above, every rule
   const rows = [[base, "Pause until the cash covers the put", pick(base), "pause"], [base + "_topup", "Add money to keep going", pick(base + "_topup"), "topup"],
-                [base + "_cap", "Buy back at the call strike or lower", pick(base + "_cap"), "cap"]]
+                [base + "_cap", "Buy back at the call strike or lower", pick(base + "_cap"), "cap"],
+                [base + "_floor", "Calls at or above the last put strike", pick(base + "_floor"), "floor"],
+                [base + "_capfloor", "Both price rules", pick(base + "_capfloor"), "capfloor"]]
     .filter((x) => x[2]).map(([key, label0, W, rule]) => {
       const label = label0 + (rule === cur ? ` <span class="chip info">shown</span>` : "");
       const s = W.summary;
@@ -2272,8 +2301,8 @@ function renderWheelCompare(B, method, startSel = "all") {
         <td>${money(s.added || 0, 0)}${s.topups ? ` <span class="muted">(${s.topups})</span>` : ""}</td><td>${signed(val - (s.added || 0) - s.start_value)}</td>
         <td>${money(bench, 0)} <span class="muted">${(s.bench_shares || 100).toFixed(1)} sh</span></td><td>${signed(val - bench)}</td></tr>`;
     });
-  $("wCompare").innerHTML = `<thead><tr><th>If the cash falls short</th><th>Ends with</th><th>Value now</th><th>Money added</th><th>Gain on money put in</th><th>Holding instead</th><th>Wheel vs holding</th></tr></thead><tbody>${rows.join("")}</tbody>`;
-  $("wCompareNote").textContent = `Both start with 100 shares worth ${money((pick("wheel") || B.wheel[method]).summary.start_value, 0)}${startSel !== "all" ? ` on ${fmtDate((pick("wheel") || B.wheel[method]).summary.first)} ${(pick("wheel") || B.wheel[method]).summary.first.slice(0, 4)}` : ""}. "Gain on money put in" subtracts the starting shares and any money added. "Holding instead" keeps the 100 shares and, in the add-money row, also buys shares with each deposit on the same day, so both sides put in the same money. Money added usually pays to buy the shares back at a higher strike after they were called away, so it doesn't add shares to the wheel. Valued at the latest option-data price.${B.wheel2 ? " Twice-a-week results assume Wednesday expirations existed for the whole period; most single stocks only gained them recently, so earlier years show what the routine would have done rather than trades you could have placed." : ""}`;
+  $("wCompare").innerHTML = `<thead><tr><th>Rule</th><th>Ends with</th><th>Value now</th><th>Money added</th><th>Gain on money put in</th><th>Holding instead</th><th>Wheel vs holding</th></tr></thead><tbody>${rows.join("")}</tbody>`;
+  $("wCompareNote").textContent = `Each starts with 100 shares worth ${money((pick("wheel") || B.wheel[method]).summary.start_value, 0)}${startSel !== "all" ? ` on ${fmtDate((pick("wheel") || B.wheel[method]).summary.first)} ${(pick("wheel") || B.wheel[method]).summary.first.slice(0, 4)}` : ""}. "Gain on money put in" subtracts the starting shares and any money added. "Holding instead" keeps the 100 shares and, in the add-money row, also buys shares with each deposit on the same day, so both sides put in the same money. Money added usually pays to buy the shares back at a higher strike after they were called away, so it doesn't add shares to the wheel. Valued at the latest option-data price.${B.wheel2 ? " Twice-a-week results assume Wednesday expirations existed for the whole period; most single stocks only gained them recently, so earlier years show what the routine would have done rather than trades you could have placed." : ""}`;
 }
 $("wShort").addEventListener("change", renderWheel);
 $("wSched").addEventListener("change", () => state.report && renderBacktest(state.report, state.backtest));
@@ -2348,6 +2377,13 @@ function renderWheelToday(B, W, s) {
     move = `<strong>${when}: skip.</strong> Earnings on ${fmtDate(r.earnings_date)} fall inside this trade's window, so the wheel sits out.`;
   } else if (!exp) {
     move = `<strong>${when}:</strong> the ${fmtDate(iso(fri))} expiration isn't in the latest option chain yet.`;
+  } else if (holding && s.floor_mode && s.bought_at) {
+    const tgt = r.call_target_delta || 0.20;
+    const over = exp.calls.filter((o) => o.delta > 0 && o.strike >= s.bought_at);
+    const c = over.sort((a, b) => Math.abs(a.delta - tgt) - Math.abs(b.delta - tgt))[0];
+    move = c && c.premium >= 5
+      ? `<strong>${when}: sell the ${money(c.strike)} covered call</strong> expiring ${fmtDate(exp.date)}, at or above the ${money(s.bought_at)} the last put bought the shares at. About ${money(c.live_quote && c.bid > 0 ? c.bid * 100 : c.premium, 0)} at the latest prices (${c.delta.toFixed(2)} delta, ${pct(c.prob_assign)} chance of being called away).`
+      : `<strong>${when}: hold the shares.</strong> Calls at or above the ${money(s.bought_at)} put strike pay almost nothing right now; the stock is ${((1 - px / s.bought_at) * 100).toFixed(1)}% below it.`;
   } else if (holding) {
     const tgt = r.call_target_delta || 0.20;
     const c = exp.calls.filter((o) => o.delta > 0).sort((a, b) => Math.abs(a.delta - tgt) - Math.abs(b.delta - tgt))[0];
