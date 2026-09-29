@@ -286,11 +286,15 @@ def _decision(policy, w, kind):
     return d
 
 
+# the wheel's rules, by the suffix on its key: what happens when cash is short, and the price rules
+RULES = (("", {}), ("_topup", {"topup": True}), ("_cap", {"cap": True}),
+         ("_floor", {"floor": True}), ("_capfloor", {"cap": True, "floor": True}))
+
 MIN_CAP_PREMIUM = 5.0     # $0.05 a share: a put paying less than this isn't worth selling; wait instead
 
 
 def wheel_sim(weeks, method, tbill=None, topup=False, legs_per_week=1, policy=None, mode=None, prior=None,
-              cap=False):
+              cap=False, floor=False):
     """The wheel: start owning 100 shares with no cash. Holding shares -> sell a covered call each
     Monday. Called away -> hold the cash and sell a cash-secured put each Monday, but only if the
     cash covers strike x 100; otherwise that week is paused. Put assigned -> buy 100 shares at the
@@ -307,6 +311,13 @@ def wheel_sim(weeks, method, tbill=None, topup=False, legs_per_week=1, policy=No
     the sale always covers it, so nothing is paused or added; if the stock has run far above K,
     that put pays next to nothing and the week is spent waiting (cash earns interest).
 
+    floor=True: "sell calls at or above the last put strike". After a put is assigned at strike P,
+    calls are only sold at P or higher (the usual call strike if that's already higher), so being
+    called away never sells the shares for less than they were bought back at. If the stock has
+    fallen far below P and that call pays almost nothing, the week is spent holding the shares.
+    Before the first put is assigned there is no put strike, so calls follow the usual strike.
+    cap and floor together give both price rules.
+
     policy / mode: follow the site's recommendation instead of trading every period. Strikes use
     the similar-weeks adjustment (walk-forward, see recommendation_backtest), and a trade is skipped
     when the verdict says so: mode "site" skips "hold off" (two flags), mode "favorable" skips any
@@ -320,8 +331,9 @@ def wheel_sim(weeks, method, tbill=None, topup=False, legs_per_week=1, policy=No
     c = {"call_weeks": 0, "put_weeks": 0, "paused": 0, "earnings_skipped": 0, "no_history": 0,
          "calls_assigned": 0, "puts_assigned": 0, "call_premium": 0.0, "put_premium": 0.0, "fees": 0.0,
          "longest_pause": 0, "interest": 0.0, "added": 0.0, "topups": 0, "largest_topup": 0.0,
-         "skipped_calls": 0, "skipped_puts": 0, "cap_waits": 0}
+         "skipped_calls": 0, "skipped_puts": 0, "cap_waits": 0, "floor_waits": 0}
     called_at = None                  # strike the shares were last called away at
+    bought_at = None                  # strike of the last put that was assigned
     bench_extra_shares = 0.0          # shares the benchmark buys with the same deposits
     run = 0
     for n_w, w in enumerate(weeks):
@@ -349,9 +361,14 @@ def wheel_sim(weeks, method, tbill=None, topup=False, legs_per_week=1, policy=No
             entry.update({"action": "skip_flag", "outcome": "hold_off" if _decision(policy, w, "put")[1] >= 2 else "not_favorable"})
         elif shares:
             K = call_strike(w, method, history, _decision(policy, w, "call")[0] if mode else 1.0)
+            if K is not None and floor and bought_at is not None and K < bought_at:
+                K = round_up(bought_at - 1e-9, w["step"])
             if K is None:
                 c["no_history"] += 1
                 entry["action"] = "no_history"
+            elif floor and bs_call(S, K, T, vol) * 100 < MIN_CAP_PREMIUM:
+                c["floor_waits"] += 1         # the call at the put strike pays almost nothing: hold the shares
+                entry.update({"action": "floor_wait", "strike": round(K, 2)})
             else:
                 prem = bs_call(S, K, T, vol) * 100
                 cash += prem - FEE
@@ -394,6 +411,7 @@ def wheel_sim(weeks, method, tbill=None, topup=False, legs_per_week=1, policy=No
                 entry.update({"action": "put", "strike": round(K, 2), "premium": round(prem, 2), "outcome": "expired"})
                 if close < K:
                     shares, cash = 100, cash - K * 100
+                    bought_at = K
                     c["puts_assigned"] += 1
                     entry["outcome"] = "bought"
                     events.append({"date": day, "type": "bought back", "strike": round(K, 2), "close": round(close, 2)})
@@ -424,6 +442,7 @@ def wheel_sim(weeks, method, tbill=None, topup=False, legs_per_week=1, policy=No
               "first": timeline_all[0][0], "last": timeline_all[-1][0],
               "last_leg": weeks[-1]["leg"], "last_expiry": weeks[-1]["x"].date().isoformat(),
               "trades_per_week": legs_per_week, "policy": mode, "cap_mode": cap,
+              "floor_mode": floor, "bought_at": round(bought_at, 2) if bought_at is not None else None,
               "called_at": round(called_at, 2) if called_at is not None else None})
     timeline = [[t[0], round(t[1]), round(t[2]), t[3]] for t in timeline]     # whole dollars for the chart
     return {"summary": c, "timeline": timeline, "events": events[-200:], "events_total": len(events),
@@ -993,7 +1012,7 @@ def later_starts(per, tbill):
         if not P:
             continue
         last = P[-1]["x"]
-        for suffix, kw in (("", {}), ("_topup", {"topup": True}), ("_cap", {"cap": True})):
+        for suffix, kw in RULES:
             for sk_start in START_CHOICES:
                 start = start_date(sk_start, last)
                 inside = [w for w in P if w["e"] >= start]
@@ -1013,12 +1032,12 @@ def later_starts(per, tbill):
 ROLL_STEP_DAYS = 91      # rolling windows start every ~3 months
 
 
-def _window_result(P, start, end, method, tbill, topup, legs):
+def _window_result(P, start, end, method, tbill, topup, legs, **kw):
     inside = [w for w in P if start <= w["e"] < end]
     if len(inside) < 20 * legs:
         return None
     prior = [w for w in P if w["x"] < start]
-    W = wheel_sim(inside, method, tbill, topup=topup, legs_per_week=legs, prior=prior)
+    W = wheel_sim(inside, method, tbill, topup=topup, legs_per_week=legs, prior=prior, **kw)
     if not W:
         return None
     s = W["summary"]
@@ -1034,7 +1053,7 @@ def _window_result(P, start, end, method, tbill, topup, legs):
             "premium": s["premium_total"], "interest": s["interest"], "ends_holding": s["ends_holding"]}
 
 
-def horizons(P, method, tbill=None, topup=False, legs=1, max_years=10):
+def horizons(P, method, tbill=None, topup=False, legs=1, max_years=10, ending_now=True, **kw):
     """The wheel run for the last 1, 2, ... 10 years (ending now), and over every rolling 1-, 2-, ...
     year stretch in the history (starting every ~3 months), each compared with holding the shares
     over the same stretch. Each run starts owning 100 shares; the history-based strike still uses
@@ -1044,10 +1063,10 @@ def horizons(P, method, tbill=None, topup=False, legs=1, max_years=10):
     first, last = P[0]["e"], P[-1]["x"] + pd.Timedelta(days=1)
     span = (last - first).days / 365.25
     ending = []
-    for n in range(1, max_years + 1):
+    for n in range(1, max_years + 1 if ending_now else 1):
         if n > span + 0.5:           # the last row can be a bit short of n years: it's the whole history
             break
-        r = _window_result(P, max(last - pd.DateOffset(years=n), first), last, method, tbill, topup, legs)
+        r = _window_result(P, max(last - pd.DateOffset(years=n), first), last, method, tbill, topup, legs, **kw)
         if r:
             ending.append({"n": n, **r})
     rolling = []
@@ -1057,7 +1076,7 @@ def horizons(P, method, tbill=None, topup=False, legs=1, max_years=10):
         res = []
         start = first
         while start + pd.DateOffset(years=n) <= last:
-            r = _window_result(P, start, start + pd.DateOffset(years=n), method, tbill, topup, legs)
+            r = _window_result(P, start, start + pd.DateOffset(years=n), method, tbill, topup, legs, **kw)
             if r:
                 res.append(r)
             start += pd.Timedelta(days=ROLL_STEP_DAYS)
@@ -1163,7 +1182,8 @@ def backtest(ticker, px, earn, now_et=None, peers=(), wiki=None, analyst=None, n
         for topup in (False, True):
             wheels[base + ("_topup" if topup else "")] = {m: wheel_sim(per[sk], m, tbill, topup=topup, legs_per_week=legs)
                                                            for m in ("delta", "study")}
-        wheels[base + "_cap"] = {m: wheel_sim(per[sk], m, tbill, legs_per_week=legs, cap=True) for m in ("delta", "study")}
+        for suffix, kw in RULES[2:]:     # the price rules (pause and add-money are above)
+            wheels[base + suffix] = {m: wheel_sim(per[sk], m, tbill, legs_per_week=legs, **kw) for m in ("delta", "study")}
     # the same wheels, following the site's recommendation (see POLICIES). They go in a separate
     # file the page loads only when you pick one; the main file keeps just their summaries.
     policy_wheels = {}
@@ -1195,9 +1215,9 @@ def backtest(ticker, px, earn, now_et=None, peers=(), wiki=None, analyst=None, n
         "cash_interest": tbill is not None,
         "return_to_strike": return_to_strike(F),
         **wheels,
-        "horizons": {base + ("_topup" if topup else ""): {m: horizons(per[sk], m, tbill, topup=topup, legs=legs)
-                                                         for m in ("delta", "study")}
-                     for base, sk, legs in WHEEL_KEYS for topup in (False, True)},
+        "horizons": {base + suffix: {m: horizons(per[sk], m, tbill, legs=legs, ending_now=not suffix, **kw)
+                                     for m in ("delta", "study")}
+                     for base, sk, legs in WHEEL_KEYS for suffix, kw in RULES},
         "policies": POLICIES,
         "policy_summary": {k: {m: (W or {}).get("summary") for m, W in v.items()} for k, v in policy_wheels.items()},
     }
