@@ -1226,6 +1226,7 @@ def backtest(ticker, px, earn, now_et=None, peers=(), wiki=None, analyst=None, n
     report["_policy_wheels"] = {"ticker": ticker, "updated": updated, **policy_wheels}
     report["start_choices"] = START_CHOICES
     report["_starts"] = {"ticker": ticker, "updated": updated, "log_fields": LOG_FIELDS, "starts": later_starts(per, tbill)}
+    report["_features"], report["_periods"] = F, per      # for strategies.py; main() removes them
     return report, history
 
 
@@ -1253,6 +1254,13 @@ def main():
             news, news_now = rs.headline_tone(tk)
             rep, hist = backtest(tk, d["px"], d["earn"], peers=d["peers"], wiki=d["wiki"], analyst=d["analyst"],
                                  news=news, news_now=news_now)
+            try:                   # the "Other strategies" tabs (see strategies.py)
+                import strategies
+                st = strategies.build(tk, rep.pop("_features"), rep.pop("_periods"), d["earn"])
+                (OUT_DIR / f"{tk}_strategies.json").write_text(json.dumps(st, separators=(",", ":")))
+            except Exception as exc:
+                print(f"{tk}: strategies data skipped ({exc})", file=sys.stderr)
+            rep.pop("_features", None); rep.pop("_periods", None)
             pol = rep.pop("_policy_wheels")
             starts = rep.pop("_starts")
             (OUT_DIR / f"{tk}.json").write_text(json.dumps(rep, separators=(",", ":")))

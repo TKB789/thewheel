@@ -166,6 +166,33 @@ def build_side(raw_rows, S, dte, kind, fallback_vol):
     return rows
 
 
+def atm_pair(raw_calls, raw_puts, S, dte, fallback_vol):
+    """The call and the put at the strike nearest the price (the straddle strike), with quotes.
+    The chain rows above only keep out-of-the-money options, so this pair is saved separately."""
+    T = max(dte, 0.5) / 365.0
+    calls = {num(r.get("strike")): r for r in raw_calls}
+    puts = {num(r.get("strike")): r for r in raw_puts}
+    both = sorted(k for k in calls if k in puts and k > 0)
+    if not both:
+        return None
+    K = min(both, key=lambda k: abs(k - S))
+    out = {"strike": round(K, 2)}
+    for kind, rw in (("call", calls[K]), ("put", puts[K])):
+        bid, ask, last = num(rw.get("bid")), num(rw.get("ask")), num(rw.get("lastPrice"))
+        live_quote = bid > 0 and ask > 0
+        mid = (bid + ask) / 2 if live_quote else last
+        if mid <= 0.01:
+            return None
+        vol = implied_vol(mid, S, K, T, RISK_FREE, kind)
+        if vol is None:
+            yv = num(rw.get("impliedVolatility"))
+            vol = yv if 0.03 < yv < 3 else fallback_vol
+        delta, _ = greeks(S, K, T, vol, RISK_FREE, kind)
+        out[kind] = {"bid": round(bid, 2), "ask": round(ask, 2), "mid": round(mid, 2), "live_quote": live_quote,
+                     "iv": round(vol, 4), "delta": round(delta, 3)}
+    return out
+
+
 def pick(expiries, side, target, band, before=None):
     """Closest-to-target delta per allowed expiry, then best annualized yield."""
     best = None
@@ -538,6 +565,13 @@ def fetch(ticker):
     lk_window, lk = load_lookalike(ticker, today)
     report = build_report(ticker, closes, price, prev_close, raw, earnings, ex_div, div_rate,
                           today, datetime.now(timezone.utc).isoformat(timespec="seconds"), lk, lk_window)
+    for e in report["expiries"]:        # same-strike call and put for the straddle on the Other strategies tabs
+        rw = next((x for x in raw if x["date"] == e["date"]), None)
+        if rw:
+            try:
+                e["atm"] = atm_pair(rw["calls_raw"], rw["puts_raw"], price, e["dte"], report.get("hv20") or 0.3)
+            except Exception:
+                pass
     # the trading day these prices come from (differs from today on weekends and market holidays)
     report["session_date"] = hist.index[-1].date().isoformat()
     # recent daily closes, so the page can score paper trades saved in your browser
