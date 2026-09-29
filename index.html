@@ -349,6 +349,7 @@
     <button type="button" id="navPaper" aria-pressed="false">Paper trades</button>
     <button type="button" id="navBacktest" aria-pressed="false">Backtest</button>
     <button type="button" id="navResearch" aria-pressed="false">Research</button>
+    <button type="button" id="navStrat" aria-pressed="false">Other strategies</button>
   </nav>
 
   <details class="card learn" id="learn">
@@ -611,6 +612,8 @@
     </div>
   </div>
 
+  <div id="stratView" class="wrap" hidden></div>
+
   <div id="researchView" class="wrap" hidden>
     <div id="rsNotice" class="notice" hidden></div>
     <section class="card bar">
@@ -817,6 +820,7 @@ async function load(ticker) {
     showNotice("");
     store("cca-ticker", ticker);
     render(rep);
+    if (window.Strat) Strat.onTicker();
   } catch (e) {
     $("report").hidden = true;
     $("fresh").hidden = true;
@@ -1481,13 +1485,14 @@ function renderPaper() {
 }
 
 function setView(v) {
-  for (const [name, view, nav] of [["analyzer", "analyzerView", "navAnalyzer"], ["puts", "putsView", "navPuts"], ["paper", "paperView", "navPaper"], ["backtest", "backtestView", "navBacktest"], ["research", "researchView", "navResearch"]]) {
+  for (const [name, view, nav] of [["analyzer", "analyzerView", "navAnalyzer"], ["puts", "putsView", "navPuts"], ["paper", "paperView", "navPaper"], ["backtest", "backtestView", "navBacktest"], ["research", "researchView", "navResearch"], ["strategies", "stratView", "navStrat"]]) {
     $(view).hidden = v !== name;
     $(nav).setAttribute("aria-pressed", v === name);
   }
   if (v === "paper") loadPaper();
   if (v === "backtest" && state.backtest) renderWheel();
   if (v === "research") renderResearchTab();
+  if (v === "strategies" && window.Strat) Strat.show();
   try { history.replaceState(null, "", v === "analyzer" ? location.pathname + location.search : "#" + v); } catch (e) {}
 }
 $("navAnalyzer").addEventListener("click", () => setView("analyzer"));
@@ -1495,6 +1500,7 @@ $("navPaper").addEventListener("click", () => setView("paper"));
 $("navPuts").addEventListener("click", () => setView("puts"));
 $("navBacktest").addEventListener("click", () => setView("backtest"));
 $("navResearch").addEventListener("click", () => setView("research"));
+$("navStrat").addEventListener("click", () => setView("strategies"));
 $("paperFilter").addEventListener("change", renderPaper);
 $("pfShow").addEventListener("change", (ev) => { store("cca-pf-show", ev.target.value); renderPaper(); });
 $("pfNew").addEventListener("click", () => { const n = askNewPortfolio(); if (n) { store("cca-pf-show", n); renderPaper(); } });
@@ -2521,7 +2527,9 @@ $("lookup").addEventListener("submit", (ev) => { ev.preventDefault(); load($("ti
 $("expiry").addEventListener("change", (ev) => { state.expiry = ev.target.value; renderChain(); });
 $("tabCalls").addEventListener("click", () => setSide("calls"));
 $("tabPuts").addEventListener("click", () => setSide("puts"));
-init().then(() => { if (location.hash === "#paper") setView("paper"); else if (location.hash === "#puts") setView("puts"); else if (location.hash === "#backtest") setView("backtest"); else if (location.hash === "#research") setView("research"); });
+init().then(() => { if (location.hash === "#paper") setView("paper"); else if (location.hash === "#puts") setView("puts"); else if (location.hash === "#backtest") setView("backtest"); else if (location.hash === "#research") setView("research");
+  else if (location.hash.startsWith("#strategies")) { const sub = location.hash.slice(12); setView("strategies"); if (sub) Strat.show(sub); } });
 </script>
+<script src="strategies.js"></script>
 </body>
 </html>
