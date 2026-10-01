@@ -1356,6 +1356,7 @@ async function scoreMine(list) {
     if (Date.now() >= settleAt.getTime()) {
       const C = await closesFor(String(t.ticker).toUpperCase());
       if (!C) t.nodata = true;
+      else if (!C.updated || new Date(C.updated) < settleAt) t.waiting = C.updated || "";
       else if (C.updated && new Date(C.updated) >= settleAt) {
         let close = null;
         for (let back = 0; back < 5 && close == null; back++) {       // holiday expirations: the last close before
@@ -1471,6 +1472,7 @@ function renderPaper() {
   const status = (t) => (t.status === "assigned" ? `<span class="chip bad">assigned</span>`
     : t.status === "expired" ? `<span class="chip good">${t.type === "put" ? "expired, kept cash" : "expired, kept shares"}</span>`
     : t.nodata ? `<span class="chip neutral">can't score: not on the watchlist</span>`
+    : t.waiting != null ? `<span class="chip neutral">expired, waiting for the closing price</span>${t.waiting ? ` <span class="muted">data last updated ${new Date(t.waiting).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</span>` : ""}`
     : t.today ? `<span class="chip ${t.today.itm ? "bad" : "good"}">expires today · ${money(t.today.price)} at ${localTime(new Date(t.today.updated))}, ${t.today.itm ? "in the money: likely assigned" : "out of the money"}</span>`
     : `<span class="chip info">open</span>`) +
     (mine(t) ? ` <button type="button" class="linkish mine-del" data-id="${esc(t.id)}" title="Delete this trade">delete</button>` : "");
