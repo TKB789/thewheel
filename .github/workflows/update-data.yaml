@@ -2,14 +2,15 @@ name: Update options data
 
 on:
   schedule:
-    # GitHub schedules run in UTC and don't follow daylight saving time, so each run is
-    # listed at both possible UTC hours. The "Check New York time" step keeps only the
-    # one that lands in the right New York window and skips the other.
-    - cron: "15 14,15 * * 1-5"   # 10:15 AM ET: after the opening swings settle; sell-time snapshot
-    - cron: "15 17,18 * * 1-5"   # 1:15 PM ET: midday refresh
-    - cron: "20 19,20 * * 1-5"   # 3:20 PM ET: last look before the close (expiration-day check)
-    - cron: "20 20,21 * * 1-5"   # 4:20 PM ET: after the close; final prices, study, trades settle (Fridays: backtest)
-    - cron: "5 16,17 * * 0,6"    # 12:05 PM ET weekends: headlines only
+    # GitHub often starts scheduled runs late (sometimes hours late) or skips them when it's busy.
+    # So the job is offered a start every 30 minutes on weekdays, and the "Decide what to run" step
+    # does each update once: the first start inside each window that hasn't been served yet.
+    #   10:00 AM ET  morning snapshot        1:00 PM ET  midday refresh
+    #   3:15 PM ET   last look before close   after 4:15 PM ET  closing prices, study, paper trades
+    # A missed after-close run is caught up by the next start, even the next morning.
+    - cron: "11,41 13-23 * * 1-5"
+    - cron: "11,41 0-3 * * 2-6"
+    - cron: "5 16,17 * * 0,6"    # 12:05 PM ET weekends: headlines (or a missed Friday close)
   push:
     paths:
       - "watchlist.txt"          # your own edits; the job's own commits don't trigger runs
@@ -33,7 +34,9 @@ jobs:
   update:
     runs-on: ubuntu-latest
     steps:
-      - name: Check New York time
+      - uses: actions/checkout@v4
+
+      - name: Decide what to run
         id: gate
         env:
           EVENT: ${{ github.event_name }}
@@ -49,22 +52,35 @@ jobs:
             echo "mode=full" >> "$GITHUB_OUTPUT"; echo "research=true" >> "$GITHUB_OUTPUT"; echo "backtest=true" >> "$GITHUB_OUTPUT"
             echo "Manual or push run: full update"; exit 0
           fi
-          HM=$((10#$(TZ=America/New_York date +%H%M)))
-          DOW=$(TZ=America/New_York date +%u)   # 1 = Monday ... 7 = Sunday
-          MODE=skip; RESEARCH=false; BACKTEST=false
-          if [ "$DOW" -le 5 ]; then
-            if [ $HM -ge 1000 ] && [ $HM -lt 1100 ]; then MODE=full; fi
-            if [ $HM -ge 1300 ] && [ $HM -lt 1400 ]; then MODE=full; fi
-            if [ $HM -ge 1515 ] && [ $HM -lt 1600 ]; then MODE=full; fi   # skipped if GitHub starts it after the close
-            if [ $HM -ge 1615 ] && [ $HM -lt 1715 ]; then MODE=full; RESEARCH=true; [ "$DOW" -eq 5 ] && BACKTEST=true; fi
-          else
-            if [ $HM -ge 1200 ] && [ $HM -lt 1300 ]; then MODE=headlines; fi
-          fi
-          echo "New York time $(TZ=America/New_York date '+%a %H:%M') -> $MODE (study: $RESEARCH)"
-          echo "mode=$MODE" >> "$GITHUB_OUTPUT"; echo "research=$RESEARCH" >> "$GITHUB_OUTPUT"; echo "backtest=$BACKTEST" >> "$GITHUB_OUTPUT"
+          LAST=$(cat data/last_full.txt 2>/dev/null || true)     # when the last full update was saved
+          python3 - "$LAST" >> "$GITHUB_OUTPUT" <<'PY'
+          import sys
+          from datetime import datetime, timedelta, time
+          from zoneinfo import ZoneInfo
+          ET = ZoneInfo("America/New_York")
+          now = datetime.now(ET)
+          last = datetime.fromisoformat(sys.argv[1]).astimezone(ET) if len(sys.argv) > 1 and sys.argv[1] else None
+          at = lambda d, h, m: datetime.combine(d, time(h, m), ET)
+          # the most recent weekday close (4:15 PM ET) at or before now
+          d = now.date()
+          while d.weekday() > 4 or at(d, 16, 15) > now:
+              d -= timedelta(days=1)
+          close_slot = at(d, 16, 15)
+          mode, research, backtest, why = "skip", "false", "false", ""
+          if last is None or last < close_slot:
+              mode, research = "full", "true"
+              backtest = "true" if d.weekday() == 4 else "false"
+              why = f"closing update for {d:%a %b %d}"
+          elif now.weekday() <= 4:
+              for h, m, h2, m2, name in ((10, 0, 13, 0, "morning"), (13, 0, 15, 15, "midday"), (15, 15, 16, 0, "before the close")):
+                  if at(now.date(), h, m) <= now < at(now.date(), h2, m2) and last < at(now.date(), h, m):
+                      mode, why = "full", name
+          elif 12 <= now.hour < 13:
+              mode, why = "headlines", "weekend headlines"
+          print(f"mode={mode}\nresearch={research}\nbacktest={backtest}")
+          print(f"New York {now:%a %H:%M}, last full update {last:%a %H:%M} -> {mode} {why}" if last else f"-> {mode} {why}", file=sys.stderr)
+          PY
 
-      - uses: actions/checkout@v4
-        if: steps.gate.outputs.mode != 'skip'
 
       - uses: actions/setup-python@v5
         if: steps.gate.outputs.mode != 'skip'
@@ -121,6 +137,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898699+github-actions[bot]@users.noreply.github.com"
+          if [ "$MODE" = "full" ]; then date -u +%Y-%m-%dT%H:%M:%S+00:00 > data/last_full.txt; fi
           git add data watchlist.txt
           git diff --cached --quiet || git commit -m "Update data ($MODE${TICKER:+ $TICKER})"
           git pull --rebase
