@@ -1,8 +1,8 @@
 {
  "ticker": "NFLX",
- "updated": "2026-10-21T21:40:40+00:00",
- "price": 65.04,
- "readings_from": "the close on 2026-10-21",
+ "updated": "2026-10-22T21:35:04+00:00",
+ "price": 67.05,
+ "readings_from": "the close on 2026-10-22",
  "history_from": "2016-10-24",
  "signals_tested": 30,
  "signals_missing": [],
@@ -15,34 +15,34 @@
  ],
  "current": {
   "gap_open": null,
-  "ret_1d": -0.05314,
-  "ret_5d": -0.07836,
-  "ret_20d": -0.08857,
-  "rsi14": 32.61164,
-  "pct_ma20": -0.06619,
-  "pct_ma50": -0.12884,
-  "hv20": 0.3286,
-  "vol_expansion": 1.46543,
-  "volume_ratio": 2.51686,
-  "range_ratio": 2.03748,
-  "rel_qqq_5d": -0.07322,
-  "qqq_5d": -0.00514,
-  "smh_5d": -0.01424,
-  "peers_1d": 0.00034,
-  "peers_5d": 0.01571,
-  "vix": 16.68,
-  "vix_chg_5d": -0.19,
-  "vix_term": 0.92866,
-  "tnx_chg_5d": -0.044,
-  "dxy_5d": -0.00825,
-  "oil_5d": 0.02755,
-  "wiki_spike": 1.16298,
-  "wiki_trend": 1.07834,
-  "days_to_earn": 90.0,
-  "analyst_net_7d": -1.0,
-  "analyst_net_30d": 0.0,
-  "pt_net_30d": -18.0,
-  "pt_gap": 0.23001,
+  "ret_1d": 0.0309,
+  "ret_5d": -0.07657,
+  "ret_20d": -0.06511,
+  "rsi14": 39.59251,
+  "pct_ma20": -0.0341,
+  "pct_ma50": -0.10019,
+  "hv20": 0.35018,
+  "vol_expansion": 1.40776,
+  "volume_ratio": 1.40223,
+  "range_ratio": 1.53156,
+  "rel_qqq_5d": -0.04425,
+  "qqq_5d": -0.03232,
+  "smh_5d": -0.06351,
+  "peers_1d": 0.03427,
+  "peers_5d": 0.03782,
+  "vix": 19.03,
+  "vix_chg_5d": 2.57,
+  "vix_term": 0.99107,
+  "tnx_chg_5d": -0.136,
+  "dxy_5d": -0.00375,
+  "oil_5d": 0.01153,
+  "wiki_spike": 1.20878,
+  "wiki_trend": 1.06433,
+  "days_to_earn": 89.0,
+  "analyst_net_7d": -2.0,
+  "analyst_net_30d": -1.0,
+  "pt_net_30d": -20.0,
+  "pt_gap": 0.19314,
   "days_since_rating": 1.0,
   "analyst_activity_7d": 19.0
  },
@@ -738,8 +738,8 @@
      "r_train": -0.0706,
      "p_train": 0.2208,
      "n_train": 303,
-     "r_test": 0.1781,
-     "p_test": 0.0425,
+     "r_test": 0.1783,
+     "p_test": 0.0422,
      "n_test": 130,
      "found": false,
      "holds": false
@@ -752,8 +752,8 @@
      "r_train": 0.0375,
      "p_train": 0.5155,
      "n_train": 303,
-     "r_test": 0.0048,
-     "p_test": 0.9569,
+     "r_test": 0.005,
+     "p_test": 0.9549,
      "n_test": 130,
      "found": false,
      "holds": false
@@ -763,7 +763,7 @@
      "label": "Past week vs Nasdaq-100",
      "target": "high_end",
      "kind": "tail",
-     "lo": 0.02738375709951968,
+     "lo": 0.02738396003792647,
      "hi": null,
      "r_train": -0.1486,
      "p_train": 0.0728,
@@ -780,7 +780,7 @@
      "target": "low_end",
      "kind": "tail",
      "lo": null,
-     "hi": -0.026872534046080764,
+     "hi": -0.02687271536145943,
      "r_train": 0.0392,
      "p_train": 0.6365,
      "n_train": 61,
@@ -823,7 +823,7 @@
      "label": "Nasdaq-100 (QQQ) past week",
      "target": "high_end",
      "kind": "tail",
-     "lo": 0.022206001031192243,
+     "lo": 0.022206146266343305,
      "hi": null,
      "r_train": -0.0619,
      "p_train": 0.4549,
@@ -840,7 +840,7 @@
      "target": "low_end",
      "kind": "tail",
      "lo": null,
-     "hi": -0.017323378477676708,
+     "hi": -0.017323283130039547,
      "r_train": 0.0434,
      "p_train": 0.6008,
      "n_train": 61,
@@ -883,7 +883,7 @@
      "label": "Chip stocks (SMH) past week",
      "target": "high_end",
      "kind": "tail",
-     "lo": 0.02831303179761764,
+     "lo": 0.02831302369060831,
      "hi": null,
      "r_train": 0.0656,
      "p_train": 0.4287,
@@ -900,7 +900,7 @@
      "target": "low_end",
      "kind": "tail",
      "lo": null,
-     "hi": -0.026696201811376507,
+     "hi": -0.026696198810261373,
      "r_train": 0.0196,
      "p_train": 0.8126,
      "n_train": 61,
@@ -943,7 +943,7 @@
      "label": "Peer stocks' previous day",
      "target": "high_end",
      "kind": "tail",
-     "lo": 0.01438834557578568,
+     "lo": 0.014388373780719912,
      "hi": null,
      "r_train": -0.0014,
      "p_train": 0.987,
@@ -960,7 +960,7 @@
      "target": "low_end",
      "kind": "tail",
      "lo": null,
-     "hi": -0.014717700312379968,
+     "hi": -0.014717672362740217,
      "r_train": -0.0057,
      "p_train": 0.9452,
      "n_train": 61,
@@ -1003,7 +1003,7 @@
      "label": "Peer stocks' past week",
      "target": "high_end",
      "kind": "tail",
-     "lo": 0.04163353290927682,
+     "lo": 0.041633565428851854,
      "hi": null,
      "r_train": 0.0331,
      "p_train": 0.6899,
@@ -1020,7 +1020,7 @@
      "target": "low_end",
      "kind": "tail",
      "lo": null,
-     "hi": -0.0398357797306153,
+     "hi": -0.039835813343549936,
      "r_train": -0.0669,
      "p_train": 0.4192,
      "n_train": 61,
@@ -1936,8 +1936,8 @@
     "hv20:size"
    ],
    "suggestion": {
-    "sigma_pct": 3.585,
-    "move_pct": 3.6,
+    "sigma_pct": 3.821,
+    "move_pct": 3.836,
     "target_rate": 0.15,
     "base_target_rate": 0.15,
     "lookalike": {
@@ -1945,9 +1945,9 @@
       "beats_chance": false,
       "p": 0.8905,
       "base_rate": 18.4,
-      "rate_now": 18.0,
-      "lookalikes_assigned": 1,
-      "as_of": "2026-10-21",
+      "rate_now": 8.0,
+      "lookalikes_assigned": 0,
+      "as_of": "2026-10-22",
       "ratio": 1.0,
       "applied": false
      },
@@ -1955,9 +1955,9 @@
       "beats_chance": false,
       "p": 0.5522,
       "base_rate": 14.7,
-      "rate_now": 16.0,
-      "lookalikes_assigned": 2,
-      "as_of": "2026-10-21",
+      "rate_now": 14.0,
+      "lookalikes_assigned": 1,
+      "as_of": "2026-10-22",
       "ratio": 1.0,
       "applied": false
      }
@@ -1977,23 +1977,23 @@
      },
      {
       "move_pct": 1.5,
-      "rate": 0.3356643356643357
+      "rate": 0.35664335664335667
      },
      {
       "move_pct": 2,
-      "rate": 0.2867132867132867
+      "rate": 0.2937062937062937
      },
      {
       "move_pct": 2.5,
-      "rate": 0.23776223776223776
+      "rate": 0.25874125874125875
      },
      {
       "move_pct": 3,
-      "rate": 0.1958041958041958
+      "rate": 0.20279720279720279
      },
      {
       "move_pct": 4,
-      "rate": 0.11188811188811189
+      "rate": 0.14685314685314685
      },
      {
       "move_pct": 5,
@@ -2001,16 +2001,16 @@
      },
      {
       "move_pct": 6,
-      "rate": 0.04195804195804196
+      "rate": 0.055944055944055944
      }
     ],
-    "put_move_pct": 1.526,
+    "put_move_pct": 1.626,
     "put_target_rate": 0.25,
     "put_base_target_rate": 0.25,
     "put_exceed_table": [
      {
       "move_pct": 0.5,
-      "rate": 0.40559440559440557
+      "rate": 0.4125874125874126
      },
      {
       "move_pct": 1,
@@ -2018,27 +2018,27 @@
      },
      {
       "move_pct": 1.5,
-      "rate": 0.26573426573426573
+      "rate": 0.2727272727272727
      },
      {
       "move_pct": 2,
-      "rate": 0.21678321678321677
+      "rate": 0.22377622377622378
      },
      {
       "move_pct": 2.5,
-      "rate": 0.16783216783216784
+      "rate": 0.18181818181818182
      },
      {
       "move_pct": 3,
-      "rate": 0.13986013986013987
+      "rate": 0.14685314685314685
      },
      {
       "move_pct": 4,
-      "rate": 0.055944055944055944
+      "rate": 0.06293706293706294
      },
      {
       "move_pct": 5,
-      "rate": 0.03496503496503497
+      "rate": 0.055944055944055944
      },
      {
       "move_pct": 6,
@@ -2739,8 +2739,8 @@
      "r_train": -0.0927,
      "p_train": 0.1145,
      "n_train": 291,
-     "r_test": 0.1181,
-     "p_test": 0.1902,
+     "r_test": 0.1186,
+     "p_test": 0.1881,
      "n_test": 125,
      "found": false,
      "holds": false
@@ -2753,8 +2753,8 @@
      "r_train": 0.1144,
      "p_train": 0.0513,
      "n_train": 291,
-     "r_test": -0.12,
-     "p_test": 0.1827,
+     "r_test": -0.1197,
+     "p_test": 0.1842,
      "n_test": 125,
      "found": false,
      "holds": false
@@ -2764,7 +2764,7 @@
      "label": "Past week vs Nasdaq-100",
      "target": "high_end",
      "kind": "tail",
-     "lo": 0.028261911965205888,
+     "lo": 0.028261473873903764,
      "hi": null,
      "r_train": -0.0807,
      "p_train": 0.3388,
@@ -2781,7 +2781,7 @@
      "target": "low_end",
      "kind": "tail",
      "lo": null,
-     "hi": -0.02689801713657436,
+     "hi": -0.02689813299158772,
      "r_train": 0.1053,
      "p_train": 0.2116,
      "n_train": 59,
@@ -2824,7 +2824,7 @@
      "label": "Nasdaq-100 (QQQ) past week",
      "target": "high_end",
      "kind": "tail",
-     "lo": 0.02177179383680672,
+     "lo": 0.021771472068338404,
      "hi": null,
      "r_train": -0.1425,
      "p_train": 0.0911,
@@ -2841,7 +2841,7 @@
      "target": "low_end",
      "kind": "tail",
      "lo": null,
-     "hi": -0.017381167865175073,
+     "hi": -0.017380966969784306,
      "r_train": 0.0342,
      "p_train": 0.6851,
      "n_train": 59,
@@ -2901,7 +2901,7 @@
      "target": "low_end",
      "kind": "tail",
      "lo": null,
-     "hi": -0.026712716556240856,
+     "hi": -0.026712713489737805,
      "r_train": -0.0082,
      "p_train": 0.9227,
      "n_train": 59,
@@ -2944,7 +2944,7 @@
      "label": "Peer stocks' previous day",
      "target": "high_end",
      "kind": "tail",
-     "lo": 0.014131544305661178,
+     "lo": 0.014131504748189064,
      "hi": null,
      "r_train": 0.0161,
      "p_train": 0.8488,
@@ -2961,7 +2961,7 @@
      "target": "low_end",
      "kind": "tail",
      "lo": null,
-     "hi": -0.01497571670601557,
+     "hi": -0.014975663735724601,
      "r_train": 0.0637,
      "p_train": 0.45,
      "n_train": 59,
@@ -3004,7 +3004,7 @@
      "label": "Peer stocks' past week",
      "target": "high_end",
      "kind": "tail",
-     "lo": 0.03717443345866608,
+     "lo": 0.037174433347818746,
      "hi": null,
      "r_train": 0.0285,
      "p_train": 0.7355,
@@ -3021,7 +3021,7 @@
      "target": "low_end",
      "kind": "tail",
      "lo": null,
-     "hi": -0.03989412293077125,
+     "hi": -0.039894178952328975,
      "r_train": -0.0633,
      "p_train": 0.4531,
      "n_train": 59,
@@ -3937,8 +3937,8 @@
     "hv20:size"
    ],
    "suggestion": {
-    "sigma_pct": 4.629,
-    "move_pct": 4.369,
+    "sigma_pct": 4.933,
+    "move_pct": 4.656,
     "target_rate": 0.15,
     "base_target_rate": 0.15,
     "lookalike": {
@@ -3946,9 +3946,9 @@
       "beats_chance": false,
       "p": 0.0846,
       "base_rate": 18.7,
-      "rate_now": 22.0,
+      "rate_now": 16.0,
       "lookalikes_assigned": 2,
-      "as_of": "2026-10-21",
+      "as_of": "2026-10-22",
       "ratio": 1.0,
       "applied": false
      },
@@ -3956,9 +3956,9 @@
       "beats_chance": false,
       "p": 0.0846,
       "base_rate": 18.5,
-      "rate_now": 12.0,
-      "lookalikes_assigned": 1,
-      "as_of": "2026-10-21",
+      "rate_now": 10.0,
+      "lookalikes_assigned": 2,
+      "as_of": "2026-10-22",
       "ratio": 1.0,
       "applied": false
      }
@@ -3974,7 +3974,7 @@
      },
      {
       "move_pct": 1,
-      "rate": 0.427536231884058
+      "rate": 0.43478260869565216
      },
      {
       "move_pct": 1.5,
@@ -3982,11 +3982,11 @@
      },
      {
       "move_pct": 2,
-      "rate": 0.35507246376811596
+      "rate": 0.36231884057971014
      },
      {
       "move_pct": 2.5,
-      "rate": 0.3115942028985507
+      "rate": 0.3188405797101449
      },
      {
       "move_pct": 3,
@@ -3998,14 +3998,14 @@
      },
      {
       "move_pct": 5,
-      "rate": 0.11594202898550725
+      "rate": 0.13768115942028986
      },
      {
       "move_pct": 6,
-      "rate": 0.07246376811594203
+      "rate": 0.08695652173913043
      }
     ],
-    "put_move_pct": 2.199,
+    "put_move_pct": 2.343,
     "put_target_rate": 0.25,
     "put_base_target_rate": 0.25,
     "put_exceed_table": [
@@ -4019,31 +4019,31 @@
      },
      {
       "move_pct": 1.5,
-      "rate": 0.3188405797101449
+      "rate": 0.3333333333333333
      },
      {
       "move_pct": 2,
-      "rate": 0.2826086956521739
+      "rate": 0.2898550724637681
      },
      {
       "move_pct": 2.5,
-      "rate": 0.21739130434782608
+      "rate": 0.2318840579710145
      },
      {
       "move_pct": 3,
-      "rate": 0.1956521739130435
+      "rate": 0.21014492753623187
      },
      {
       "move_pct": 4,
-      "rate": 0.13768115942028986
+      "rate": 0.15942028985507245
      },
      {
       "move_pct": 5,
-      "rate": 0.07971014492753623
+      "rate": 0.08695652173913043
      },
      {
       "move_pct": 6,
-      "rate": 0.050724637681159424
+      "rate": 0.057971014492753624
      }
     ]
    },
@@ -4760,7 +4760,7 @@
      "label": "Past week vs Nasdaq-100",
      "target": "high_end",
      "kind": "tail",
-     "lo": 0.026211595100832753,
+     "lo": 0.02621151623064133,
      "hi": null,
      "r_train": -0.0657,
      "p_train": 0.4058,
@@ -4777,7 +4777,7 @@
      "target": "low_end",
      "kind": "tail",
      "lo": null,
-     "hi": -0.02832160941935706,
+     "hi": -0.028321734178078328,
      "r_train": 0.0914,
      "p_train": 0.2473,
      "n_train": 67,
@@ -4820,7 +4820,7 @@
      "label": "Nasdaq-100 (QQQ) past week",
      "target": "high_end",
      "kind": "tail",
-     "lo": 0.025616985131296455,
+     "lo": 0.025617117453000583,
      "hi": null,
      "r_train": -0.0238,
      "p_train": 0.7636,
@@ -4837,7 +4837,7 @@
      "target": "low_end",
      "kind": "tail",
      "lo": null,
-     "hi": -0.01772609938825324,
+     "hi": -0.01772607969038073,
      "r_train": 0.1507,
      "p_train": 0.0565,
      "n_train": 67,
@@ -4880,7 +4880,7 @@
      "label": "Chip stocks (SMH) past week",
      "target": "high_end",
      "kind": "tail",
-     "lo": 0.036031861317658634,
+     "lo": 0.036031646030994985,
      "hi": null,
      "r_train": 0.0032,
      "p_train": 0.9678,
@@ -4897,7 +4897,7 @@
      "target": "low_end",
      "kind": "tail",
      "lo": null,
-     "hi": -0.02163552155067241,
+     "hi": -0.021635749042643624,
      "r_train": 0.0832,
      "p_train": 0.2921,
      "n_train": 67,
@@ -4940,7 +4940,7 @@
      "label": "Peer stocks' previous day",
      "target": "high_end",
      "kind": "tail",
-     "lo": 0.01889979049475707,
+     "lo": 0.01889981942263959,
      "hi": null,
      "r_train": -0.0666,
      "p_train": 0.3994,
@@ -4957,7 +4957,7 @@
      "target": "low_end",
      "kind": "tail",
      "lo": null,
-     "hi": -0.012287570228531485,
+     "hi": -0.012287617373380598,
      "r_train": 0.1521,
      "p_train": 0.0542,
      "n_train": 67,
@@ -5000,7 +5000,7 @@
      "label": "Peer stocks' past week",
      "target": "high_end",
      "kind": "tail",
-     "lo": 0.044865416727514804,
+     "lo": 0.0448654015790011,
      "hi": null,
      "r_train": -0.067,
      "p_train": 0.3963,
@@ -5017,7 +5017,7 @@
      "target": "low_end",
      "kind": "tail",
      "lo": null,
-     "hi": -0.038750233447760074,
+     "hi": -0.038750253437779186,
      "r_train": 0.1079,
      "p_train": 0.1719,
      "n_train": 67,
@@ -5931,8 +5931,8 @@
    "pairs": [],
    "holding": [],
    "suggestion": {
-    "sigma_pct": 2.927,
-    "move_pct": 2.727,
+    "sigma_pct": 3.12,
+    "move_pct": 2.906,
     "target_rate": 0.15,
     "base_target_rate": 0.15,
     "lookalike": {
@@ -5940,9 +5940,9 @@
       "beats_chance": false,
       "p": 0.1393,
       "base_rate": 16.2,
-      "rate_now": 14.0,
-      "lookalikes_assigned": 2,
-      "as_of": "2026-10-21",
+      "rate_now": 6.0,
+      "lookalikes_assigned": 0,
+      "as_of": "2026-10-22",
       "ratio": 1.0,
       "applied": false
      },
@@ -5952,7 +5952,7 @@
       "base_rate": 15.7,
       "rate_now": 14.0,
       "lookalikes_assigned": 1,
-      "as_of": "2026-10-21",
+      "as_of": "2026-10-22",
       "ratio": 1.0,
       "applied": false
      }
@@ -5962,80 +5962,80 @@
     "exceed_table": [
      {
       "move_pct": 0.5,
-      "rate": 0.4581589958158996
+      "rate": 0.46443514644351463
      },
      {
       "move_pct": 1,
-      "rate": 0.3702928870292887
+      "rate": 0.38284518828451886
      },
      {
       "move_pct": 1.5,
-      "rate": 0.28870292887029286
+      "rate": 0.3075313807531381
      },
      {
       "move_pct": 2,
-      "rate": 0.21338912133891214
+      "rate": 0.22594142259414227
      },
      {
       "move_pct": 2.5,
-      "rate": 0.17573221757322174
+      "rate": 0.1903765690376569
      },
      {
       "move_pct": 3,
-      "rate": 0.12761506276150628
+      "rate": 0.14644351464435146
      },
      {
       "move_pct": 4,
-      "rate": 0.08577405857740586
+      "rate": 0.09205020920502092
      },
      {
       "move_pct": 5,
-      "rate": 0.04602510460251046
+      "rate": 0.056485355648535567
      },
      {
       "move_pct": 6,
-      "rate": 0.02301255230125523
+      "rate": 0.029288702928870293
      }
     ],
-    "put_move_pct": 1.367,
+    "put_move_pct": 1.457,
     "put_target_rate": 0.25,
     "put_base_target_rate": 0.25,
     "put_exceed_table": [
      {
       "move_pct": 0.5,
-      "rate": 0.38284518828451886
+      "rate": 0.3891213389121339
      },
      {
       "move_pct": 1,
-      "rate": 0.303347280334728
+      "rate": 0.3138075313807531
      },
      {
       "move_pct": 1.5,
-      "rate": 0.2196652719665272
+      "rate": 0.2405857740585774
      },
      {
       "move_pct": 2,
-      "rate": 0.17782426778242677
+      "rate": 0.1903765690376569
      },
      {
       "move_pct": 2.5,
-      "rate": 0.13598326359832635
+      "rate": 0.14644351464435146
      },
      {
       "move_pct": 3,
-      "rate": 0.0899581589958159
+      "rate": 0.10669456066945607
      },
      {
       "move_pct": 4,
-      "rate": 0.05439330543933055
+      "rate": 0.06276150627615062
      },
      {
       "move_pct": 5,
-      "rate": 0.03138075313807531
+      "rate": 0.03347280334728033
      },
      {
       "move_pct": 6,
-      "rate": 0.02301255230125523
+      "rate": 0.027196652719665274
      }
     ]
    },
@@ -6752,7 +6752,7 @@
      "label": "Past week vs Nasdaq-100",
      "target": "high_end",
      "kind": "tail",
-     "lo": 0.04060961421900969,
+     "lo": 0.04060966582088227,
      "hi": null,
      "r_train": 0.1139,
      "p_train": 0.1526,
@@ -6769,7 +6769,7 @@
      "target": "low_end",
      "kind": "tail",
      "lo": null,
-     "hi": -0.029201255973202753,
+     "hi": -0.029200924880802368,
      "r_train": 0.034,
      "p_train": 0.6694,
      "n_train": 66,
@@ -6812,7 +6812,7 @@
      "label": "Nasdaq-100 (QQQ) past week",
      "target": "high_end",
      "kind": "tail",
-     "lo": 0.025199397935161075,
+     "lo": 0.025199364023709918,
      "hi": null,
      "r_train": -0.1705,
      "p_train": 0.0323,
@@ -6829,7 +6829,7 @@
      "target": "low_end",
      "kind": "tail",
      "lo": null,
-     "hi": -0.011191388391602962,
+     "hi": -0.011191757229869401,
      "r_train": -0.1206,
      "p_train": 0.1298,
      "n_train": 66,
@@ -6872,7 +6872,7 @@
      "label": "Chip stocks (SMH) past week",
      "target": "high_end",
      "kind": "tail",
-     "lo": 0.03724122502317618,
+     "lo": 0.0372413056832651,
      "hi": null,
      "r_train": -0.0261,
      "p_train": 0.7427,
@@ -6889,7 +6889,7 @@
      "target": "low_end",
      "kind": "tail",
      "lo": null,
-     "hi": -0.024452209086344445,
+     "hi": -0.024452115103052494,
      "r_train": -0.0406,
      "p_train": 0.6102,
      "n_train": 66,
@@ -6932,7 +6932,7 @@
      "label": "Peer stocks' previous day",
      "target": "high_end",
      "kind": "tail",
-     "lo": 0.016978120710540483,
+     "lo": 0.016978076812847846,
      "hi": null,
      "r_train": 0.0261,
      "p_train": 0.7427,
@@ -6949,7 +6949,7 @@
      "target": "low_end",
      "kind": "tail",
      "lo": null,
-     "hi": -0.0195428198534896,
+     "hi": -0.019542816192308066,
      "r_train": -0.1184,
      "p_train": 0.137,
      "n_train": 66,
@@ -6992,7 +6992,7 @@
      "label": "Peer stocks' past week",
      "target": "high_end",
      "kind": "tail",
-     "lo": 0.04415494391666992,
+     "lo": 0.04415487574186091,
      "hi": null,
      "r_train": -0.0623,
      "p_train": 0.4337,
@@ -7009,7 +7009,7 @@
      "target": "low_end",
      "kind": "tail",
      "lo": null,
-     "hi": -0.03525342511772846,
+     "hi": -0.03525344528839484,
      "r_train": 0.0187,
      "p_train": 0.814,
      "n_train": 66,
@@ -7923,8 +7923,8 @@
    "pairs": [],
    "holding": [],
    "suggestion": {
-    "sigma_pct": 2.927,
-    "move_pct": 2.457,
+    "sigma_pct": 3.12,
+    "move_pct": 2.618,
     "target_rate": 0.15,
     "base_target_rate": 0.15,
     "lookalike": {
@@ -7933,8 +7933,8 @@
       "p": 0.8458,
       "base_rate": 12.9,
       "rate_now": 14.0,
-      "lookalikes_assigned": 2,
-      "as_of": "2026-10-21",
+      "lookalikes_assigned": 1,
+      "as_of": "2026-10-22",
       "ratio": 1.0,
       "applied": false
      },
@@ -7942,9 +7942,9 @@
       "beats_chance": false,
       "p": 0.1741,
       "base_rate": 15.3,
-      "rate_now": 10.0,
+      "rate_now": 14.0,
       "lookalikes_assigned": 1,
-      "as_of": "2026-10-21",
+      "as_of": "2026-10-22",
       "ratio": 1.0,
       "applied": false
      }
@@ -7954,80 +7954,80 @@
     "exceed_table": [
      {
       "move_pct": 0.5,
-      "rate": 0.42643923240938164
+      "rate": 0.43070362473347545
      },
      {
       "move_pct": 1,
-      "rate": 0.3390191897654584
+      "rate": 0.35181236673773986
      },
      {
       "move_pct": 1.5,
-      "rate": 0.2515991471215352
+      "rate": 0.26652452025586354
      },
      {
       "move_pct": 2,
-      "rate": 0.1812366737739872
+      "rate": 0.2025586353944563
      },
      {
       "move_pct": 2.5,
-      "rate": 0.14285714285714285
+      "rate": 0.15565031982942432
      },
      {
       "move_pct": 3,
-      "rate": 0.09168443496801706
+      "rate": 0.11087420042643924
      },
      {
       "move_pct": 4,
-      "rate": 0.0511727078891258
+      "rate": 0.06396588486140725
      },
      {
       "move_pct": 5,
-      "rate": 0.02771855010660981
+      "rate": 0.03411513859275053
      },
      {
       "move_pct": 6,
-      "rate": 0.021321961620469083
+      "rate": 0.023454157782515993
      }
     ],
-    "put_move_pct": 1.524,
+    "put_move_pct": 1.624,
     "put_target_rate": 0.25,
     "put_base_target_rate": 0.25,
     "put_exceed_table": [
      {
       "move_pct": 0.5,
-      "rate": 0.417910447761194
+      "rate": 0.42217484008528783
      },
      {
       "move_pct": 1,
-      "rate": 0.3283582089552239
+      "rate": 0.3368869936034115
      },
      {
       "move_pct": 1.5,
-      "rate": 0.2601279317697228
+      "rate": 0.27505330490405117
      },
      {
       "move_pct": 2,
-      "rate": 0.18763326226012794
+      "rate": 0.2025586353944563
      },
      {
       "move_pct": 2.5,
-      "rate": 0.13219616204690832
+      "rate": 0.14925373134328357
      },
      {
       "move_pct": 3,
-      "rate": 0.09381663113006397
+      "rate": 0.11727078891257996
      },
      {
       "move_pct": 4,
-      "rate": 0.05970149253731343
+      "rate": 0.06609808102345416
      },
      {
       "move_pct": 5,
-      "rate": 0.029850746268656716
+      "rate": 0.04051172707889126
      },
      {
       "move_pct": 6,
-      "rate": 0.023454157782515993
+      "rate": 0.02771855010660981
      }
     ]
    },
@@ -8744,7 +8744,7 @@
      "label": "Past week vs Nasdaq-100",
      "target": "high_end",
      "kind": "tail",
-     "lo": 0.03805448797524838,
+     "lo": 0.03805466005642697,
      "hi": null,
      "r_train": 0.0639,
      "p_train": 0.4443,
@@ -8761,7 +8761,7 @@
      "target": "low_end",
      "kind": "tail",
      "lo": null,
-     "hi": -0.030645095513475516,
+     "hi": -0.030645931772576396,
      "r_train": 0.1724,
      "p_train": 0.039,
      "n_train": 60,
@@ -8804,7 +8804,7 @@
      "label": "Nasdaq-100 (QQQ) past week",
      "target": "high_end",
      "kind": "tail",
-     "lo": 0.023883632273145945,
+     "lo": 0.023883750961219804,
      "hi": null,
      "r_train": -0.052,
      "p_train": 0.5333,
@@ -8821,7 +8821,7 @@
      "target": "low_end",
      "kind": "tail",
      "lo": null,
-     "hi": -0.012524218149496712,
+     "hi": -0.01252413323023902,
      "r_train": -0.1743,
      "p_train": 0.0368,
      "n_train": 60,
@@ -8864,7 +8864,7 @@
      "label": "Chip stocks (SMH) past week",
      "target": "high_end",
      "kind": "tail",
-     "lo": 0.03614934688118221,
+     "lo": 0.03614914581796436,
      "hi": null,
      "r_train": 0.1158,
      "p_train": 0.1657,
@@ -8924,7 +8924,7 @@
      "label": "Peer stocks' previous day",
      "target": "high_end",
      "kind": "tail",
-     "lo": 0.016988687510840664,
+     "lo": 0.01698869932137135,
      "hi": null,
      "r_train": 0.0437,
      "p_train": 0.6011,
@@ -8941,7 +8941,7 @@
      "target": "low_end",
      "kind": "tail",
      "lo": null,
-     "hi": -0.02153053225683388,
+     "hi": -0.021530521177778178,
      "r_train": -0.2077,
      "p_train": 0.0129,
      "n_train": 60,
@@ -8984,7 +8984,7 @@
      "label": "Peer stocks' past week",
      "target": "high_end",
      "kind": "tail",
-     "lo": 0.04402364769979297,
+     "lo": 0.04402358199691776,
      "hi": null,
      "r_train": -0.0093,
      "p_train": 0.9109,
@@ -9001,7 +9001,7 @@
      "target": "low_end",
      "kind": "tail",
      "lo": null,
-     "hi": -0.03692259050239867,
+     "hi": -0.03692256183034086,
      "r_train": 0.0226,
      "p_train": 0.7867,
      "n_train": 60,
@@ -9915,8 +9915,8 @@
    "pairs": [],
    "holding": [],
    "suggestion": {
-    "sigma_pct": 3.585,
-    "move_pct": 3.087,
+    "sigma_pct": 3.821,
+    "move_pct": 3.29,
     "target_rate": 0.15,
     "base_target_rate": 0.15,
     "lookalike": null,
@@ -9925,80 +9925,80 @@
     "exceed_table": [
      {
       "move_pct": 0.5,
-      "rate": 0.4532710280373832
+      "rate": 0.45560747663551404
      },
      {
       "move_pct": 1,
-      "rate": 0.3925233644859813
+      "rate": 0.39953271028037385
      },
      {
       "move_pct": 1.5,
-      "rate": 0.3317757009345794
+      "rate": 0.34345794392523366
      },
      {
       "move_pct": 2,
-      "rate": 0.26401869158878505
+      "rate": 0.26869158878504673
      },
      {
       "move_pct": 2.5,
-      "rate": 0.19626168224299065
+      "rate": 0.21495327102803738
      },
      {
       "move_pct": 3,
-      "rate": 0.1588785046728972
+      "rate": 0.17289719626168223
      },
      {
       "move_pct": 4,
-      "rate": 0.10046728971962617
+      "rate": 0.10747663551401869
      },
      {
       "move_pct": 5,
-      "rate": 0.0630841121495327
+      "rate": 0.06775700934579439
      },
      {
       "move_pct": 6,
-      "rate": 0.0397196261682243
+      "rate": 0.04439252336448598
      }
     ],
-    "put_move_pct": 1.893,
+    "put_move_pct": 2.018,
     "put_target_rate": 0.25,
     "put_base_target_rate": 0.25,
     "put_exceed_table": [
      {
       "move_pct": 0.5,
-      "rate": 0.3855140186915888
+      "rate": 0.3925233644859813
      },
      {
       "move_pct": 1,
-      "rate": 0.31542056074766356
+      "rate": 0.32242990654205606
      },
      {
       "move_pct": 1.5,
-      "rate": 0.2850467289719626
+      "rate": 0.2897196261682243
      },
      {
       "move_pct": 2,
-      "rate": 0.23598130841121495
+      "rate": 0.2523364485981308
      },
      {
       "move_pct": 2.5,
-      "rate": 0.1939252336448598
+      "rate": 0.205607476635514
      },
      {
       "move_pct": 3,
-      "rate": 0.1542056074766355
+      "rate": 0.17289719626168223
      },
      {
       "move_pct": 4,
-      "rate": 0.09579439252336448
+      "rate": 0.10514018691588785
      },
      {
       "move_pct": 5,
-      "rate": 0.06074766355140187
+      "rate": 0.07242990654205607
      },
      {
       "move_pct": 6,
-      "rate": 0.04205607476635514
+      "rate": 0.0514018691588785
      }
     ]
    },
@@ -10017,9 +10017,9 @@
     "beats_chance": false,
     "p": 0.0846,
     "base_rate": 18.7,
-    "rate_now": 22.0,
+    "rate_now": 16.0,
     "lookalikes_assigned": 2,
-    "as_of": "2026-10-21",
+    "as_of": "2026-10-22",
     "ratio": 1.0,
     "applied": false
    },
@@ -10027,9 +10027,9 @@
     "beats_chance": false,
     "p": 0.0846,
     "base_rate": 18.5,
-    "rate_now": 12.0,
-    "lookalikes_assigned": 1,
-    "as_of": "2026-10-21",
+    "rate_now": 10.0,
+    "lookalikes_assigned": 2,
+    "as_of": "2026-10-22",
     "ratio": 1.0,
     "applied": false
    }
@@ -10039,9 +10039,9 @@
     "beats_chance": false,
     "p": 0.8905,
     "base_rate": 18.4,
-    "rate_now": 18.0,
-    "lookalikes_assigned": 1,
-    "as_of": "2026-10-21",
+    "rate_now": 8.0,
+    "lookalikes_assigned": 0,
+    "as_of": "2026-10-22",
     "ratio": 1.0,
     "applied": false
    },
@@ -10049,9 +10049,9 @@
     "beats_chance": false,
     "p": 0.5522,
     "base_rate": 14.7,
-    "rate_now": 16.0,
-    "lookalikes_assigned": 2,
-    "as_of": "2026-10-21",
+    "rate_now": 14.0,
+    "lookalikes_assigned": 1,
+    "as_of": "2026-10-22",
     "ratio": 1.0,
     "applied": false
    }
@@ -10062,8 +10062,8 @@
     "p": 0.8458,
     "base_rate": 12.9,
     "rate_now": 14.0,
-    "lookalikes_assigned": 2,
-    "as_of": "2026-10-21",
+    "lookalikes_assigned": 1,
+    "as_of": "2026-10-22",
     "ratio": 1.0,
     "applied": false
    },
@@ -10071,9 +10071,9 @@
     "beats_chance": false,
     "p": 0.1741,
     "base_rate": 15.3,
-    "rate_now": 10.0,
+    "rate_now": 14.0,
     "lookalikes_assigned": 1,
-    "as_of": "2026-10-21",
+    "as_of": "2026-10-22",
     "ratio": 1.0,
     "applied": false
    }
@@ -10083,9 +10083,9 @@
     "beats_chance": false,
     "p": 0.1393,
     "base_rate": 16.2,
-    "rate_now": 14.0,
-    "lookalikes_assigned": 2,
-    "as_of": "2026-10-21",
+    "rate_now": 6.0,
+    "lookalikes_assigned": 0,
+    "as_of": "2026-10-22",
     "ratio": 1.0,
     "applied": false
    },
@@ -10095,7 +10095,7 @@
     "base_rate": 15.7,
     "rate_now": 14.0,
     "lookalikes_assigned": 1,
-    "as_of": "2026-10-21",
+    "as_of": "2026-10-22",
     "ratio": 1.0,
     "applied": false
    }
