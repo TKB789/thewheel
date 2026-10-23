@@ -3,7 +3,6 @@
   "GOOGL",
   "GOOG",
   "AAPL",
-  "MSFT",
   "NVDA",
   "AMZN",
   "META",
@@ -23,6 +22,8 @@
   "QQQ",
   "IWM"
  ],
- "failed": [],
- "updated": "2026-10-22T21:32:23+00:00"
+ "failed": [
+  "MSFT"
+ ],
+ "updated": "2026-10-23T17:52:57+00:00"
 }
