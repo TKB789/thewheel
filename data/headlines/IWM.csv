@@ -1,4 +1,17 @@
 id,published_utc,provider,title,score
+b14f4288-e91e-36d4-9e67-0b90f5e11a71,2026-07-29T13:30+00:00,Trefis,SOXQ ETF Is A Sharper Bet Than Its Name Suggests,0.0
+8aa2c853-792d-3ef9-b6cc-3ca09158d0c8,2026-07-29T16:05+00:00,Motley Fool,"Israel Englander's Top Disclosed Holding Is an iShares Russell 2000 ETF, a Bet on Small-Cap Stocks Broadening Out the Rally",0.2023
+11651051-7585-3508-88ca-cd420020e831,2026-07-29T21:43+00:00,Trefis,How Much Eli Lilly (LLY) Are You Really Betting On?,0.0
+aad6273b-b3b6-3936-9628-5e58db40a975,2026-07-29T22:05+00:00,Trefis,The SOXX Dip Has A Painful History,-0.5994
+2d59a910-b32e-3042-a2ad-a019337f1d10,2026-07-30T12:23+00:00,Trefis,SPMO ETF Hides A Heavy Tech Tilt,-0.09
+3cb2d95d-692d-394b-a357-1eb275f3e342,2026-07-30T12:45+00:00,24/7 Wall St.,Institutional Investors Favor IWM Over IJR or VB. Should You?,0.2144
+48d067ab-41d4-33c6-8b6b-3729d34d1b55,2026-07-30T13:39+00:00,Trefis,VTV Asks You to Pay Yesterday's Premium for Tomorrow's Growth,0.3612
+8f194af7-3573-38a8-9de0-d7a4a1647043,2026-07-30T20:29+00:00,Trefis,How SCHY ETF Held Up While Stocks Fell,0.4215
+bc32eb32-1692-375d-9555-6514ed02c33e,2026-07-31T00:48+00:00,Trefis,Is This XLK Tech Dip A Gift?,0.7391
+e4a5b0e1-6fce-3cd6-92de-7dc4d7e3ce02,2026-07-31T01:21+00:00,Trefis,How Much RTX Are You Quietly Betting On?,0.0
+afb4eb19-1982-37ea-b855-aeeccd50b03e,2026-07-31T19:52+00:00,Trefis,How Much CRWD Are You Really Betting On?,0.0
+6dd2b0f1-8dfa-3061-935f-f63540e86b94,2026-07-31T20:02+00:00,Trefis,"Cash In Your IEFA Gain, Or Let It Ride?",0.8573
+679bec0f-69e7-3170-8d3a-f4598cc9166a,2026-07-31T21:56+00:00,24/7 Wall St.,Forget IWM: SPSM Has Quietly Beaten It by 12.68 Points Over 10 Years,0.6956
 868293ab-2e08-3d4f-a358-bc5b9fde3398,2026-08-01T16:36+00:00,Trefis,What's Inside URA Decides This Dip's Fate,-0.128
 274216f2-52d1-3430-81d0-54727ca11306,2026-08-03T13:06+00:00,MT Newswires,"Exchange-Traded Funds, Equity Futures Higher Pre-Bell Monday Amid US-Iran Truce Hopes",0.8126
 443a2867-860e-3cde-9c12-765174175759,2026-08-04T10:45+00:00,Trefis,What IJR's Own History Says About Its Price Today,0.6652
@@ -39,9 +52,11 @@ eda9a240-36a5-3bf5-8f96-8f1303b9b25e,2026-09-01T12:00+00:00,Zacks,ETF Asset Flow
 b14c84d2-4332-3335-a6a0-7af29fd1b39c,2026-09-02T13:08+00:00,MT Newswires,"Exchange-Traded Funds, Equity Futures Mixed Pre-Bell Wednesday Amid Escalating US-Iran Tensions",0.4404
 8505cd1b-ddba-3b17-9581-227846f5beab,2026-09-03T13:20+00:00,MT Newswires,"Exchange-Traded Funds Higher, Equity Futures Mixed Pre-Bell Thursday as Markets Weigh Oil Prices, Tech Earnings",0.6808
 66f821a3-49c9-3ba4-9638-76d493807f26,2026-09-04T13:33+00:00,MT Newswires,"Exchange-Traded Funds Higher, Equity Futures Mixed Pre-Bell Friday After August Jobs Report Tops Estimates",0.836
+996d5a8b-81d4-3d7a-b60a-0fedf2f1d82b,2026-09-05T13:30+00:00,Barchart,Scott Bessent Said Interest Rates Have Fallen During Trump’s Second Term. Here’s Where He’s Right – and Where He’s Wrong.,-0.0772
 bf2679fa-576e-3b71-abad-3f18be9c7e9e,2026-09-06T16:10+00:00,MarketBeat,3 ETFs That Could Move as Rate Expectations Shift,0.5106
 4a7c8579-d084-36ae-bedf-8e5873045cf3,2026-09-08T13:00+00:00,Zacks,5 Leveraged ETF Areas of Last Week,0.6808
 4881a043-f0a0-337e-b1f7-04d91da65927,2026-09-09T13:06+00:00,MT Newswires,"Exchange-Traded Funds, Equity Futures Down Pre-Bell Wednesday as Brent Crude Exceeds $100 a Barrel",0.2263
+3f927d48-f130-320c-9efa-f726285f3a4a,2026-09-18T15:00+00:00,24/7 Wall St.,Jennison’s PJSM Arrives With a Bold Promise and Almost No Track Record to Back It Up,0.7466
 1aad3be4-2405-3f83-a916-e9fcee286377,2026-09-21T13:23+00:00,MT Newswires,"Exchange-Traded Funds Rise, Equity Futures up Pre-Bell Monday as Oil Prices Decline",0.6808
 41850ff4-bac3-3505-bbea-581c4fa76b8f,2026-09-22T13:08+00:00,MT Newswires,"Exchange-Traded Funds Mixed, Equity Futures Up Pre-Bell Tuesday as Oil Prices Drop Due to Possible Diplomacy in US-Iran Conflict",0.296
 0d3beacb-9726-3c5c-a434-55bc18bc1ae5,2026-09-22T15:59+00:00,24/7 Wall St.,"Trade Desk Falls 4% as Index-Removal Flows Keep Pressure On; Magnite Drops 3%, AppLovin Pulls Back",-0.296
@@ -49,3 +64,19 @@ bf2679fa-576e-3b71-abad-3f18be9c7e9e,2026-09-06T16:10+00:00,MarketBeat,3 ETFs Th
 690b52fd-1811-31e3-8462-ca43d95d8f4c,2026-09-24T13:17+00:00,MT Newswires,"Exchange-Traded Funds, Equity Futures Lower Pre-Bell Thursday Amid Ongoing Middle East Tensions Before US-China Talks",0.1779
 0be616c1-fcba-31a1-b274-c782f3ba3634,2026-09-24T18:00+00:00,24/7 Wall St.,Bond Market Flashes a Warning Not Seen Since 2007,-0.7269
 392049fa-a74d-3709-878a-0e6c9b579e61,2026-09-25T13:24+00:00,MT Newswires,"Exchange-Traded Funds, Equity Futures up Pre-Bell Friday as Treasury Yields Rise, Oil Prices Fall",0.7506
+df2dc346-beb1-373f-abd7-e5cb569c65a5,2026-09-29T19:14+00:00,Barchart,The Credit Rout Is No Longer a Distant Threat: 4 ETFs Show How a Looming Debt Collapse Could Hit Stocks,-0.8176
+f49941dd-2eba-39ab-bb8f-fe3371860b6e,2026-10-01T09:20+00:00,Zacks,Should iShares Russell 2000 ETF (IWM) Be on Your Investing Radar?,0.0
+676b8bcc-3166-371c-969c-52a045311fa9,2026-10-01T21:03+00:00,24/7 Wall St.,"Forget IWM: This Screened Small-Cap Fund Beat It Year to Date, Over One Year and Over Five Years",0.25
+2ab4c4c1-edc2-3db5-9779-3773763c456f,2026-10-02T11:33+00:00,24/7 Wall St.,IWM Has Trailed the S&P 500 for a Decade While Carrying More Risk: The Small-Cap Premium That Never Fully Arrived,0.4417
+707ff8ba-cd7a-3366-8945-fb7df95fa39e,2026-10-02T11:48+00:00,MarketWatch,The stock market is anything but normal right now — and these charts show it,-0.7351
+e53d4bf8-80fc-311e-ad9f-aadb167a75c7,2026-10-05T14:55+00:00,MarketBeat,5 Oversold Corners of the Market That Could Bounce If Breadth Finally Improves,0.836
+f63dc961-1f6e-38ac-9243-27c7a2016314,2026-10-06T18:04+00:00,24/7 Wall St.,"Hertz Rebounds 16% From a Record Low; Avis Climbs 5%, Ryder Ticks Up",-0.7717
+02ec36bb-ebe8-3830-8b8a-8615d31ca63f,2026-10-12T16:30+00:00,Barchart,Small-Cap Stocks Are in Grave Danger Thanks to an Impending Debt Cliff. Use These 2 ETFs for Protection and Profit.,-0.7003
+bb404e5d-d36b-3d4f-9523-a920aac9d48c,2026-10-12T18:32+00:00,Barrons.com,AI Can Help Small-Caps Beat Megacap Tech Rivals. That Gives This ETF 20% Upside.,0.6348
+ee4fed31-a631-3bad-b372-b092c77f625f,2026-10-14T06:00+00:00,Barrons.com,Catching a Turn in the Market Can Pay Off Big. Here’s One Way to Do It.,-0.0772
+c272fe41-772f-3eac-85bd-cef7a078a0d8,2026-10-16T21:00+00:00,etf.com,ETF Fund Flows: Small-Cap Focused IWM Nets $2.2 Billion,0.6597
+abac3269-1e14-3f12-ae28-93412d32154e,2026-10-17T00:42+00:00,etf.com,What It Takes to Launch an ETF In Today's Market,0.6486
+1593275a-5998-3516-a147-01b92badbbaa,2026-10-20T14:21+00:00,International Business Times,NYSE Expands Trading Beyond the Bell. An Expert Weighs In.,0.1027
+cba2ac9b-36ad-3650-b70f-d2e1fd44f9e9,2026-10-25T11:55+00:00,MarketBeat,"Market Volatility Playbook: Trade the Noise, Get Paid to Ignore the Rest",-0.0258
+8cbd4d36-03e1-3b61-8fa6-9409a0882630,2026-10-25T12:45+00:00,MarketBeat,3 Defined Outcome ETFs Offering Unique Twists on Buffer Strategies,-0.2732
+fbd06fc6-8486-3257-b6e3-c1c35e5848e9,2026-11-02T11:05+00:00,GuruFocus.com,"iShares Russell 2000 (IWM) Adds Jackson Financial, Trims Glaukos on Thursday",0.2732
